@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model, authenticate
-from .serializers import RegisterSerializer, UserSerializer, CartItemSerializer, WishlistItemSerializer
+from .serializers import RegisterSerializer, UserSerializer, UpdateProfileSerializer, CartItemSerializer, WishlistItemSerializer
 from .models import CartItem, WishlistItem
 
 User = get_user_model()
@@ -41,12 +41,24 @@ class RegisterView(generics.CreateAPIView):
         return Response({'access': str(refresh.access_token), 'refresh': str(refresh)}, status=status.HTTP_201_CREATED)
 
 
-class ProfileView(generics.RetrieveUpdateAPIView):
+class ProfileView(generics.RetrieveAPIView):
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_object(self):
         return self.request.user
+
+    def patch(self, request, *args, **kwargs):
+        serializer = UpdateProfileSerializer(
+            request.user, data=request.data, partial=True, context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)
+
+    def delete(self, request, *args, **kwargs):
+        request.user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CartView(APIView):

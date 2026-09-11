@@ -25,6 +25,28 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'email', 'is_staff', 'is_superuser', 'created_at')
 
 
+class UpdateProfileSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=8, required=False)
+    is_staff = serializers.BooleanField(required=False)
+
+    class Meta:
+        model = User
+        fields = ('name', 'email', 'phone', 'password', 'is_staff')
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        # only allow is_staff change if requester is admin
+        request = self.context.get('request')
+        if not (request and request.user.is_staff):
+            validated_data.pop('is_staff', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
+
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
