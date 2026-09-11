@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, Trash2 } from 'lucide-react'
-import { wishlistApi, cartApi, hasAccessToken, toProduct, type WishlistItem } from '../lib/api'
+import { wishlistApi, cartApi, hasAccessToken, notifyWishlistUpdated, toProduct, type WishlistItem } from '../lib/api'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
@@ -22,6 +22,7 @@ export default function WishlistPage() {
     setRemoving(productId)
     await wishlistApi.remove(productId)
     setItems(prev => prev.filter(i => i.product_id !== productId))
+    notifyWishlistUpdated()
     setRemoving(null)
   }
 

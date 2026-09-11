@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { cartApi, productsApi, wishlistApi, toProduct, type Product, type ApiReview } from '../lib/api'
+import { cartApi, productsApi, wishlistApi, notifyWishlistUpdated, toProduct, type Product, type ApiReview } from '../lib/api'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -122,6 +122,7 @@ export default function ProductPage() {
         await wishlistApi.add(product)
         setWishlisted(true)
       }
+      notifyWishlistUpdated()
     } catch {
       showToast('Please sign in to save products to your wishlist.')
     }

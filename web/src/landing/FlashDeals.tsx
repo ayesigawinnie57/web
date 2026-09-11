@@ -130,7 +130,7 @@ export default function FlashDeals({ products: _ }: { products: unknown[] }) {
           <Link to="/deals" className="text-[13px] font-bold text-[#1E3A8A]">See All →</Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-4 xl:grid-cols-5">
           {visibleSales.map(sale => <FlashCard key={sale.id} sale={sale} />)}
         </div>
 

@@ -203,8 +203,10 @@ export type ApiOrder = {
 
 const GUEST_CART_KEY = 'majo_guest_cart'
 export const CART_UPDATED_EVENT = 'majo-cart-updated'
+export const WISHLIST_UPDATED_EVENT = 'majo-wishlist-updated'
 export const hasAccessToken = () => Boolean(localStorage.getItem('access_token'))
 export const notifyCartUpdated = () => window.dispatchEvent(new Event(CART_UPDATED_EVENT))
+export const notifyWishlistUpdated = () => window.dispatchEvent(new Event(WISHLIST_UPDATED_EVENT))
 
 const getGuestCart = (): CartItem[] => {
   try { return JSON.parse(localStorage.getItem(GUEST_CART_KEY) ?? '[]') as CartItem[] }

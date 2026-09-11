@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings } from 'lucide-react'
-import { CART_UPDATED_EVENT, cartApi, LOGO, productsApi, toProduct, type Product, type ApiCategory } from '../lib/api'
+import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory } from '../lib/api'
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
 
@@ -18,6 +18,7 @@ export default function Navbar() {
   const [catResults, setCatResults] = useState<ApiCategory[]>([])
   const [searching, setSearching] = useState(false)
   const [cartCount, setCartCount] = useState(0)
+  const [wishlistCount, setWishlistCount] = useState(0)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
@@ -52,6 +53,20 @@ export default function Navbar() {
     return () => {
       window.removeEventListener(CART_UPDATED_EVENT, refreshCartCount)
       window.removeEventListener('storage', refreshCartCount)
+    }
+  }, [])
+
+  useEffect(() => {
+    const refreshWishlistCount = () => {
+      if (!hasAccessToken()) { setWishlistCount(0); return }
+      wishlistApi.list().then(({ data }) => setWishlistCount(data.length)).catch(() => setWishlistCount(0))
+    }
+    refreshWishlistCount()
+    window.addEventListener(WISHLIST_UPDATED_EVENT, refreshWishlistCount)
+    window.addEventListener('storage', refreshWishlistCount)
+    return () => {
+      window.removeEventListener(WISHLIST_UPDATED_EVENT, refreshWishlistCount)
+      window.removeEventListener('storage', refreshWishlistCount)
     }
   }, [])
 
@@ -145,6 +160,11 @@ export default function Navbar() {
               <svg className="w-[21px] h-[21px] text-red-500" fill="none" stroke="#ef4444" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z" />
               </svg>
+              {wishlistCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center">
+                  {wishlistCount > 99 ? '99+' : wishlistCount}
+                </span>
+              )}
             </Link>
             {/* Cart */}
             <Link to="/cart" aria-label="Cart" title="Cart" className="relative p-0.5">
