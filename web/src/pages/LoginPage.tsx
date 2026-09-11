@@ -21,7 +21,9 @@ export default function LoginPage() {
     try {
       const { data } = await authApi.login(email.trim(), password)
       authApi.saveTokens(data.access, data.refresh)
-      // Redirect admins to admin panel
+      authApi.saveProfile(email.trim(), email.trim())
+      // fetch real name from profile
+      authApi.profile().then(({ data: p }) => authApi.saveProfile(p.name, p.email)).catch(() => {})
       try {
         const payload = JSON.parse(atob(data.access.split('.')[1]))
         navigate(payload.is_staff ? '/admin' : '/', { replace: true })

@@ -26,6 +26,7 @@ export default function RegisterPage() {
     try {
       const { data } = await authApi.register({ name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), password: form.password, country: 'Uganda', region: form.region, district: form.district.trim(), village: form.village.trim() })
       authApi.saveTokens(data.access, data.refresh)
+      authApi.saveProfile(form.name.trim(), form.email.trim())
       navigate('/', { replace: true })
     } catch (requestError: any) {
       const data = requestError?.response?.data

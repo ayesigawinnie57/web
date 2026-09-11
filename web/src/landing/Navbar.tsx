@@ -3,16 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Bell, ShoppingCart } from 'lucide-react'
 import { CART_UPDATED_EVENT, cartApi, LOGO, productsApi, toProduct, type Product, type ApiCategory } from '../lib/api'
 
-function getUser() {
-  try {
-    const token = localStorage.getItem('access_token')
-    if (!token) return null
-    return JSON.parse(atob(token.split('.')[1])) as { name?: string; email?: string; is_staff?: boolean }
-  } catch { return null }
+type UserInfo = { name: string; email: string }
+
+function getCachedUser(): UserInfo | null {
+  try { return JSON.parse(localStorage.getItem('majo_user') ?? 'null') } catch { return null }
 }
 
 export default function Navbar() {
-  const [user, setUser] = useState(getUser)
+  const [user, setUser] = useState<UserInfo | null>(getCachedUser)
   const [searchOpen, setSearchOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -59,7 +57,7 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => {
-    if (accountOpen) setUser(getUser())
+    if (accountOpen) setUser(getCachedUser())
   }, [accountOpen])
 
   const closeSearch = () => { setSearchOpen(false); setQuery(''); setResults([]); setCatResults([]) }
@@ -67,6 +65,7 @@ export default function Navbar() {
   const signOut = () => {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
+    localStorage.removeItem('majo_user')
     setUser(null)
     setAccountOpen(false)
     navigate('/')
@@ -236,11 +235,11 @@ export default function Navbar() {
             </div>
             <div className="flex items-center gap-2 py-6 border-b border-[#E2E8F0]">
               <div className="w-[52px] h-[52px] rounded-full bg-[#1E3A8A] flex items-center justify-center shrink-0">
-                <span className="text-white text-lg font-extrabold">{user ? (user.name ?? user.email ?? 'U').slice(0, 2).toUpperCase() : 'UN'}</span>
+                <span className="text-white text-lg font-extrabold">{user ? user.name.slice(0, 2).toUpperCase() : 'UN'}</span>
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-[#071A2B]">{user ? (user.name ?? user.email ?? 'User') : 'Guest'}</p>
-                <p className="text-xs text-[#64748B] mt-1">{user ? user.email ?? '' : 'Not signed in'}</p>
+                <p className="text-sm font-bold text-[#071A2B]">{user ? user.name : 'Guest'}</p>
+                <p className="text-xs text-[#64748B] mt-1">{user ? user.email : 'Not signed in'}</p>
               </div>
             </div>
             <div className="border-b border-[#E2E8F0] py-2">
