@@ -106,6 +106,12 @@ export type Product = {
 const DEFAULT_PRODUCT_DESCRIPTION = 'A quality product from Majo Gadgets, selected for reliable everyday use and great value.'
 const DEFAULT_LONG_DESCRIPTION = 'This product is carefully selected by Majo Gadgets for dependable quality, practical everyday use, and excellent value. Product availability and delivery details are shown above.'
 
+function unescapeHtml(str: string): string {
+  const txt = document.createElement('textarea')
+  txt.innerHTML = str
+  return txt.value
+}
+
 export const toProduct = (p: ApiProduct): Product => ({
   id: p.id,
   slug: p.slug,
@@ -119,7 +125,7 @@ export const toProduct = (p: ApiProduct): Product => ({
   stock: p.stock ?? 0,
   deliveryFee: Number(p.delivery_fee ?? 0),
   shortDescription: p.short_description?.trim() || DEFAULT_PRODUCT_DESCRIPTION,
-  longDescription: p.long_description?.trim() || DEFAULT_LONG_DESCRIPTION,
+  longDescription: unescapeHtml(p.long_description?.trim() || DEFAULT_LONG_DESCRIPTION),
   category: p.category?.slug ?? '',
   categoryName: p.category?.name ?? '',
 })
