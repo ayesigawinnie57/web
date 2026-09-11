@@ -1,17 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle, ChevronDown, CreditCard, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
-import { cartApi, hasAccessToken, ordersApi, type ApiOrder, type CartItem } from '../lib/api'
+import { BASE_URL, cartApi, hasAccessToken, ordersApi, type ApiOrder, type CartItem } from '../lib/api'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
-const REGIONS = ['Central Uganda', 'Eastern Uganda', 'Northern Uganda', 'Western Uganda']
+const REGIONS = [
+  { value: 'Central Region', label: 'Central Uganda' },
+  { value: 'Eastern Region', label: 'Eastern Uganda' },
+  { value: 'Northern Region', label: 'Northern Uganda' },
+  { value: 'Western Region', label: 'Western Uganda' },
+] as const
+
 const money = (value: string | number) => Number(value).toLocaleString()
 
+type District = { id: number; name: string; price: string; region: string }
 type Form = { name: string; phone: string; region: string; district: string; village: string; note: string }
 
 export default function CheckoutPage() {
   const [items, setItems] = useState<CartItem[]>([])
+  const [districts, setDistricts] = useState<District[]>([])
   const [form, setForm] = useState<Form>({ name: '', phone: '', region: '', district: '', village: '', note: '' })
   const [loading, setLoading] = useState(true)
   const [placing, setPlacing] = useState(false)
@@ -19,18 +27,51 @@ export default function CheckoutPage() {
   const [order, setOrder] = useState<ApiOrder | null>(null)
 
   useEffect(() => {
-    cartApi.list().then(setItems).catch(() => setError('Unable to load your cart.')).finally(() => setLoading(false))
+    Promise.all([
+      cartApi.list(),
+      fetch(`${BASE_URL}/api/settings/districts/`)
+        .then(res => (res.ok ? res.json() : []))
+        .then(data => (Array.isArray(data) ? data : (data.results ?? []))),
+    ])
+      .then(([cartItems, districtList]) => {
+        setItems(cartItems)
+        setDistricts(districtList)
+      })
+      .catch(() => setError('Unable to load your cart.'))
+      .finally(() => setLoading(false))
   }, [])
 
   const set = (key: keyof Form, value: string) => setForm(current => ({ ...current, [key]: value }))
   const subtotal = items.reduce((total, item) => total + Number(item.product_price) * item.quantity, 0)
+  const regionDistricts = useMemo(() => districts.filter(d => d.region === form.region), [districts, form.region])
+  const selectedDistrict = useMemo(() => regionDistricts.find(d => d.name === form.district), [regionDistricts, form.district])
+  const districtFee = Number(selectedDistrict?.price ?? 0)
+
+  const handleRegionChange = (value: string) => {
+    set('region', value)
+    set('district', '')
+  }
 
   const placeOrder = async (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
-    if (!hasAccessToken()) { setError('Please sign in before placing your order.'); return }
-    if (!items.length) { setError('Your cart is empty.'); return }
-    if (!form.name.trim() || !form.phone.trim()) { setError('Full name and phone number are required.'); return }
+    if (!hasAccessToken()) {
+      setError('Please sign in before placing your order.')
+      return
+    }
+    if (!items.length) {
+      setError('Your cart is empty.')
+      return
+    }
+    if (!form.name.trim() || !form.phone.trim()) {
+      setError('Full name and phone number are required.')
+      return
+    }
+    if (!form.region || !form.district) {
+      setError('Please select your region and district before placing the order.')
+      return
+    }
+
     setPlacing(true)
     try {
       const response = await ordersApi.create({
@@ -38,6 +79,7 @@ export default function CheckoutPage() {
         phone: form.phone.trim(),
         note: form.note.trim(),
         guest_name: form.name.trim(),
+        delivery_fee: districtFee,
         items: items.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
       })
       setOrder(response.data)
@@ -45,62 +87,164 @@ export default function CheckoutPage() {
     } catch (requestError: any) {
       const data = requestError?.response?.data
       setError(data?.detail ?? data?.non_field_errors?.[0] ?? 'Failed to place order. Please try again.')
-    } finally { setPlacing(false) }
+    } finally {
+      setPlacing(false)
+    }
   }
 
-  if (loading) return <><Navbar /><div className="pt-16 py-24 text-center text-[#64748B]">Loading checkout...</div></>
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="pt-16 py-24 text-center text-[#64748B]">Loading checkout...</div>
+      </>
+    )
+  }
 
-  if (order) return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <Navbar />
-      <main className="pt-14 lg:pt-16 max-w-xl mx-auto px-4 py-16 text-center">
-        <CheckCircle className="mx-auto text-green-600" size={64} />
-        <h1 className="text-3xl font-extrabold text-[#071A2B] mt-5">Order placed!</h1>
-        <p className="text-[13px] text-[#64748B] mt-2">Your order has been received and is being processed.</p>
-        <div className="mt-7 py-4 border-y border-[#E2E8F0] flex justify-between text-[14px]"><span>Order No.</span><strong>{order.code}</strong></div>
-        <div className="mt-5 space-y-3 text-[13px] text-[#64748B]">
-          <div className="flex justify-between"><span>Subtotal</span><span>UGX {money(order.subtotal)}</span></div>
-          <div className="flex justify-between"><span>Delivery fee</span><span>UGX {money(order.delivery_fee)}</span></div>
-          <div className="flex justify-between pt-4 border-t border-[#E2E8F0] text-[16px] font-extrabold text-[#071A2B]"><span>Total</span><span className="text-[#1E3A8A]">UGX {money(order.total)}</span></div>
-        </div>
-        <div className="flex items-center justify-center gap-2 mt-7 text-[13px] text-green-700"><Truck size={17} /> Expected delivery after 3 days</div>
-        <Link to="/" className="inline-block mt-8 bg-[#1E3A8A] text-white px-6 py-3 rounded-xl text-[13px] font-bold">Back to home</Link>
-      </main>
-      <Footer />
-    </div>
-  )
+  if (order) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <Navbar />
+        <main className="pt-14 lg:pt-16 max-w-xl mx-auto px-4 py-16 text-center">
+          <CheckCircle className="mx-auto text-green-600" size={64} />
+          <h1 className="text-3xl font-extrabold text-[#071A2B] mt-5">Order placed!</h1>
+          <p className="text-[13px] text-[#64748B] mt-2">Your order has been received and is being processed.</p>
+          <div className="mt-7 py-4 border-y border-[#E2E8F0] flex justify-between text-[14px]">
+            <span>Order No.</span>
+            <strong>{order.code}</strong>
+          </div>
+          <div className="mt-5 space-y-3 text-[13px] text-[#64748B]">
+            <div className="flex justify-between"><span>Subtotal</span><span>UGX {money(order.subtotal)}</span></div>
+            <div className="flex justify-between"><span>Delivery fee</span><span>UGX {money(order.delivery_fee)}</span></div>
+            <div className="flex justify-between pt-4 border-t border-[#E2E8F0] text-[16px] font-extrabold text-[#071A2B]">
+              <span>Total</span>
+              <span className="text-[#1E3A8A]">UGX {money(order.total)}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-7 text-[13px] text-green-700">
+            <Truck size={17} />
+            Expected delivery after 3 days
+          </div>
+          <Link to="/" className="inline-block mt-8 bg-[#1E3A8A] text-white px-6 py-3 rounded-xl text-[13px] font-bold">Back to home</Link>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
       <main className="pt-14 lg:pt-16 max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-end justify-between gap-4 mb-8">
-          <div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1E3A8A]">Complete your order</p><h1 className="text-3xl font-extrabold text-[#071A2B] mt-1">Checkout</h1></div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1E3A8A]">Complete your order</p>
+            <h1 className="text-3xl font-extrabold text-[#071A2B] mt-1">Checkout</h1>
+          </div>
           <Link to="/cart" className="text-[13px] font-bold text-[#1E3A8A]">Back to cart</Link>
         </div>
-        {!hasAccessToken() && <div className="mb-6 p-4 border border-blue-100 bg-blue-50 text-[13px] text-[#1E3A8A]">Please <Link to="/login" className="font-extrabold underline">sign in</Link> to place your order.</div>}
+
+        {!hasAccessToken() && (
+          <div className="mb-6 p-4 border border-blue-100 bg-blue-50 text-[13px] text-[#1E3A8A]">
+            Please <Link to="/login" className="font-extrabold underline">sign in</Link> to place your order.
+          </div>
+        )}
+
         {error && <div className="mb-6 p-4 border border-red-100 bg-red-50 text-[13px] font-semibold text-red-600">{error}</div>}
+
         <form onSubmit={placeOrder} className="grid lg:grid-cols-[1fr_320px] gap-8 items-start">
           <div className="space-y-8">
             <section>
-              <div className="flex items-center gap-3 mb-4"><MapPin className="text-[#1E3A8A]" size={19} /><div><h2 className="text-[17px] font-extrabold text-[#071A2B]">Delivery details</h2><p className="text-[12px] text-[#64748B]">Where should we deliver your order?</p></div></div>
+              <div className="flex items-center gap-3 mb-4">
+                <MapPin className="text-[#1E3A8A]" size={19} />
+                <div>
+                  <h2 className="text-[17px] font-extrabold text-[#071A2B]">Delivery details</h2>
+                  <p className="text-[12px] text-[#64748B]">Where should we deliver your order?</p>
+                </div>
+              </div>
+
               <div className="bg-white border border-[#E2E8F0] divide-y divide-[#E2E8F0]">
                 <Field label="Full Name" required value={form.name} onChange={value => set('name', value)} placeholder="Enter your full name" />
                 <Field label="Phone Number" required value={form.phone} onChange={value => set('phone', value)} placeholder="Enter your phone number" type="tel" />
-                <div className="p-4"><label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Country</label><div className="mt-2 px-3 py-2.5 bg-[#F8FAFC] text-[13px] text-[#64748B]">Uganda</div></div>
-                <div className="p-4"><label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Region</label><div className="relative mt-2"><select value={form.region} onChange={event => set('region', event.target.value)} className="appearance-none w-full px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none"><option value="">Select region</option>{REGIONS.map(region => <option key={region}>{region}</option>)}</select><ChevronDown className="absolute right-3 top-2.5 text-[#64748B] pointer-events-none" size={16} /></div></div>
-                <Field label="District" value={form.district} onChange={value => set('district', value)} placeholder="e.g. Kampala" />
+
+                <div className="p-4">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Country</label>
+                  <div className="mt-2 px-3 py-2.5 bg-[#F8FAFC] text-[13px] text-[#64748B]">Uganda</div>
+                </div>
+
+                <div className="p-4">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Region</label>
+                  <div className="relative mt-2">
+                    <select value={form.region} onChange={event => handleRegionChange(event.target.value)} className="appearance-none w-full px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none">
+                      <option value="">Select region</option>
+                      {REGIONS.map(region => <option key={region.value} value={region.value}>{region.label}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-2.5 text-[#64748B] pointer-events-none" size={16} />
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">District</label>
+                  <div className="relative mt-2">
+                    <select value={form.district} disabled={!form.region || regionDistricts.length === 0} onChange={event => set('district', event.target.value)} className="appearance-none w-full px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none disabled:opacity-50">
+                      <option value="">{form.region ? 'Select district' : 'Choose a region first'}</option>
+                      {regionDistricts.map(district => <option key={district.id} value={district.name}>{district.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-2.5 text-[#64748B] pointer-events-none" size={16} />
+                  </div>
+                </div>
+
                 <Field label="Village / Street" value={form.village} onChange={value => set('village', value)} placeholder="e.g. Nakawa" />
                 <Field label="Order Note" value={form.note} onChange={value => set('note', value)} placeholder="Add delivery instructions (optional)" />
               </div>
             </section>
+
             <section>
-              <div className="flex items-center gap-3 mb-4"><PackageCheck className="text-[#1E3A8A]" size={19} /><div><h2 className="text-[17px] font-extrabold text-[#071A2B]">Your order</h2><p className="text-[12px] text-[#64748B]">{items.length} item{items.length === 1 ? '' : 's'}</p></div></div>
-              <div className="bg-white border border-[#E2E8F0] divide-y divide-[#E2E8F0]">{items.map(item => <div key={item.id} className="flex items-center gap-3 p-4"><div className="w-14 h-14 bg-[#F8FAFC] shrink-0">{item.product_image && <img src={item.product_image} alt="" className="w-full h-full object-contain" />}</div><div className="flex-1 min-w-0"><p className="text-[13px] font-bold text-[#071A2B] truncate">{item.product_name}</p><p className="text-[12px] text-[#64748B] mt-1">Qty: {item.quantity}</p></div><span className="text-[13px] font-bold text-[#1E3A8A]">UGX {(Number(item.product_price) * item.quantity).toLocaleString()}</span></div>)}</div>
+              <div className="flex items-center gap-3 mb-4">
+                <PackageCheck className="text-[#1E3A8A]" size={19} />
+                <div>
+                  <h2 className="text-[17px] font-extrabold text-[#071A2B]">Your order</h2>
+                  <p className="text-[12px] text-[#64748B]">{items.length} item{items.length === 1 ? '' : 's'}</p>
+                </div>
+              </div>
+              <div className="bg-white border border-[#E2E8F0] divide-y divide-[#E2E8F0]">
+                {items.map(item => (
+                  <div key={item.id} className="flex items-center gap-3 p-4">
+                    <div className="w-14 h-14 bg-[#F8FAFC] shrink-0">
+                      {item.product_image && <img src={item.product_image} alt="" className="w-full h-full object-contain" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-bold text-[#071A2B] truncate">{item.product_name}</p>
+                      <p className="text-[12px] text-[#64748B] mt-1">Qty: {item.quantity}</p>
+                    </div>
+                    <span className="text-[13px] font-bold text-[#1E3A8A]">UGX {(Number(item.product_price) * item.quantity).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
             </section>
-            <div className="flex items-start gap-3 p-4 bg-green-50 text-green-800"><ShieldCheck size={19} className="shrink-0" /><div><p className="text-[13px] font-bold">Secure checkout</p><p className="text-[12px] mt-1">Final price including delivery is confirmed by the backend when your order is placed.</p></div></div>
+
+            <div className="flex items-start gap-3 p-4 bg-green-50 text-green-800">
+              <ShieldCheck size={19} className="shrink-0" />
+              <div>
+                <p className="text-[13px] font-bold">Secure checkout</p>
+                <p className="text-[12px] mt-1">Final price including delivery is confirmed by the backend when your order is placed.</p>
+              </div>
+            </div>
           </div>
-          <aside className="bg-white border border-[#E2E8F0] p-5 lg:sticky lg:top-24"><div className="flex items-center gap-2"><CreditCard size={18} className="text-[#1E3A8A]" /><h2 className="text-[17px] font-extrabold text-[#071A2B]">Payment</h2></div><p className="text-[12px] text-[#64748B] mt-2">Pay via MTN, Airtel or card.</p><div className="flex justify-between mt-6 text-[13px] text-[#64748B]"><span>Subtotal</span><span>UGX {subtotal.toLocaleString()}</span></div><p className="text-[11px] text-[#94A3B8] mt-3">Delivery fee is confirmed when you place the order.</p><button type="submit" disabled={placing || !items.length || !hasAccessToken()} className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold disabled:opacity-40">{placing ? 'Placing order...' : 'Place Order'}</button></aside>
+
+          <aside className="bg-white border border-[#E2E8F0] p-5 lg:sticky lg:top-24">
+            <div className="flex items-center gap-2">
+              <CreditCard size={18} className="text-[#1E3A8A]" />
+              <h2 className="text-[17px] font-extrabold text-[#071A2B]">Payment</h2>
+            </div>
+            <p className="text-[12px] text-[#64748B] mt-2">Pay via MTN, Airtel or card.</p>
+            <div className="flex justify-between mt-6 text-[13px] text-[#64748B]"><span>Subtotal</span><span>UGX {subtotal.toLocaleString()}</span></div>
+            <div className="flex justify-between mt-3 text-[13px] text-[#64748B]"><span>Delivery</span><span className="font-bold text-[#071A2B]">{selectedDistrict ? `UGX ${money(districtFee)}` : 'Select district'}</span></div>
+            <p className="text-[11px] text-[#94A3B8] mt-3">Selected district delivery fee overrides the default product delivery amount.</p>
+            <button type="submit" disabled={placing || !items.length || !hasAccessToken()} className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold disabled:opacity-40">
+              {placing ? 'Placing order...' : 'Place Order'}
+            </button>
+          </aside>
         </form>
       </main>
       <Footer />
@@ -109,5 +253,13 @@ export default function CheckoutPage() {
 }
 
 function Field({ label, required, value, onChange, placeholder, type = 'text' }: { label: string; required?: boolean; value: string; onChange: (value: string) => void; placeholder: string; type?: string }) {
-  return <label className="block p-4"><span className="flex justify-between text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]"><span>{label}</span><span className={required ? 'text-red-500' : 'text-[#CBD5E1]'}>{required ? 'Required *' : 'Optional'}</span></span><input required={required} type={type} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="w-full mt-2 px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none focus:border-[#1E3A8A]" /></label>
+  return (
+    <label className="block p-4">
+      <span className="flex justify-between text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">
+        <span>{label}</span>
+        <span className={required ? 'text-red-500' : 'text-[#CBD5E1]'}>{required ? 'Required *' : 'Optional'}</span>
+      </span>
+      <input required={required} type={type} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="w-full mt-2 px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none focus:border-[#1E3A8A]" />
+    </label>
+  )
 }

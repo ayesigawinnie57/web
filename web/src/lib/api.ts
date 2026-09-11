@@ -326,7 +326,7 @@ export const cartApi = {
 }
 
 export const ordersApi = {
-  create: (payload: { delivery_address: string; phone: string; note: string; guest_name: string; items: { product_id: number; quantity: number }[] }) => api.post<ApiOrder>('/api/orders/', payload),
+  create: (payload: { delivery_address: string; phone: string; note: string; guest_name: string; delivery_fee?: number; items: { product_id: number; quantity: number }[] }) => api.post<ApiOrder>('/api/orders/', payload),
 }
 
 export type ApiAdminOrder = {
