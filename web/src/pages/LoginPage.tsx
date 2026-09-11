@@ -21,15 +21,19 @@ export default function LoginPage() {
     try {
       const { data } = await authApi.login(email.trim(), password)
       authApi.saveTokens(data.access, data.refresh)
-      authApi.saveProfile(email.trim(), email.trim())
-      // fetch real name + admin status from backend profile
-      authApi.profile().then(({ data: p }) => authApi.saveProfile(p.name, p.email, p.is_staff)).catch(() => {})
+      let isStaff = false
       try {
         const payload = JSON.parse(atob(data.access.split('.')[1]))
-        navigate(payload.is_staff ? '/admin' : '/', { replace: true })
+        isStaff = !!payload.is_staff
+      } catch { /* ignore */ }
+      try {
+        const { data: p } = await authApi.profile()
+        authApi.saveProfile(p.name, p.email, p.is_staff)
+        isStaff = !!p.is_staff
       } catch {
-        navigate('/', { replace: true })
+        authApi.saveProfile(email.trim(), email.trim(), isStaff)
       }
+      navigate(isStaff ? '/admin' : '/', { replace: true })
     } catch (requestError: any) {
       setError(requestError?.response?.data?.detail ?? 'Invalid email or password.')
     } finally { setLoading(false) }
