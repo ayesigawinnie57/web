@@ -219,9 +219,9 @@ export const productsApi = {
 }
 
 export const authApi = {
-  login: (email: string, password: string) => api.post<{ access: string; refresh: string }>('/api/users/login/', { email, password }),
-  register: (payload: { name: string; email: string; phone: string; password: string; country: string; region: string; district: string; village: string }) => api.post<{ access: string; refresh: string }>('/api/users/register/', payload),
-  profile: () => api.get<{ id: number; email: string; name: string; is_staff: boolean; is_superuser: boolean }>('/api/users/profile/'),
+  login: (email: string, password: string) => api.post<{ access: string; refresh: string }>('/api/auth/login/', { email, password }),
+  register: (payload: { name: string; email: string; phone: string; password: string; country: string; region: string; district: string; village: string }) => api.post<{ access: string; refresh: string }>('/api/auth/register/', payload),
+  profile: () => api.get<{ id: number; email: string; name: string; is_staff: boolean; is_superuser: boolean }>('/api/auth/profile/'),
   saveTokens: (access: string, refresh: string) => {
     localStorage.setItem('access_token', access)
     localStorage.setItem('refresh_token', refresh)
@@ -241,8 +241,8 @@ export type WishlistItem = {
 }
 
 export const wishlistApi = {
-  list: () => api.get<WishlistItem[]>('/api/users/wishlist/'),
-  add: (product: Product) => api.post('/api/users/wishlist/', {
+  list: () => api.get<WishlistItem[]>('/api/auth/wishlist/'),
+  add: (product: Product) => api.post('/api/auth/wishlist/', {
     product_id: product.id,
     product_name: product.name,
     product_price: product.price,
@@ -251,16 +251,16 @@ export const wishlistApi = {
     product_category: product.category,
     product_rating: product.rating,
   }),
-  remove: (productId: number) => api.delete(`/api/users/wishlist/${productId}/`),
+  remove: (productId: number) => api.delete(`/api/auth/wishlist/${productId}/`),
 }
 
 export const cartApi = {
   list: async () => hasAccessToken()
-    ? (await api.get<CartItem[]>('/api/users/cart/')).data
+    ? (await api.get<CartItem[]>('/api/auth/cart/')).data
     : getGuestCart(),
   add: async (product: Product, quantity: number) => {
     if (hasAccessToken()) {
-      const response = await api.post<CartItem>('/api/users/cart/', {
+      const response = await api.post<CartItem>('/api/auth/cart/', {
         product_id: product.id,
         product_name: product.name,
         product_price: product.price,
@@ -296,7 +296,7 @@ export const cartApi = {
   },
   update: async (productId: number, quantity: number) => {
     if (hasAccessToken()) {
-      const response = await api.patch<CartItem>(`/api/users/cart/${productId}/`, { quantity })
+      const response = await api.patch<CartItem>(`/api/auth/cart/${productId}/`, { quantity })
       notifyCartUpdated()
       return response.data
     }
@@ -307,7 +307,7 @@ export const cartApi = {
   },
   remove: async (productId: number) => {
     if (hasAccessToken()) {
-      await api.delete(`/api/users/cart/${productId}/`)
+      await api.delete(`/api/auth/cart/${productId}/`)
       notifyCartUpdated()
       return
     }
