@@ -24,7 +24,7 @@ export default function LandingPage() {
         <Hero />
         <Products products={products} />
         <FlashDeals products={[]} />
-        <Recommended products={products} />
+        <Recommended products={products} featuredIds={new Set(products.slice(0, 12).map(p => p.id))} />
       </div>
       <Footer />
     </div>

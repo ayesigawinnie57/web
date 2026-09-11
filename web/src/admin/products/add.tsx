@@ -82,7 +82,7 @@ export default function AddProduct() {
   }
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-8">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate('/admin/products')} className="p-1 hover:opacity-70"><ArrowLeft size={20} color="#071A2B" /></button>
         <h1 className="text-xl font-extrabold text-[#071A2B]">Add Product</h1>
@@ -90,81 +90,93 @@ export default function AddProduct() {
 
       {error && <ErrorBanner message={error} onDismiss={() => setError('')} />}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Images</label>
-          <div className="flex gap-3 flex-wrap">
-            {previews.map((src, i) => (
-              <div key={i} className="relative">
-                <img src={src} className="w-20 h-20 rounded-lg object-cover" />
-                <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5">
-                  <X size={10} color="#fff" />
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Left column: images + toggles + category */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Images</label>
+              <div className="flex gap-3 flex-wrap">
+                {previews.map((src, i) => (
+                  <div key={i} className="relative">
+                    <img src={src} className="w-20 h-20 rounded-lg object-cover" />
+                    <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5">
+                      <X size={10} color="#fff" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="w-20 h-20 rounded-lg border border-dashed border-[#E2E8F0] bg-white flex flex-col items-center justify-center gap-1 hover:border-[#22C55E]"
+                >
+                  <ImagePlus size={20} color="#94A3B8" />
+                  <span className="text-[10px] text-[#94A3B8] font-semibold">Add</span>
                 </button>
+                <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
               </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="w-20 h-20 rounded-lg border border-dashed border-[#E2E8F0] bg-white flex flex-col items-center justify-center gap-1 hover:border-[#22C55E]"
-            >
-              <ImagePlus size={20} color="#94A3B8" />
-              <span className="text-[10px] text-[#94A3B8] font-semibold">Add</span>
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
+            </div>
+
+            <div className="flex gap-4">
+              <Toggle label="Featured" value={form.isFeatured} onChange={v => set('isFeatured')(v)} />
+              <Toggle label="New Deal" value={form.isNewDeal} onChange={v => set('isNewDeal')(v)} />
+            </div>
+
+            <div>
+              <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Category *</label>
+              {categories.length === 0 && !error && (
+                <p className="text-[12px] text-[#94A3B8] mb-2">Loading categories...</p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {categories.map(cat => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => set('categoryId')(String(cat.id))}
+                    className={`px-3 py-1.5 rounded-full border text-[12px] font-semibold capitalize transition-colors ${
+                      form.categoryId === String(cat.id)
+                        ? 'bg-[#22C55E] border-[#22C55E] text-white'
+                        : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#22C55E]'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
 
-        <Field label="Product Name *" value={form.name} onChange={set('name')} placeholder="e.g. Wireless Earbuds" />
-        <Field label="Price (UGX) *" value={form.price} onChange={set('price')} placeholder="e.g. 29000" type="number" />
-        <Field label="Original Price (UGX)" value={form.originalPrice} onChange={set('originalPrice')} placeholder="e.g. 59000" type="number" />
-        <Field label="Stock" value={form.stock} onChange={set('stock')} placeholder="e.g. 50" type="number" />
-        <Field label="Delivery Fee (UGX)" value={form.deliveryFee} onChange={set('deliveryFee')} placeholder="e.g. 5000" type="number" />
-        <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} placeholder="Brief summary" />
-        <div>
-          <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
-          <RichTextEditor
-            value={form.longDescription}
-            onChange={v => set('longDescription')(v)}
-            placeholder="Full product details..."
-          />
-        </div>
+          {/* Right columns: all fields */}
+          <div className="lg:col-span-2 space-y-4">
+            <Field label="Product Name *" value={form.name} onChange={set('name')} placeholder="e.g. Wireless Earbuds" />
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Price (UGX) *" value={form.price} onChange={set('price')} placeholder="e.g. 29000" type="number" />
+              <Field label="Original Price (UGX)" value={form.originalPrice} onChange={set('originalPrice')} placeholder="e.g. 59000" type="number" />
+              <Field label="Stock" value={form.stock} onChange={set('stock')} placeholder="e.g. 50" type="number" />
+              <Field label="Delivery Fee (UGX)" value={form.deliveryFee} onChange={set('deliveryFee')} placeholder="e.g. 5000" type="number" />
+            </div>
+            <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} placeholder="Brief summary" />
+            <div>
+              <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
+              <RichTextEditor
+                value={form.longDescription}
+                onChange={v => set('longDescription')(v)}
+                placeholder="Full product details..."
+              />
+            </div>
 
-        <div className="flex gap-4">
-          <Toggle label="Featured" value={form.isFeatured} onChange={v => set('isFeatured')(v)} />
-          <Toggle label="New Deal" value={form.isNewDeal} onChange={v => set('isNewDeal')(v)} />
-        </div>
-
-        <div>
-          <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Category *</label>
-          {categories.length === 0 && !error && (
-            <p className="text-[12px] text-[#94A3B8] mb-2">Loading categories...</p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {categories.map(cat => (
+            <div className="flex justify-end pt-2">
               <button
-                key={cat.id}
-                type="button"
-                onClick={() => set('categoryId')(String(cat.id))}
-                className={`px-3 py-1.5 rounded-full border text-[12px] font-semibold capitalize transition-colors ${
-                  form.categoryId === String(cat.id)
-                    ? 'bg-[#22C55E] border-[#22C55E] text-white'
-                    : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#22C55E]'
-                }`}
+                type="submit"
+                disabled={loading}
+                className="bg-[#22C55E] text-white px-6 py-2.5 rounded-lg text-[13px] font-bold disabled:opacity-60 hover:opacity-90"
               >
-                {cat.name}
+                {loading ? 'Saving...' : 'Save Product'}
               </button>
-            ))}
+            </div>
           </div>
-        </div>
 
-        <div className="flex justify-end pt-2">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-[#22C55E] text-white px-6 py-2.5 rounded-lg text-[13px] font-bold disabled:opacity-60 hover:opacity-90"
-          >
-            {loading ? 'Saving...' : 'Save Product'}
-          </button>
         </div>
       </form>
     </div>
@@ -181,6 +193,7 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: {
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
+        onWheel={type === 'number' ? e => (e.target as HTMLInputElement).blur() : undefined}
         placeholder={placeholder}
         className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px] text-[#071A2B] outline-none focus:border-[#22C55E]"
       />

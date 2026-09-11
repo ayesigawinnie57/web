@@ -6,7 +6,7 @@ type Props = { value: string; onChange: (html: string) => void; placeholder?: st
 
 export default function RichTextEditor({ value, onChange, placeholder = 'Write here...' }: Props) {
   const editorRef = useRef<HTMLDivElement>(null)
-  const lastValue = useRef(value)
+  const lastValue = useRef<string | null>(null)
 
   // Only set innerHTML when value changes externally (e.g. initial load)
   useEffect(() => {
@@ -28,6 +28,18 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write h
     const html = editorRef.current?.innerHTML ?? ''
     lastValue.current = html
     onChange(html)
+  }
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const plain = e.clipboardData.getData('text/plain')
+    if (!plain) return
+    e.preventDefault()
+    const html = plain
+      .split(/\n{2,}/)
+      .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+      .join('')
+    document.execCommand('insertHTML', false, html)
+    emit()
   }
 
   const isActive = (cmd: string) => {
@@ -92,6 +104,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write h
         contentEditable
         suppressContentEditableWarning
         onInput={emit}
+        onPaste={handlePaste}
         data-placeholder={placeholder}
         className="min-h-[120px] px-3 py-3 text-[13px] text-[#071A2B] outline-none leading-relaxed
           [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5

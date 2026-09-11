@@ -50,6 +50,15 @@ export default function ProductPage() {
       const p = toProduct(data)
       setProduct(p)
 
+      // Track browsed categories for Recommended section
+      if (p.category) {
+        try {
+          const prev: string[] = JSON.parse(localStorage.getItem('majo_browsed_cats') ?? '[]')
+          const updated = [p.category, ...prev.filter(c => c !== p.category)].slice(0, 6)
+          localStorage.setItem('majo_browsed_cats', JSON.stringify(updated))
+        } catch { /* ignore */ }
+      }
+
       productsApi.byCategory(p.category).then(({ data: d }) => {
         const raw = Array.isArray(d) ? d : (d as any).results ?? []
         setRelated(raw.map(toProduct).filter((r: Product) => r.slug !== slug).slice(0, 6))
@@ -342,6 +351,7 @@ export default function ProductPage() {
                 <div className="py-4 border-b border-[#E2E8F0]">
                   <div
                     className="text-[13px] text-[#475569] leading-relaxed
+                      [&_p]:mb-3 [&_p:last-child]:mb-0
                       [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
                       [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic
                       [&_u]:underline [&_s]:line-through [&_strike]:line-through"
