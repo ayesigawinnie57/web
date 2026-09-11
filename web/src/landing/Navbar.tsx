@@ -3,7 +3,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Bell, ShoppingCart } from 'lucide-react'
 import { CART_UPDATED_EVENT, cartApi, LOGO, productsApi, toProduct, type Product, type ApiCategory } from '../lib/api'
 
+function getUser() {
+  try {
+    const token = localStorage.getItem('access_token')
+    if (!token) return null
+    return JSON.parse(atob(token.split('.')[1])) as { name?: string; email?: string; is_staff?: boolean }
+  } catch { return null }
+}
+
 export default function Navbar() {
+  const [user, setUser] = useState(getUser)
   const [searchOpen, setSearchOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -49,7 +58,19 @@ export default function Navbar() {
     }
   }, [])
 
+  useEffect(() => {
+    if (accountOpen) setUser(getUser())
+  }, [accountOpen])
+
   const closeSearch = () => { setSearchOpen(false); setQuery(''); setResults([]); setCatResults([]) }
+
+  const signOut = () => {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    setUser(null)
+    setAccountOpen(false)
+    navigate('/')
+  }
 
   return (
     <>
@@ -215,11 +236,11 @@ export default function Navbar() {
             </div>
             <div className="flex items-center gap-2 py-6 border-b border-[#E2E8F0]">
               <div className="w-[52px] h-[52px] rounded-full bg-[#1E3A8A] flex items-center justify-center shrink-0">
-                <span className="text-white text-lg font-extrabold">UN</span>
+                <span className="text-white text-lg font-extrabold">{user ? (user.name ?? user.email ?? 'U').slice(0, 2).toUpperCase() : 'UN'}</span>
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-[#071A2B]">Guest</p>
-                <p className="text-xs text-[#64748B] mt-1">Not signed in</p>
+                <p className="text-sm font-bold text-[#071A2B]">{user ? (user.name ?? user.email ?? 'User') : 'Guest'}</p>
+                <p className="text-xs text-[#64748B] mt-1">{user ? user.email ?? '' : 'Not signed in'}</p>
               </div>
             </div>
             <div className="border-b border-[#E2E8F0] py-2">
@@ -229,8 +250,14 @@ export default function Navbar() {
                 </button>
               ))}
             </div>
-            <Link to="/login" onClick={() => setAccountOpen(false)} className="mt-6 bg-[#1E3A8A] text-white text-[15px] font-bold py-3.5 rounded-[10px] text-center block">Sign In</Link>
-            <Link to="/register" onClick={() => setAccountOpen(false)} className="mt-3 border border-[#E2E8F0] text-[#071A2B] text-[15px] font-bold py-3.5 rounded-[10px] text-center block">Create Account</Link>
+            {user ? (
+              <button onClick={signOut} className="mt-6 bg-red-500 text-white text-[15px] font-bold py-3.5 rounded-[10px] text-center block w-full">Sign Out</button>
+            ) : (
+              <>
+                <Link to="/login" onClick={() => setAccountOpen(false)} className="mt-6 bg-[#1E3A8A] text-white text-[15px] font-bold py-3.5 rounded-[10px] text-center block">Sign In</Link>
+                <Link to="/register" onClick={() => setAccountOpen(false)} className="mt-3 border border-[#E2E8F0] text-[#071A2B] text-[15px] font-bold py-3.5 rounded-[10px] text-center block">Create Account</Link>
+              </>
+            )}
           </div>
         </div>
       )}
