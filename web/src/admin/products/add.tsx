@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ImagePlus, X } from 'lucide-react'
 import { adminProductsApi, type ApiCategory } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
+import RichTextEditor from '../../components/RichTextEditor'
 
 type Form = {
   name: string; price: string; originalPrice: string; stock: string
@@ -121,12 +122,10 @@ export default function AddProduct() {
         <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} placeholder="Brief summary" />
         <div>
           <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
-          <textarea
+          <RichTextEditor
             value={form.longDescription}
-            onChange={e => set('longDescription')(e.target.value)}
+            onChange={v => set('longDescription')(v)}
             placeholder="Full product details..."
-            rows={4}
-            className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px] text-[#071A2B] outline-none focus:border-[#22C55E] resize-none"
           />
         </div>
 

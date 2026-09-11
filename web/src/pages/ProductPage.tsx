@@ -340,7 +340,13 @@ export default function ProductPage() {
               </button>
               {productDetailsExpanded && (
                 <div className="py-4 border-b border-[#E2E8F0]">
-                  <p className="text-[13px] text-[#475569] leading-relaxed whitespace-pre-line">{longDescription}</p>
+                  <div
+                    className="text-[13px] text-[#475569] leading-relaxed
+                      [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
+                      [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic
+                      [&_u]:underline [&_s]:line-through [&_strike]:line-through"
+                    dangerouslySetInnerHTML={{ __html: longDescription }}
+                  />
                 </div>
               )}
               <div className="flex items-center justify-between gap-3 pb-4 mb-5 border-b border-[#E2E8F0]">

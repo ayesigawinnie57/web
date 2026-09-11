@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ImagePlus } from 'lucide-react'
 import { adminProductsApi, type ApiCategory } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
+import RichTextEditor from '../../components/RichTextEditor'
 
-type Form = { name: string; price: string; originalPrice: string; stock: string; categoryId: string }
+type Form = { name: string; price: string; originalPrice: string; stock: string; categoryId: string; shortDescription: string; longDescription: string }
 
 export default function EditProduct() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [form, setForm] = useState<Form>({ name: '', price: '', originalPrice: '', stock: '', categoryId: '' })
+  const [form, setForm] = useState<Form>({ name: '', price: '', originalPrice: '', stock: '', categoryId: '', shortDescription: '', longDescription: '' })
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [existingImage, setExistingImage] = useState<string | null>(null)
   const [newImage, setNewImage] = useState<File | null>(null)
@@ -27,7 +28,7 @@ export default function EditProduct() {
         const cats = Array.isArray(catsData) ? catsData : (catsData as any).results ?? []
         setCategories(cats)
         setExistingImage(p.image)
-        setForm({ name: p.name, price: p.price, originalPrice: p.original_price ?? '', stock: String(p.stock), categoryId: String(p.category?.id ?? '') })
+        setForm({ name: p.name, price: p.price, originalPrice: p.original_price ?? '', stock: String(p.stock), categoryId: String(p.category?.id ?? ''), shortDescription: p.short_description ?? '', longDescription: p.long_description ?? '' })
       })
       .catch(err => setError(parseError(err, 'Failed to load product.')))
       .finally(() => setLoading(false))
@@ -51,6 +52,8 @@ export default function EditProduct() {
       fd.append('category_id', form.categoryId)
       if (form.originalPrice) fd.append('original_price', form.originalPrice)
       if (form.stock) fd.append('stock', form.stock)
+      if (form.shortDescription) fd.append('short_description', form.shortDescription)
+      if (form.longDescription) fd.append('long_description', form.longDescription)
       if (newImage) fd.append('image', newImage)
       await adminProductsApi.update(Number(id), fd)
       navigate('/admin/products')
@@ -91,6 +94,15 @@ export default function EditProduct() {
         <Field label="Price (UGX) *" value={form.price} onChange={set('price')} type="number" />
         <Field label="Original Price (UGX)" value={form.originalPrice} onChange={set('originalPrice')} type="number" />
         <Field label="Stock" value={form.stock} onChange={set('stock')} type="number" />
+        <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} />
+        <div>
+          <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
+          <RichTextEditor
+            value={form.longDescription}
+            onChange={v => set('longDescription')(v)}
+            placeholder="Full product details..."
+          />
+        </div>
 
         <div>
           <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Category</label>
