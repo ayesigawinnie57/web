@@ -29,6 +29,7 @@ import AdminPayments from './admin/payments/index'
 import AdminAccount from './admin/account'
 import AdminSettings from './admin/settings'
 import WishlistPage from './pages/WishlistPage'
+import AccountPage from './pages/AccountPage'
 import NotificationsPage from './pages/NotificationsPage'
 import NotificationDetailPage from './pages/NotificationDetailPage'
 
@@ -69,6 +70,7 @@ export default function App() {
         <Route path="/wishlist" element={<WishlistPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/notifications/:slug" element={<NotificationDetailPage />} />
+        <Route path="/account" element={<AccountPage />} />
         <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
