@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { NotificationProvider } from './lib/NotificationContext'
 import LandingPage from './landing'
 import ProductPage from './pages/ProductPage'
 import CartPage from './pages/CartPage'
@@ -24,9 +25,12 @@ import AddFlashSale from './admin/flashsales/add'
 import AdminUsers from './admin/users/index'
 import AdminPayments from './admin/payments/index'
 import WishlistPage from './pages/WishlistPage'
+import NotificationsPage from './pages/NotificationsPage'
+import NotificationDetailPage from './pages/NotificationDetailPage'
 
 export default function App() {
   return (
+    <NotificationProvider>
     <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -39,6 +43,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/notifications/:id" element={<NotificationDetailPage />} />
         <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
@@ -58,5 +64,6 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </NotificationProvider>
   )
 }
