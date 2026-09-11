@@ -1,6 +1,14 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { BASE_URL } from '../lib/api'
 
 export default function Footer() {
+  const [allowSelling, setAllowSelling] = useState(false)
+
+  useEffect(() => {
+    fetch(`${BASE_URL}/api/settings/platform/`)
+      .then(r => r.json()).then(d => setAllowSelling(!!d.allow_selling)).catch(() => {})
+  }, [])
   const openAppStore = () => {
     const isAppleDevice = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)
     const storeUrl = isAppleDevice
@@ -44,6 +52,9 @@ export default function Footer() {
             </div>
           </div>
         </div>
+        {allowSelling && (
+          <Link to="/register" className="text-[13px] text-[#94A3B8] hover:text-white transition text-center md:text-left mt-4 block">Sell with Majo Gadgets</Link>
+        )}
         <p className="text-[12px] text-[#64748B] text-center md:text-left pt-6">© {new Date().getFullYear()} Majo Gadgets. All rights reserved.</p>
       </div>
     </footer>
