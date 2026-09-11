@@ -1,7 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings } from 'lucide-react'
+import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings, Smartphone, Tv, WashingMachine, Shirt, Monitor, Sparkles, ShoppingBag } from 'lucide-react'
 import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory } from '../lib/api'
+
+const CAT_NAV = [
+  { label: 'Phones & Tablets', slug: 'phones-tablets', icon: Smartphone },
+  { label: 'Electronics',      slug: 'electronics',    icon: Tv },
+  { label: 'Appliances',       slug: 'appliances',     icon: WashingMachine },
+  { label: 'Fashion',          slug: 'fashion',        icon: Shirt },
+  { label: 'Computing',        slug: 'computing',      icon: Monitor },
+  { label: 'Health & Beauty',  slug: 'health-beauty',  icon: Sparkles },
+  { label: 'Baby Products',   slug: 'baby-products',  icon: ShoppingBag },
+]
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
 
@@ -245,6 +255,22 @@ export default function Navbar() {
             </div>
           </>
         )}
+        {/* Category bar — mobile + desktop */}
+        <div className="flex items-center border-t border-[#E2E8F0] overflow-x-auto scrollbar-none">
+          <div className="flex items-center lg:justify-between max-w-7xl mx-auto w-full px-2 lg:px-4 gap-0">
+            {CAT_NAV.map(({ label, slug, icon: Icon }) => (
+              <Link
+                key={slug}
+                to={`/shop?category=${slug}`}
+                onClick={closeSearch}
+                className="flex flex-col lg:flex-row items-center gap-1 lg:gap-1.5 px-3 lg:px-3.5 py-2 lg:py-2.5 text-[10px] lg:text-[12.5px] font-semibold text-[#071A2B] hover:text-[#1E3A8A] hover:bg-[#F0F4FF] whitespace-nowrap transition-colors border-b-2 border-transparent hover:border-[#1E3A8A] shrink-0"
+              >
+                <Icon size={14} strokeWidth={2} />
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
       </nav>
 
       {/* Account drawer */}
