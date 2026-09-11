@@ -22,4 +22,4 @@ class DeliverySettingsSerializer(serializers.ModelSerializer):
 class DistrictSerializer(serializers.ModelSerializer):
     class Meta:
         model = District
-        fields = ('id', 'name', 'price')
+        fields = ('id', 'name', 'price', 'region')
