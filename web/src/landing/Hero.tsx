@@ -112,7 +112,7 @@ export default function Hero() {
         <div className="absolute -bottom-10 right-16 w-36 h-36 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
 
         {/* left: text */}
-        <div className="absolute inset-0 flex flex-col justify-between pt-5 pb-5 md:pt-7 md:pb-7 pl-4 md:pl-8 pr-[50%] z-10">
+        <div className="absolute inset-0 flex flex-col justify-between pt-5 pb-5 md:pt-7 md:pb-7 pl-4 md:pl-8 pr-[50%] md:pr-[46%] z-10">
           <span className="inline-flex items-center gap-1 bg-white/20 text-white text-[9px] md:text-[11px] font-bold uppercase px-2 py-0.5 rounded-full mb-1.5 w-fit">
             <Icon size={9} strokeWidth={2.5} />
             {label}
@@ -131,11 +131,11 @@ export default function Hero() {
         </div>
 
         {/* right: category image */}
-        <div className="absolute right-0 top-0 bottom-0 w-[50%]">
+        <div className="absolute right-0 top-0 bottom-0 w-[50%] md:w-[46%]">
           <img
             src={image}
             alt={label}
-            className="w-full h-full object-contain object-center scale-110"
+            className="w-full h-full object-contain object-center scale-110 md:object-bottom md:scale-100"
           />
         </div>
 
