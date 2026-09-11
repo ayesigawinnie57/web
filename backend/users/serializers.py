@@ -26,23 +26,52 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UpdateProfileSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8, required=False)
+    current_password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    new_password = serializers.CharField(write_only=True, required=False, min_length=8, allow_blank=True)
+    password_confirm = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    password = serializers.CharField(write_only=True, min_length=8, required=False, allow_blank=True)
     is_staff = serializers.BooleanField(required=False)
 
     class Meta:
         model = User
-        fields = ('name', 'email', 'phone', 'password', 'is_staff')
+        fields = ('name', 'email', 'phone', 'current_password', 'new_password', 'password_confirm', 'password', 'is_staff')
+
+    def validate(self, attrs):
+        current_password = attrs.get('current_password')
+        new_password = attrs.get('new_password') or attrs.get('password')
+        password_confirm = attrs.get('password_confirm')
+
+        has_password_change = any(value not in (None, '') for value in [current_password, new_password, password_confirm])
+        if not has_password_change:
+            return attrs
+
+        if not current_password:
+            raise serializers.ValidationError({'current_password': 'Current password is required.'})
+        if not self.instance.check_password(current_password):
+            raise serializers.ValidationError({'current_password': 'Current password is incorrect.'})
+        if not new_password:
+            raise serializers.ValidationError({'new_password': 'New password is required.'})
+        if not password_confirm:
+            raise serializers.ValidationError({'password_confirm': 'Please confirm your new password.'})
+        if new_password != password_confirm:
+            raise serializers.ValidationError({'password_confirm': 'Passwords do not match.'})
+
+        return attrs
 
     def update(self, instance, validated_data):
-        password = validated_data.pop('password', None)
-        # only allow is_staff change if requester is admin
+        new_password = validated_data.pop('new_password', None)
+        if new_password is None:
+            new_password = validated_data.pop('password', None)
+        validated_data.pop('current_password', None)
+        validated_data.pop('password_confirm', None)
+
         request = self.context.get('request')
         if not (request and request.user.is_staff):
             validated_data.pop('is_staff', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        if password:
-            instance.set_password(password)
+        if new_password:
+            instance.set_password(new_password)
         instance.save()
         return instance
 
