@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, ShoppingCart } from 'lucide-react'
+import { Bell, ShoppingCart, ShieldCheck } from 'lucide-react'
 import { CART_UPDATED_EVENT, cartApi, LOGO, productsApi, toProduct, type Product, type ApiCategory } from '../lib/api'
 
-type UserInfo = { name: string; email: string }
+type UserInfo = { name: string; email: string; isAdmin: boolean }
 
 function getCachedUser(): UserInfo | null {
   try { return JSON.parse(localStorage.getItem('majo_user') ?? 'null') } catch { return null }
@@ -122,6 +122,12 @@ export default function Navbar() {
               <Link to="/categories" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Category</Link>
               <Link to="/deals" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Deals</Link>
             </div>
+            {/* Admin icon — only shown when backend confirms is_staff */}
+            {user?.isAdmin && (
+              <Link to="/admin" title="Admin Panel" className="w-[34px] h-[34px] rounded-full bg-[#1E3A8A] flex items-center justify-center">
+                <ShieldCheck className="w-[18px] h-[18px] text-white" />
+              </Link>
+            )}
             {/* Account */}
             <button
               onClick={() => setAccountOpen(true)}

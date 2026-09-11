@@ -226,8 +226,8 @@ export const authApi = {
     localStorage.setItem('access_token', access)
     localStorage.setItem('refresh_token', refresh)
   },
-  saveProfile: (name: string, email: string) => {
-    localStorage.setItem('majo_user', JSON.stringify({ name, email }))
+  saveProfile: (name: string, email: string, isAdmin = false) => {
+    localStorage.setItem('majo_user', JSON.stringify({ name, email, isAdmin }))
   },
 }
 
