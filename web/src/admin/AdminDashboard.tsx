@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Package, ShoppingBag, Grid2X2, Zap, Users, CreditCard, Plus, List } from 'lucide-react'
+import { Plus, List } from 'lucide-react'
 import { adminProductsApi, adminFlashSalesApi, adminUsersApi, type ApiFlashSaleItem } from '../lib/api'
 import ErrorBanner from './ErrorBanner'
 
+function getCachedUser() {
+  try { return JSON.parse(localStorage.getItem('majo_user') ?? 'null') as { name: string } | null } catch { return null }
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate()
+  const user = getCachedUser()
   const [productCount, setProductCount] = useState(0)
   const [flashSales, setFlashSales] = useState<ApiFlashSaleItem[]>([])
   const [userCount, setUserCount] = useState(0)
@@ -29,36 +34,46 @@ export default function AdminDashboard() {
 
   const pages = [
     {
-      label: 'Products', desc: `${productCount} total products`, icon: Package, color: '#6366f1',
+      label: 'Products', desc: `${productCount} total products`, color: '#6366f1',
       actions: [{ label: 'View All', route: '/admin/products' }, { label: 'Add New', route: '/admin/products/add' }],
     },
     {
-      label: 'Flash Sales', desc: `${activeFlash} active sale${activeFlash !== 1 ? 's' : ''}`, icon: Zap, color: '#F97316',
+      label: 'Flash Sales', desc: `${activeFlash} active sale${activeFlash !== 1 ? 's' : ''}`, color: '#F97316',
       actions: [{ label: 'Manage', route: '/admin/flashsales' }],
     },
     {
-      label: 'Categories', desc: 'Organise your products', icon: Grid2X2, color: '#10b981',
+      label: 'Categories', desc: 'Organise your products', color: '#10b981',
       actions: [{ label: 'View All', route: '/admin/categories' }, { label: 'Add New', route: '/admin/categories/add' }],
     },
     {
-      label: 'Orders', desc: 'Track & manage orders', icon: ShoppingBag, color: '#f59e0b',
+      label: 'Orders', desc: 'Track & manage orders', color: '#f59e0b',
       actions: [{ label: 'View All', route: '/admin/orders' }],
     },
     {
-      label: 'Users', desc: `${userCount} registered user${userCount !== 1 ? 's' : ''}`, icon: Users, color: '#8b5cf6',
+      label: 'Users', desc: `${userCount} registered user${userCount !== 1 ? 's' : ''}`, color: '#8b5cf6',
       actions: [{ label: 'View All', route: '/admin/users' }],
     },
     {
-      label: 'Payments', desc: 'Pesapal transactions', icon: CreditCard, color: '#0ea5e9',
+      label: 'Payments', desc: 'Pesapal transactions', color: '#0ea5e9',
       actions: [{ label: 'View All', route: '/admin/payments' }],
     },
   ]
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <p className="text-[13px] text-[#64748B]">Welcome back,</p>
-        <h1 className="text-3xl font-extrabold text-[#071A2B]">Admin</h1>
+    <div className="p-6 md:p-8">
+
+      {/* Welcome header */}
+      <div className="relative rounded-2xl overflow-hidden mb-8 bg-[#071A2B] px-6 py-7">
+        {/* decorative circles */}
+        <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/5" />
+        <div className="absolute -bottom-10 -right-2 w-28 h-28 rounded-full bg-white/5" />
+        <p className="text-[13px] text-white/50 font-semibold mb-1">Welcome back,</p>
+        <h1 className="text-[26px] font-extrabold text-white leading-tight mb-3">
+          {user?.name ?? 'Admin'} 😊
+        </h1>
+        <p className="text-[13px] text-white/60 leading-relaxed max-w-sm">
+          This is your admin account. You have full control over <span className="text-white font-semibold">Majo Gadgets</span>. Enjoy managing!
+        </p>
       </div>
 
       {error && <ErrorBanner message={error} onDismiss={() => setError('')} />}
@@ -71,11 +86,8 @@ export default function AdminDashboard() {
         </div>
       ) : (
         <div className="grid gap-3">
-          {pages.map(({ label, desc, icon: Icon, color, actions }) => (
+          {pages.map(({ label, desc, color, actions }) => (
             <div key={label} className="bg-white border border-[#E2E8F0] rounded-xl px-4 py-3 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: color + '18' }}>
-                <Icon size={20} color={color} />
-              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[14px] font-extrabold text-[#071A2B]">{label}</p>
                 <p className="text-[11px] text-[#64748B] mt-0.5">{desc}</p>

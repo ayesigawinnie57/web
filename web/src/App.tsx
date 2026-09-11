@@ -24,6 +24,7 @@ import AdminFlashSales from './admin/flashsales/index'
 import AddFlashSale from './admin/flashsales/add'
 import AdminUsers from './admin/users/index'
 import AdminPayments from './admin/payments/index'
+import AdminAccount from './admin/account'
 import WishlistPage from './pages/WishlistPage'
 import NotificationsPage from './pages/NotificationsPage'
 import NotificationDetailPage from './pages/NotificationDetailPage'
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="flashsales/add" element={<AddFlashSale />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="payments" element={<AdminPayments />} />
+            <Route path="account" element={<AdminAccount />} />
           </Route>
         </Route>
       </Routes>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, ShoppingCart, ShieldCheck } from 'lucide-react'
+import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings } from 'lucide-react'
 import { CART_UPDATED_EVENT, cartApi, LOGO, productsApi, toProduct, type Product, type ApiCategory } from '../lib/api'
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
@@ -21,7 +21,6 @@ export default function Navbar() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
-
   useEffect(() => {
     if (searchOpen) setTimeout(() => inputRef.current?.focus(), 50)
   }, [searchOpen])
@@ -122,7 +121,7 @@ export default function Navbar() {
               <Link to="/categories" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Category</Link>
               <Link to="/deals" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Deals</Link>
             </div>
-            {/* Admin icon — only shown when backend confirms is_staff */}
+            {/* Admin icon — visible on shop navbar for admins, navigates to admin */}
             {user?.isAdmin && (
               <Link to="/admin" title="Admin Panel" className="w-[34px] h-[34px] rounded-full bg-[#1E3A8A] flex items-center justify-center">
                 <ShieldCheck className="w-[18px] h-[18px] text-white" />
@@ -232,7 +231,7 @@ export default function Navbar() {
       {accountOpen && (
         <div className="fixed inset-0 z-[200] flex">
           <div className="absolute inset-0 bg-[#0F172A]/35" onClick={() => setAccountOpen(false)} />
-          <div className="ml-auto w-[min(50%,320px)] h-full bg-white shadow-2xl flex flex-col px-5 pt-16 relative z-10">
+          <div className="ml-auto w-[min(75%,320px)] h-full bg-white shadow-2xl flex flex-col px-5 pt-16 relative z-10">
             <div className="flex items-center justify-between pb-5 border-b border-[#E2E8F0]">
               <span className="text-2xl font-extrabold text-[#071A2B]">My Account</span>
               <button onClick={() => setAccountOpen(false)}>
@@ -266,6 +265,25 @@ export default function Navbar() {
           </div>
         </div>
       )}
+      {/* Bottom navbar — mobile only */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 h-16 bg-white border-t border-[#E2E8F0] flex items-center justify-between px-6 lg:hidden">
+        <Link to="/" className="flex flex-col items-center gap-1 text-[#64748B]">
+          <Home size={20} />
+          <span className="text-[10px] font-semibold">Home</span>
+        </Link>
+        <Link to="/categories" className="flex flex-col items-center gap-1 text-[#64748B]">
+          <Tag size={20} />
+          <span className="text-[10px] font-semibold">Categories</span>
+        </Link>
+        <Link to="/notifications" className="flex flex-col items-center gap-1 text-[#64748B]">
+          <Bell size={20} />
+          <span className="text-[10px] font-semibold">Notifications</span>
+        </Link>
+        <button onClick={() => setAccountOpen(true)} className="flex flex-col items-center gap-1 text-[#64748B]">
+          <Settings size={20} />
+          <span className="text-[10px] font-semibold">Settings</span>
+        </button>
+      </nav>
     </>
   )
 }

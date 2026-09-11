@@ -165,7 +165,7 @@ export default function ProductPage() {
           {cartToast}
         </div>
       )}
-      <div className="pt-14 lg:pt-16">
+      <div className="pt-14 lg:pt-16 pb-16 lg:pb-0">
         <div className="max-w-7xl mx-auto px-4 py-5">
 
           {/* Breadcrumb */}

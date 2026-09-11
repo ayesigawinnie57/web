@@ -20,7 +20,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <div className="pt-14 lg:pt-16">
+      <div className="pt-14 lg:pt-16 pb-16 lg:pb-0">
         <Hero />
         <Products products={products} />
         <FlashDeals products={[]} />

@@ -31,14 +31,19 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write h
   }
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    const plain = e.clipboardData.getData('text/plain')
-    if (!plain) return
     e.preventDefault()
-    const html = plain
-      .split(/\n{2,}/)
-      .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
-      .join('')
-    document.execCommand('insertHTML', false, html)
+    const html = e.clipboardData.getData('text/html')
+    if (html) {
+      document.execCommand('insertHTML', false, html)
+    } else {
+      const plain = e.clipboardData.getData('text/plain')
+      if (!plain) return
+      const converted = plain
+        .split(/\n{2,}/)
+        .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+        .join('')
+      document.execCommand('insertHTML', false, converted)
+    }
     emit()
   }
 
