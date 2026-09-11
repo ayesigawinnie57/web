@@ -292,7 +292,7 @@ export default function Navbar() {
         </div>
       )}
       {/* Bottom navbar — mobile only */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 h-16 bg-white border-t border-[#E2E8F0] flex items-center justify-between px-6 lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-white border-t border-[#E2E8F0] flex items-center justify-between px-6 lg:hidden">
         <Link to="/" className="flex flex-col items-center gap-1 text-[#64748B]">
           <Home size={20} />
           <span className="text-[10px] font-semibold">Home</span>
