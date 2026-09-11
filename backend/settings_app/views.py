@@ -10,7 +10,10 @@ User = get_user_model()
 
 
 class PlatformSettingsView(APIView):
-    permission_classes = (permissions.IsAdminUser,)
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
     def get(self, request):
         return Response(PlatformSettingsSerializer(PlatformSettings.get()).data)
