@@ -6,15 +6,6 @@ import { productsApi, toProduct, type Product } from '../lib/api'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
-const TYPE_META: Record<NotificationType, { color: string; bg: string }> = {
-  order:          { color: '#22C55E', bg: '#DCFCE7' },
-  welcome:        { color: '#6366F1', bg: '#EEF2FF' },
-  promo:          { color: '#F59E0B', bg: '#FEF3C7' },
-  system:         { color: '#64748B', bg: '#F1F5F9' },
-  service_rating: { color: '#F59E0B', bg: '#FEF3C7' },
-  product_rating: { color: '#22C55E', bg: '#DCFCE7' },
-}
-
 const NUDGE: Record<NotificationType, string> = {
   welcome:        "You're all set. Thousands of people shop here every day — see what they're picking up.",
   promo:          "Deals like this don't last. Stock up before they're gone.",
