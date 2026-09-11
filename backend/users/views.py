@@ -23,10 +23,52 @@ class LoginView(APIView):
         return Response({'access': str(refresh.access_token), 'refresh': str(refresh)})
 
 
-class AdminUsersView(generics.ListAPIView):
-    serializer_class = UserSerializer
+class AdminUsersView(APIView):
     permission_classes = (permissions.IsAdminUser,)
-    queryset = User.objects.all().order_by('-id')
+
+    def get(self, request):
+        users = User.objects.all().order_by('-id')
+        return Response(UserSerializer(users, many=True).data)
+
+    def post(self, request):
+        password = request.data.get('password')
+        if not password:
+            return Response({'password': 'Password is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.create_user(
+                email=request.data.get('email', ''),
+                password=password,
+                name=request.data.get('name', ''),
+                phone=request.data.get('phone', ''),
+            )
+            if request.data.get('is_staff'):
+                user.is_staff = True
+                user.save()
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+class AdminUserDetailView(APIView):
+    permission_classes = (permissions.IsAdminUser,)
+
+    def patch(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = UpdateProfileSerializer(user, data=request.data, partial=True, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(user).data)
+
+    def delete(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RegisterView(generics.CreateAPIView):
