@@ -4,6 +4,7 @@ export type NotificationType = 'order' | 'welcome' | 'promo' | 'system' | 'servi
 
 export type Notification = {
   id: string
+  slug: string
   type: NotificationType
   title: string
   body: string
@@ -14,16 +15,21 @@ export type Notification = {
 
 const STORAGE_KEY = 'majo_notifications'
 
-const makeId = (existing: Notification[] = []) => {
-  let id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
-  let i = 1
-  while (existing.some(n => n.id === id)) id = `${id}-${i++}`
-  return id
-}
+const makeId = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+      })
+
+const makeSlug = (title: string) =>
+  title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
 
 const INITIAL: Notification[] = [
   {
-    id: '1',
+    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    slug: 'welcome-to-majo-gadgets',
     type: 'welcome',
     title: 'Welcome to Majo Gadgets',
     body: 'Thanks for signing in. Explore our latest gadgets and enjoy exclusive deals made just for you.',
@@ -32,7 +38,8 @@ const INITIAL: Notification[] = [
     createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
   },
   {
-    id: '2',
+    id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+    slug: 'todays-special-savings-30-off',
     type: 'promo',
     title: "Today's Special Savings — 30% Off",
     body: 'Today only: get 30% off on all accessories. Use code MAJO30 at checkout. Offer expires at midnight.',
@@ -41,7 +48,8 @@ const INITIAL: Notification[] = [
     createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
   },
   {
-    id: '3',
+    id: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+    slug: 'app-updated',
     type: 'system',
     title: 'App Updated',
     body: 'Majo Gadgets has been updated with new features and performance improvements.',
@@ -51,10 +59,10 @@ const INITIAL: Notification[] = [
   },
 ]
 
-type AddFn = (n: Omit<Notification, 'id' | 'read'>) => void
+type AddFn = (n: Omit<Notification, 'id' | 'slug' | 'read'>) => void
 
 const globalAdd = { current: null as AddFn | null }
-const pending: Array<Omit<Notification, 'id' | 'read'>> = []
+const pending: Array<Omit<Notification, 'id' | 'slug' | 'read'>> = []
 export const pushNotification: AddFn = (n) => {
   if (globalAdd.current) globalAdd.current(n)
   else pending.push(n)
@@ -108,7 +116,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => prev.filter(n => !ids.includes(n.id))), [])
 
   const addNotification: AddFn = useCallback((n) =>
-    setNotifications(prev => [{ ...n, id: makeId(prev), read: false, createdAt: new Date().toISOString() }, ...prev]), [])
+    setNotifications(prev => [{ ...n, id: makeId(), slug: makeSlug(n.title), read: false, createdAt: new Date().toISOString() }, ...prev]), [])
 
   useEffect(() => {
     if (!loaded) return

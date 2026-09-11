@@ -33,12 +33,12 @@ function formatDate(iso?: string) {
 }
 
 export default function NotificationDetailPage() {
-  const { id } = useParams<{ id: string }>()
+  const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const { notifications, markRead, deleteNotification } = useNotifications()
   const [products, setProducts] = useState<Product[]>([])
 
-  const n = notifications.find(x => x.id === id)
+  const n = notifications.find(x => x.slug === slug)
   if (n && !n.read) markRead(n.id)
 
   useEffect(() => {

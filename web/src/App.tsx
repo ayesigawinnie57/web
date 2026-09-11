@@ -44,7 +44,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/wishlist" element={<WishlistPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/notifications/:id" element={<NotificationDetailPage />} />
+        <Route path="/notifications/:slug" element={<NotificationDetailPage />} />
         <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
