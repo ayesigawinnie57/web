@@ -23,6 +23,7 @@ import AdminFlashSales from './admin/flashsales/index'
 import AddFlashSale from './admin/flashsales/add'
 import AdminUsers from './admin/users/index'
 import AdminPayments from './admin/payments/index'
+import WishlistPage from './pages/WishlistPage'
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
         <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />

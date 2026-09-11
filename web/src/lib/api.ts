@@ -228,7 +228,20 @@ export const authApi = {
   },
 }
 
+export type WishlistItem = {
+  id: number
+  product_id: number
+  product_name: string
+  product_price: string
+  product_image: string | null
+  product_slug: string
+  product_category: string
+  product_rating: string
+  added_at: string
+}
+
 export const wishlistApi = {
+  list: () => api.get<WishlistItem[]>('/api/users/wishlist/'),
   add: (product: Product) => api.post('/api/users/wishlist/', {
     product_id: product.id,
     product_name: product.name,
