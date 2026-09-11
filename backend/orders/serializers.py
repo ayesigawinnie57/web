@@ -37,13 +37,14 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ('id', 'code', 'status', 'subtotal', 'delivery_fee', 'total', 'items', 'delivery_address', 'phone', 'note', 'cancel_reason', 'has_service_rating', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'code', 'subtotal', 'delivery_fee', 'total', 'status', 'cancel_reason', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'code', 'subtotal', 'total', 'status', 'cancel_reason', 'created_at', 'updated_at')
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')
-        # Prices always come from the DB — never trust client-supplied values
         subtotal = sum(item['product'].price * item['quantity'] for item in items_data)
-        delivery_fee = validated_data.pop('delivery_fee', 5000)
+        delivery_fee = validated_data.pop('delivery_fee', None)
+        if delivery_fee is None:
+            delivery_fee = sum((item['product'].delivery_fee or 0) * item['quantity'] for item in items_data)
         total = subtotal + delivery_fee
         order = Order.objects.create(subtotal=subtotal, delivery_fee=delivery_fee, total=total, **validated_data)
         for item in items_data:
