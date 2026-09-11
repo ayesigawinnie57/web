@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { productsApi, toFlashSale, type FlashSale } from '../lib/api'
+import { Flame, ShoppingCart, Timer } from 'lucide-react'
+import { cartApi, productsApi, toFlashSale, type FlashSale } from '../lib/api'
 import { Link as RouterLink } from 'react-router-dom'
 
 function useCountdown(endsAt: Date) {
@@ -8,72 +9,92 @@ function useCountdown(endsAt: Date) {
   const [remaining, setRemaining] = useState(calc)
 
   useEffect(() => {
-    const id = setInterval(() => setRemaining(calc), 1000)
-    return () => clearInterval(id)
+    const id = window.setInterval(() => setRemaining(calc), 1000)
+    return () => window.clearInterval(id)
   }, [endsAt])
 
-  const h = String(Math.floor(remaining / 3600)).padStart(2, '0')
-  const m = String(Math.floor((remaining % 3600) / 60)).padStart(2, '0')
-  const s = String(remaining % 60).padStart(2, '0')
-  return { h, m, s, expired: remaining === 0 }
+  const secs = Math.max(0, remaining)
+  const days = Math.floor(secs / 86400)
+  const hours = Math.floor((secs % 86400) / 3600)
+  const minutes = Math.floor((secs % 3600) / 60)
+  const seconds = secs % 60
+
+  let label = '0m 00s'
+  if (secs >= 86400) label = `${days}d ${hours}h ${minutes}m`
+  else if (secs >= 3600) label = `${hours}h ${String(minutes).padStart(2, '0')}m`
+  else label = `${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`
+
+  return { label, expired: secs === 0, urgent: secs < 3600 }
 }
 
 function FlashCard({ sale }: { sale: FlashSale }) {
-  const { h, m, s, expired } = useCountdown(sale.endsAt)
+  const { label, expired, urgent } = useCountdown(sale.endsAt)
   const { product } = sale
+  const stockPercent = sale.stockLimit > 0 ? Math.max(0, Math.min(100, (sale.stockLeft / sale.stockLimit) * 100)) : 0
+  const critical = stockPercent <= 20
+
+  const addToCart = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    await cartApi.add(product, 1)
+  }
 
   return (
     <RouterLink
       to={`/shop/${product.slug}`}
-      className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden hover:shadow-md transition-shadow group flex flex-col"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
     >
-      <div className="relative bg-[#F8FAFC] aspect-square overflow-hidden">
+      <div className="relative aspect-square overflow-hidden bg-[#F8FAFC]">
         {product.image
-          ? <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
-          : <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
+          ? <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
+          : <div className="flex h-full w-full items-center justify-center text-4xl"><span aria-hidden="true">📦</span></div>
         }
-        <div className="absolute top-1 left-1 bg-[#EF4444] rounded-[6px] px-1 py-0.5">
-          <span className="text-white text-[8px] font-bold">-{sale.discountPct}%</span>
+        <div className="absolute left-2 top-2 rounded-md bg-[#EF4444] px-1.5 py-1">
+          <span className="text-[9px] font-extrabold text-white">-{sale.discountPct}%</span>
         </div>
+        {critical && !expired && (
+          <div className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-[#F97316] px-1.5 py-1 text-[9px] font-bold text-white">
+            <Flame size={10} fill="currentColor" />
+            <span>HOT</span>
+          </div>
+        )}
       </div>
 
-      <div className="p-[7px] flex flex-col gap-1">
-        <p className="text-[10px] font-bold text-[#071A2B] leading-[14px] truncate">{product.name}</p>
+      <div className="flex flex-1 flex-col gap-2 p-2.5">
+        <p className="line-clamp-2 text-[11px] font-bold leading-[1.35] text-[#071A2B]">{product.name}</p>
 
-        <div className="flex items-center flex-wrap gap-1">
-          <span className="text-[10px] font-extrabold text-[#EF4444]">UGX {sale.flashPrice.toLocaleString()}</span>
-          <span className="text-[8px] text-[#94A3B8] line-through">UGX {product.price.toLocaleString()}</span>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[13px] font-extrabold text-[#EF4444]">UGX {sale.flashPrice.toLocaleString()}</span>
+          <span className="text-[9px] text-[#94A3B8] line-through">UGX {product.price.toLocaleString()}</span>
         </div>
 
-        {/* stock bar */}
+        <div className="flex items-center gap-1 text-[10px] font-semibold text-[#64748B]">
+          <Timer size={11} className={urgent ? 'text-[#F97316]' : 'text-[#64748B]'} />
+          {expired ? <span className="text-[#EF4444]">Expired</span> : <span className={urgent ? 'text-[#F97316]' : 'text-[#64748B]'}>{label}</span>}
+        </div>
+
         <div>
-          <div className="w-full h-1 bg-[#E2E8F0] rounded-full overflow-hidden">
+          <div className="h-1.5 overflow-hidden rounded-full bg-[#E2E8F0]">
             <div
-              className="h-full bg-[#EF4444] rounded-full"
-              style={{ width: `${Math.round((sale.stockLeft / sale.stockLimit) * 100)}%` }}
+              className={`h-full rounded-full ${critical ? 'bg-[#EF4444]' : 'bg-[#22C55E]'}`}
+              style={{ width: `${stockPercent}%` }}
             />
           </div>
-          <p className="text-[8px] text-[#64748B] mt-0.5">{sale.stockLeft} left</p>
+          <p className="mt-1 text-[9px] font-medium text-[#64748B]">{sale.stockLeft} <span>left</span></p>
         </div>
 
-        {/* per-product countdown */}
-        <div className="flex items-center gap-0.5">
-          {expired
-            ? <span className="text-[8px] text-[#EF4444] font-semibold">Expired</span>
-            : <>
-                <span className="text-[8px] text-[#64748B]">Ends:</span>
-                {[[h, 'h'], [m, 'm'], [s, 's']].map(([val, unit], i) => (
-                  <span key={unit} className="flex items-center gap-0.5">
-                    <span className="bg-[#071A2B] rounded px-1 py-0.5 flex items-baseline gap-0.5">
-                      <span className="text-white text-[8px] font-extrabold">{val}</span>
-                      <span className="text-[#BBF7D0] text-[7px]">{unit}</span>
-                    </span>
-                    {i < 2 && <span className="text-[#071A2B] text-[8px] font-bold">:</span>}
-                  </span>
-                ))}
-              </>
-          }
-        </div>
+        {critical && !expired && (
+          <p className="text-[10px] font-bold text-[#EF4444]"><span aria-hidden="true">🔥</span> <span>Only {sale.stockLeft} left!</span></p>
+        )}
+
+        <button
+          type="button"
+          onClick={addToCart}
+          className="mt-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#F97316] px-2.5 py-2 text-[10px] font-bold text-white transition hover:bg-[#EA580C]"
+        >
+          <ShoppingCart size={12} />
+          <span>Add to Cart</span>
+        </button>
       </div>
     </RouterLink>
   )
@@ -81,6 +102,7 @@ function FlashCard({ sale }: { sale: FlashSale }) {
 
 export default function FlashDeals({ products: _ }: { products: unknown[] }) {
   const [sales, setSales] = useState<FlashSale[]>([])
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     productsApi.flashSales().then(({ data }) => {
@@ -91,23 +113,38 @@ export default function FlashDeals({ products: _ }: { products: unknown[] }) {
 
   if (!sales.length) return null
 
+  const visibleSales = showAll ? sales : sales.slice(0, 6)
+
   return (
-    <div className="bg-[#FFEDD5] px-4 py-6 border-t border-b border-[#FDBA74]">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-end justify-between mb-3.5">
+    <div className="border-y border-[#FDBA74] bg-[#FFEDD5] px-4 py-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-4 flex items-end justify-between gap-3">
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[20px] leading-none">🔥</span>
-              <p className="text-[21px] font-extrabold text-[#071A2B]">Flash Deals</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[22px]" aria-hidden="true">🔥</span>
+              <p className="text-[22px] font-extrabold text-[#071A2B]">Flash Deals</p>
+              <span className="rounded bg-[#EF4444] px-1.5 py-0.5 text-[9px] font-bold tracking-[0.18em] text-white">LIVE</span>
             </div>
-            <p className="text-[12px] text-[#64748B] mt-0.5">Big savings, available right now</p>
+            <p className="mt-1 text-[12px] text-[#64748B]">Limited stock · prices drop every hour</p>
           </div>
           <Link to="/deals" className="text-[13px] font-bold text-[#1E3A8A]">See All →</Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {sales.map(s => <FlashCard key={s.id} sale={s} />)}
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-5">
+          {visibleSales.map(sale => <FlashCard key={sale.id} sale={sale} />)}
         </div>
+
+        {sales.length > 6 && (
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => setShowAll(v => !v)}
+              className="rounded-xl border border-[#FDBA74] bg-[#FFF0DC] px-4 py-2 text-[12px] font-bold text-[#F97316]"
+            >
+              <span>{showAll ? 'Show Less ↑' : `View All ${sales.length} Flash Sales ↓`}</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
