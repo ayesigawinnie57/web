@@ -88,7 +88,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) setNotifications(JSON.parse(raw))
+      if (raw) {
+        const parsed: Notification[] = JSON.parse(raw)
+        // migrate old notifications that have no slug
+        const migrated = parsed.map(n => ({
+          ...n,
+          slug: n.slug || makeSlug(n.title),
+        }))
+        setNotifications(migrated)
+      }
     } catch { /* ignore */ }
     setLoaded(true)
   }, [])
