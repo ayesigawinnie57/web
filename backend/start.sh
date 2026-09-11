@@ -15,6 +15,9 @@ else:
     print('Superadmin already exists')
 "
 
+echo "Seeding districts..."
+python manage.py seed_districts
+
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
