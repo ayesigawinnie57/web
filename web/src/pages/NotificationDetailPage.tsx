@@ -42,10 +42,9 @@ export default function NotificationDetailPage() {
   if (n && !n.read) markRead(n.id)
 
   useEffect(() => {
-    productsApi.list().then(({ data }) => {
+    productsApi.list('page_size=6').then(({ data }) => {
       const all: any[] = Array.isArray(data) ? data : (data as any).results ?? []
-      const shuffled = [...all].sort(() => Math.random() - 0.5).slice(0, 3)
-      setProducts(shuffled.map(toProduct))
+      setProducts(all.slice(0, 6).map(toProduct))
     }).catch(() => {})
   }, [])
 
@@ -114,11 +113,11 @@ export default function NotificationDetailPage() {
           )}
 
           {/* Nudge */}
-          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-3">
-            <p className="text-[13px] text-[#64748B] leading-relaxed">
+          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 flex items-center justify-between gap-4">
+            <p className="text-[13px] text-[#64748B] leading-relaxed flex-1">
               {n.type === 'order' ? getOrderNudge(n.title) : NUDGE[n.type]}
             </p>
-            <Link to="/shop" className="inline-block text-center bg-[#071A2B] text-white text-[13px] font-bold px-4 py-2 rounded-lg">
+            <Link to="/shop" className="shrink-0 inline-block text-center bg-[#071A2B] text-white text-[13px] font-bold px-4 py-2 rounded-lg">
               See what's new
             </Link>
           </div>
@@ -127,10 +126,10 @@ export default function NotificationDetailPage() {
           {products.length > 0 && (
             <div className="space-y-3">
               <p className="text-[13px] font-extrabold text-[#071A2B]">You might like</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {products.map(p => (
-                  <Link key={p.id} to={`/shop/${p.slug}`} className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl overflow-hidden hover:shadow-sm">
-                    <div className="aspect-square bg-white flex items-center justify-center overflow-hidden">
+                  <Link key={p.id} to={`/shop/${p.slug}`} className="border border-[#E2E8F0] rounded-xl overflow-hidden hover:shadow-sm">
+                    <div className="aspect-square overflow-hidden">
                       {p.image
                         ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
                         : <div className="w-full h-full" />}

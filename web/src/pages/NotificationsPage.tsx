@@ -1,18 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCheck, Trash2, X } from 'lucide-react'
-import { useNotifications, type Notification, type NotificationType } from '../lib/NotificationContext'
+import { useNotifications, type Notification } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
-
-const ICON_MAP: Record<NotificationType, { color: string; bg: string }> = {
-  order:          { color: '#22C55E', bg: '#DCFCE7' },
-  welcome:        { color: '#6366F1', bg: '#EEF2FF' },
-  promo:          { color: '#F59E0B', bg: '#FEF3C7' },
-  system:         { color: '#64748B', bg: '#F1F5F9' },
-  service_rating: { color: '#F59E0B', bg: '#FEF3C7' },
-  product_rating: { color: '#22C55E', bg: '#DCFCE7' },
-}
 
 export default function NotificationsPage() {
   const navigate = useNavigate()
@@ -33,7 +24,6 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
       <main className="pt-14 lg:pt-16 px-4 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           {selecting ? (
             <>
@@ -73,7 +63,6 @@ export default function NotificationsPage() {
         ) : (
           <div className="flex flex-col gap-2">
             {notifications.map(n => {
-              const { bg } = ICON_MAP[n.type]
               const isSelected = selected.includes(n.id)
               return (
                 <div
@@ -91,7 +80,6 @@ export default function NotificationsPage() {
                       {isSelected && <CheckCheck size={11} color="#fff" />}
                     </div>
                   )}
-                  <div className="w-10 h-10 rounded-xl shrink-0" style={{ backgroundColor: bg }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-[13px] font-bold text-[#071A2B] truncate">{n.title}</p>
