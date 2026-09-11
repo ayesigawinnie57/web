@@ -1,3 +1,6 @@
+# Backend is its own separate git repo
+backend/
+
 # Local secrets and environment files
 .env
 .env.*
