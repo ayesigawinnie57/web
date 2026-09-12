@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { CheckCircle, Circle, Package, Truck, MapPin, XCircle } from 'lucide-react'
+import { Package, Truck, MapPin, XCircle, CheckCircle, Clock, Loader2 } from 'lucide-react'
 import { ordersApi, hasAccessToken, type ApiOrderDetail } from '../lib/api'
 import { pushNotification } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
@@ -10,16 +10,23 @@ const money = (v: string | number) => Number(v).toLocaleString()
 
 type Status = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
 
-const STEPS: { key: Status; label: string; desc: string }[] = [
-  { key: 'pending', label: 'Order Placed', desc: 'We received your order' },
-  { key: 'processing', label: 'Confirmed', desc: 'Your order is being prepared' },
-  { key: 'shipped', label: 'Shipped', desc: 'Your order is on the way' },
-  { key: 'delivered', label: 'Delivered', desc: 'Order delivered successfully' },
+const STEPS: { key: Status; label: string; icon: string }[] = [
+  { key: 'pending',    label: 'Placed',     icon: '📋' },
+  { key: 'processing', label: 'Confirmed',  icon: '⚙️'  },
+  { key: 'shipped',    label: 'Shipped',    icon: '🚚' },
+  { key: 'delivered',  label: 'Delivered',  icon: '✅' },
 ]
-
 const STEP_ORDER: Status[] = ['pending', 'processing', 'shipped', 'delivered']
 
-function StatusTimeline({ status }: { status: Status }) {
+const STATUS_MESSAGES: Record<Status, { title: string; body: string }> = {
+  processing: { title: 'Order Confirmed! ✅', body: 'Your order has been confirmed and is being prepared.' },
+  shipped:    { title: 'Order Shipped! 🚚',   body: 'Your order is on its way to you.' },
+  delivered:  { title: 'Order Delivered! 🎉', body: 'Your order has been delivered. Enjoy!' },
+  cancelled:  { title: 'Order Cancelled ❌',  body: 'Your order has been cancelled.' },
+  pending:    { title: '', body: '' },
+}
+
+function HorizontalProgress({ status }: { status: Status }) {
   if (status === 'cancelled') {
     return (
       <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
@@ -35,32 +42,49 @@ function StatusTimeline({ status }: { status: Status }) {
   const currentIdx = STEP_ORDER.indexOf(status)
 
   return (
-    <div className="relative">
-      {STEPS.map((step, idx) => {
-        const done = idx <= currentIdx
-        const active = idx === currentIdx
-        return (
-          <div key={step.key} className="flex gap-4 pb-6 last:pb-0">
-            <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 transition-colors ${
-                done ? 'bg-[#1E3A8A] border-[#1E3A8A]' : 'bg-white border-[#E2E8F0]'
-              }`}>
+    <div className="w-full">
+      {/* connector line + circles row */}
+      <div className="flex items-center w-full mb-2">
+        {STEPS.map((step, idx) => {
+          const done = idx <= currentIdx
+          const active = idx === currentIdx
+          return (
+            <div key={step.key} className="flex items-center flex-1 last:flex-none">
+              {/* circle */}
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-[16px] border-2 transition-all ${
+                done
+                  ? 'bg-[#1E3A8A] border-[#1E3A8A] shadow-md'
+                  : 'bg-white border-[#E2E8F0]'
+              } ${active ? 'ring-4 ring-blue-100' : ''}`}>
                 {done
-                  ? <CheckCircle size={16} className="text-white" />
-                  : <Circle size={16} className="text-[#CBD5E1]" />
+                  ? <span className="text-[14px]">{step.icon}</span>
+                  : <span className="text-[14px] opacity-30">{step.icon}</span>
                 }
               </div>
+              {/* connector */}
               {idx < STEPS.length - 1 && (
-                <div className={`w-0.5 flex-1 mt-1 ${done && idx < currentIdx ? 'bg-[#1E3A8A]' : 'bg-[#E2E8F0]'}`} style={{ minHeight: 24 }} />
+                <div className="flex-1 h-1 mx-1 rounded-full overflow-hidden bg-[#E2E8F0]">
+                  <div className={`h-full rounded-full transition-all duration-500 ${idx < currentIdx ? 'bg-[#1E3A8A] w-full' : 'w-0'}`} />
+                </div>
               )}
             </div>
-            <div className="pt-1 pb-2">
-              <p className={`text-[13px] font-bold ${done ? 'text-[#071A2B]' : 'text-[#94A3B8]'}`}>{step.label}</p>
-              <p className={`text-[12px] mt-0.5 ${active ? 'text-[#1E3A8A] font-semibold' : 'text-[#94A3B8]'}`}>{step.desc}</p>
+          )
+        })}
+      </div>
+      {/* labels row */}
+      <div className="flex w-full">
+        {STEPS.map((step, idx) => {
+          const done = idx <= currentIdx
+          const active = idx === currentIdx
+          return (
+            <div key={step.key} className="flex-1 last:flex-none text-center" style={{ minWidth: 0 }}>
+              <p className={`text-[11px] font-bold truncate ${
+                active ? 'text-[#1E3A8A]' : done ? 'text-[#334155]' : 'text-[#94A3B8]'
+              }`}>{step.label}</p>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -73,14 +97,40 @@ export default function OrderDetailPage() {
   const [error, setError] = useState('')
   const [cancelling, setCancelling] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const prevStatusRef = useRef<string | null>(null)
+
+  const fetchOrder = async () => {
+    if (!code) return
+    try {
+      const r = await ordersApi.get(code)
+      const fresh = r.data
+      setOrder(prev => {
+        // detect status change and push notification
+        if (prev && fresh.status !== prev.status) {
+          const msg = STATUS_MESSAGES[fresh.status as Status]
+          if (msg?.title) {
+            pushNotification({ type: 'order', title: msg.title, body: msg.body, time: 'Just now' })
+          }
+        }
+        return fresh
+      })
+    } catch {
+      // silently ignore polling errors
+    }
+  }
 
   useEffect(() => {
     if (!hasAccessToken()) { navigate('/login'); return }
     if (!code) return
+
     ordersApi.get(code)
-      .then(r => setOrder(r.data))
+      .then(r => { setOrder(r.data); prevStatusRef.current = r.data.status })
       .catch(() => setError('Order not found.'))
       .finally(() => setLoading(false))
+
+    // Poll every 15 seconds to pick up admin status changes
+    const interval = setInterval(fetchOrder, 15000)
+    return () => clearInterval(interval)
   }, [code])
 
   const handleCancel = async () => {
@@ -106,7 +156,9 @@ export default function OrderDetailPage() {
   if (loading) return (
     <>
       <Navbar />
-      <div className="pt-20 text-center text-[13px] text-[#64748B]">Loading order...</div>
+      <div className="pt-20 flex justify-center items-center gap-2 text-[13px] text-[#64748B]">
+        <Loader2 size={16} className="animate-spin" /> Loading order...
+      </div>
     </>
   )
 
@@ -124,6 +176,7 @@ export default function OrderDetailPage() {
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
       <main className="pt-14 lg:pt-16 max-w-3xl mx-auto px-4 py-8">
+
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
@@ -143,10 +196,16 @@ export default function OrderDetailPage() {
 
         <div className="grid lg:grid-cols-[1fr_280px] gap-6">
           <div className="space-y-5">
-            {/* Status timeline */}
+
+            {/* Status progress */}
             <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8] mb-4">Order Status</p>
-              <StatusTimeline status={order.status as Status} />
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8]">Order Status</p>
+                <div className="flex items-center gap-1 text-[10px] text-[#94A3B8]">
+                  <Clock size={11} /> Auto-refreshes
+                </div>
+              </div>
+              <HorizontalProgress status={order.status as Status} />
               {order.status === 'cancelled' && order.cancel_reason && (
                 <div className="mt-4 p-3 bg-red-50 rounded-xl">
                   <p className="text-[12px] font-bold text-red-700">Reason</p>
@@ -179,7 +238,7 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Summary sidebar */}
+          {/* Sidebar */}
           <div className="space-y-5">
             <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5">
               <p className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8] mb-4">Order Summary</p>
@@ -232,7 +291,6 @@ export default function OrderDetailPage() {
       </main>
       <Footer />
 
-      {/* Cancel confirm modal */}
       {confirmCancel && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmCancel(false)} />
