@@ -53,6 +53,7 @@ export default function LoginPage() {
             <button disabled={loading} className="w-full h-12 bg-[#1E3A8A] text-white text-[14px] font-bold disabled:opacity-50">{loading ? 'Signing in...' : 'Sign In'}</button>
           </form>
           <p className="text-center text-[13px] text-[#64748B] mt-6">Don't have an account? <Link to="/register" className="font-bold text-[#1E3A8A]">Sign Up</Link></p>
+          <p className="text-center text-[13px] text-[#64748B] mt-2"><Link to="/forgot-password" className="font-bold text-[#1E3A8A]">Forgot password?</Link></p>
         </section>
       </main>
       <Footer />

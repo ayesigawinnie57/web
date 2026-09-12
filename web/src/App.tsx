@@ -32,6 +32,8 @@ import WishlistPage from './pages/WishlistPage'
 import AccountPage from './pages/AccountPage'
 import NotificationsPage from './pages/NotificationsPage'
 import NotificationDetailPage from './pages/NotificationDetailPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 function SiteOffline() {
   return (
@@ -67,6 +69,8 @@ export default function App() {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/wishlist" element={<WishlistPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/notifications/:slug" element={<NotificationDetailPage />} />
