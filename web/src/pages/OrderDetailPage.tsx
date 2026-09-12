@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Package, Truck, MapPin, XCircle, Clock, Loader2, CheckCheck, ClipboardList, PackageCheck } from 'lucide-react'
 import { ordersApi, hasAccessToken, type ApiOrderDetail } from '../lib/api'
-import { pushNotification } from '../lib/NotificationContext'
+import { useNotifications } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
@@ -17,14 +17,6 @@ const STEPS: { key: Status; label: string; icon: any }[] = [
   { key: 'delivered',  label: 'Delivered',  icon: CheckCheck },
 ]
 const STEP_ORDER: Status[] = ['pending', 'processing', 'shipped', 'delivered']
-
-const STATUS_MESSAGES: Record<Status, { title: string; body: string }> = {
-  processing: { title: 'Order Confirmed!', body: 'Your order has been confirmed and is being prepared.' },
-  shipped:    { title: 'Order Shipped!', body: 'Your order is on its way to you.' },
-  delivered:  { title: 'Order Delivered!', body: 'Your order has been delivered. Enjoy!' },
-  cancelled:  { title: 'Order Cancelled', body: 'This order has been cancelled.' },
-  pending:    { title: '', body: '' },
-}
 
 function HorizontalProgress({ status }: { status: Status }) {
   if (status === 'cancelled') {
@@ -99,6 +91,7 @@ export default function OrderDetailPage() {
   const [cancelling, setCancelling] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const prevStatusRef = useRef<string | null>(null)
+  const { refresh: refreshNotifications } = useNotifications()
 
   const fetchOrder = async () => {
     if (!code) return
@@ -106,13 +99,7 @@ export default function OrderDetailPage() {
       const r = await ordersApi.get(code)
       const fresh = r.data
       setOrder(prev => {
-        // detect status change and push notification
-        if (prev && fresh.status !== prev.status) {
-          const msg = STATUS_MESSAGES[fresh.status as Status]
-          if (msg?.title) {
-            pushNotification({ type: 'order', title: msg.title, body: msg.body, time: 'Just now' })
-          }
-        }
+        if (prev && fresh.status !== prev.status) refreshNotifications()
         return fresh
       })
     } catch {
@@ -141,12 +128,7 @@ export default function OrderDetailPage() {
       const r = await ordersApi.cancel(order.code)
       setOrder(r.data)
       setConfirmCancel(false)
-      pushNotification({
-        type: 'order',
-        title: `Order #${order.code} Cancelled`,
-        body: 'Your order has been cancelled successfully.',
-        time: 'Just now',
-      })
+      refreshNotifications()
     } catch {
       setError('Failed to cancel order.')
     } finally {

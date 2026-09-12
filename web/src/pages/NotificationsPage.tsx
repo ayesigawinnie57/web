@@ -1,13 +1,24 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, Trash2, X } from 'lucide-react'
+import { Bell, CheckCheck, Trash2, X, Loader2 } from 'lucide-react'
 import { useNotifications, type Notification } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1) return 'Just now'
+  if (m < 60) return `${m} min ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h} hr ago`
+  const d = Math.floor(h / 24)
+  return `${d} day${d > 1 ? 's' : ''} ago`
+}
+
 export default function NotificationsPage() {
   const navigate = useNavigate()
-  const { notifications, unreadCount, markRead, markAllRead, markSelectedRead, deleteNotification, deleteSelected } = useNotifications()
+  const { notifications, unreadCount, loading, markRead, markAllRead, deleteNotification } = useNotifications()
   const [selected, setSelected] = useState<string[]>([])
   const selecting = selected.length > 0
 
@@ -17,23 +28,33 @@ export default function NotificationsPage() {
   const handleClick = (n: Notification) => {
     if (selecting) { toggle(n.id); return }
     markRead(n.id)
-    navigate(`/notifications/${n.slug}`)
+    navigate(`/notifications/${n.id}`)
+  }
+
+  const deleteSelected = () => {
+    selected.forEach(id => deleteNotification(id))
+    setSelected([])
+  }
+
+  const markSelectedRead = () => {
+    selected.forEach(id => markRead(id))
+    setSelected([])
   }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <main className="pt-14 lg:pt-16 px-4 py-8">
+      <main className="pt-14 lg:pt-16 px-4 py-8 max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           {selecting ? (
             <>
               <button onClick={() => setSelected([])} className="p-1"><X size={20} color="#071A2B" /></button>
               <span className="text-[15px] font-extrabold text-[#071A2B]">{selected.length} selected</span>
               <div className="flex items-center gap-4">
-                <button onClick={() => { markSelectedRead(selected); setSelected([]) }} title="Mark selected read">
+                <button onClick={markSelectedRead} title="Mark selected read">
                   <CheckCheck size={20} color="#22C55E" />
                 </button>
-                <button onClick={() => { deleteSelected(selected); setSelected([]) }} title="Delete selected">
+                <button onClick={deleteSelected} title="Delete selected">
                   <Trash2 size={20} color="#ef4444" />
                 </button>
               </div>
@@ -54,7 +75,12 @@ export default function NotificationsPage() {
           )}
         </div>
 
-        {notifications.length === 0 ? (
+        {loading && notifications.length === 0 ? (
+          <div className="py-24 flex flex-col items-center gap-3">
+            <Loader2 size={28} className="animate-spin text-[#94A3B8]" />
+            <p className="text-[13px] text-[#64748B]">Loading notifications...</p>
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="py-24 flex flex-col items-center gap-3">
             <Bell size={44} color="#E2E8F0" />
             <p className="text-[17px] font-extrabold text-[#071A2B]">No notifications yet</p>
@@ -83,7 +109,7 @@ export default function NotificationsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-[13px] font-bold text-[#071A2B] truncate">{n.title}</p>
-                      <span className="text-[11px] text-[#94A3B8] shrink-0">{n.time}</span>
+                      <span className="text-[11px] text-[#94A3B8] shrink-0">{timeAgo(n.createdAt)}</span>
                     </div>
                     <p className="text-[12px] text-[#64748B] mt-0.5 line-clamp-2">{n.body.split('|')[0]}</p>
                   </div>

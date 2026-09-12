@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings, ShoppingBag } from 'lucide-react'
 import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory } from '../lib/api'
+import { useNotifications } from '../lib/NotificationContext'
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
 
@@ -11,6 +12,7 @@ function getCachedUser(): UserInfo | null {
 
 export default function Navbar() {
   const [user, setUser] = useState<UserInfo | null>(getCachedUser)
+  const { unreadCount, refresh: refreshNotifications } = useNotifications()
   const [searchOpen, setSearchOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -91,6 +93,7 @@ export default function Navbar() {
     localStorage.removeItem('majo_user')
     setUser(null)
     setAccountOpen(false)
+    refreshNotifications()
     navigate('/')
   }
 
@@ -163,6 +166,11 @@ export default function Navbar() {
             {/* Notifications */}
             <Link to="/notifications" aria-label="Notifications" title="Notifications" className="relative p-0.5">
               <Bell className="w-[22px] h-[22px] text-[#071A2B]" strokeWidth={2} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Link>
             {/* Wishlist */}
             <Link to="/wishlist" className="relative p-0.5">
@@ -330,8 +338,15 @@ export default function Navbar() {
           <Tag size={20} />
           <span className="text-[10px] font-semibold">Categories</span>
         </Link>
-        <Link to="/notifications" className="flex flex-col items-center gap-1 text-[#64748B]">
-          <Bell size={20} />
+        <Link to="/notifications" className="flex flex-col items-center gap-1 text-[#64748B] relative">
+          <span className="relative">
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-3.5 h-3.5 px-0.5 rounded-full bg-red-500 text-white text-[8px] font-extrabold flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </span>
           <span className="text-[10px] font-semibold">Notifications</span>
         </Link>
         <button onClick={() => setAccountOpen(true)} className="flex flex-col items-center gap-1 text-[#64748B]">

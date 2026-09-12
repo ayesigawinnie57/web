@@ -1,140 +1,97 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { notificationsApi, hasAccessToken, type ApiNotification } from './api'
 
 export type NotificationType = 'order' | 'welcome' | 'promo' | 'system' | 'service_rating' | 'product_rating'
 
 export type Notification = {
   id: string
-  slug: string
   type: NotificationType
   title: string
   body: string
-  time: string
   read: boolean
-  createdAt?: string
+  createdAt: string
 }
 
-const STORAGE_KEY = 'majo_notifications'
-
-const makeId = () =>
-  typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-        const r = Math.random() * 16 | 0
-        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
-      })
-
-const makeSlug = (title: string) =>
-  title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
-
-const INITIAL: Notification[] = [
-  {
-    id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    slug: 'welcome-to-majo-gadgets',
-    type: 'welcome',
-    title: 'Welcome to Majo Gadgets',
-    body: 'Thanks for signing in. Explore our latest gadgets and enjoy exclusive deals made just for you.',
-    time: '1 hr ago',
-    read: false,
-    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
-    slug: 'todays-special-savings-30-off',
-    type: 'promo',
-    title: "Today's Special Savings — 30% Off",
-    body: 'Today only: get 30% off on all accessories. Use code MAJO30 at checkout. Offer expires at midnight.',
-    time: '3 hr ago',
-    read: false,
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
-    slug: 'app-updated',
-    type: 'system',
-    title: 'App Updated',
-    body: 'Majo Gadgets has been updated with new features and performance improvements.',
-    time: '2 days ago',
-    read: true,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-]
-
-type AddFn = (n: Omit<Notification, 'id' | 'slug' | 'read'>) => void
-
-const globalAdd = { current: null as AddFn | null }
-const pending: Array<Omit<Notification, 'id' | 'slug' | 'read'>> = []
-export const pushNotification: AddFn = (n) => {
-  if (globalAdd.current) globalAdd.current(n)
-  else pending.push(n)
+function fromApi(n: ApiNotification): Notification {
+  return {
+    id: String(n.id),
+    type: n.type,
+    title: n.title,
+    body: n.body,
+    read: n.read,
+    createdAt: n.created_at,
+  }
 }
 
 type Ctx = {
   notifications: Notification[]
   unreadCount: number
+  loading: boolean
   markRead: (id: string) => void
   markAllRead: () => void
-  markSelectedRead: (ids: string[]) => void
   deleteNotification: (id: string) => void
-  deleteSelected: (ids: string[]) => void
-  addNotification: AddFn
+  refresh: () => void
 }
 
 const NotificationContext = createContext<Ctx | null>(null)
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(INITIAL)
-  const [loaded, setLoaded] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
+    if (!hasAccessToken()) { setNotifications([]); return }
+    setLoading(true)
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const parsed: Notification[] = JSON.parse(raw)
-        // migrate old notifications that have no slug
-        const migrated = parsed.map(n => ({
-          ...n,
-          slug: n.slug || makeSlug(n.title),
-        }))
-        setNotifications(migrated)
-      }
-    } catch { /* ignore */ }
-    setLoaded(true)
+      const { data } = await notificationsApi.list()
+      setNotifications(data.map(fromApi))
+    } catch {
+      // silently ignore
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
+  // Fetch on mount
   useEffect(() => {
-    if (!loaded) return
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications)) } catch { /* ignore */ }
-  }, [notifications, loaded])
+    refresh()
+  }, [refresh])
+
+  // Re-fetch when user logs in/out in another tab
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'access_token') refresh()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [refresh])
+
+  // Poll every 30 s while logged in
+  useEffect(() => {
+    if (!hasAccessToken()) return
+    const id = setInterval(refresh, 30_000)
+    return () => clearInterval(id)
+  }, [refresh])
 
   const unreadCount = notifications.filter(n => !n.read).length
 
-  const markRead = useCallback((id: string) =>
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)), [])
+  const markRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+    notificationsApi.markRead(Number(id)).catch(() => {})
+  }, [])
 
-  const markAllRead = useCallback(() =>
-    setNotifications(prev => prev.map(n => ({ ...n, read: true }))), [])
+  const markAllRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    notificationsApi.markAllRead().catch(() => {})
+  }, [])
 
-  const markSelectedRead = useCallback((ids: string[]) =>
-    setNotifications(prev => prev.map(n => ids.includes(n.id) ? { ...n, read: true } : n)), [])
-
-  const deleteNotification = useCallback((id: string) =>
-    setNotifications(prev => prev.filter(n => n.id !== id)), [])
-
-  const deleteSelected = useCallback((ids: string[]) =>
-    setNotifications(prev => prev.filter(n => !ids.includes(n.id))), [])
-
-  const addNotification: AddFn = useCallback((n) =>
-    setNotifications(prev => [{ ...n, id: makeId(), slug: makeSlug(n.title), read: false, createdAt: new Date().toISOString() }, ...prev]), [])
-
-  useEffect(() => {
-    if (!loaded) return
-    globalAdd.current = addNotification
-    pending.splice(0).forEach(addNotification)
-    return () => { globalAdd.current = null }
-  }, [addNotification, loaded])
+  const deleteNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id))
+    notificationsApi.delete(Number(id)).catch(() => {})
+  }, [])
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markRead, markAllRead, markSelectedRead, deleteNotification, deleteSelected, addNotification }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, loading, markRead, markAllRead, deleteNotification, refresh }}>
       {children}
     </NotificationContext.Provider>
   )

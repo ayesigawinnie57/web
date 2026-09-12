@@ -465,6 +465,22 @@ export const adminPaymentsApi = {
   list: () => api.get<ApiPayment[]>('/api/orders/admin/payments/'),
 }
 
+export type ApiNotification = {
+  id: number
+  type: 'order' | 'welcome' | 'promo' | 'system' | 'service_rating' | 'product_rating'
+  title: string
+  body: string
+  read: boolean
+  created_at: string
+}
+
+export const notificationsApi = {
+  list: () => api.get<ApiNotification[]>('/api/auth/notifications/'),
+  markRead: (id: number) => api.patch(`/api/auth/notifications/${id}/`, {}),
+  markAllRead: () => api.post('/api/auth/notifications/mark-all-read/', {}),
+  delete: (id: number) => api.delete(`/api/auth/notifications/${id}/`),
+}
+
 export const isAdmin = () => {
   try {
     const token = localStorage.getItem('access_token')

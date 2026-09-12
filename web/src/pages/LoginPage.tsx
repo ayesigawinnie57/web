@@ -2,6 +2,7 @@ import { type FormEvent, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { authApi, LOGO } from '../lib/api'
+import { useNotifications } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
@@ -9,6 +10,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const nextPath = new URLSearchParams(location.search).get('next')
+  const { refresh: refreshNotifications } = useNotifications()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -36,6 +38,7 @@ export default function LoginPage() {
         authApi.saveProfile(email.trim(), email.trim(), isStaff)
       }
       navigate(isStaff ? '/admin' : (nextPath ?? '/'), { replace: true })
+      refreshNotifications()
     } catch (requestError: any) {
       setError(requestError?.response?.data?.detail ?? 'Invalid email or password.')
     } finally { setLoading(false) }
