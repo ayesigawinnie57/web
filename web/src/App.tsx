@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import { NotificationProvider } from './lib/NotificationContext'
 import { useEffect, useState } from 'react'
 import { BASE_URL } from './lib/api'
@@ -60,7 +60,7 @@ export default function App() {
   if (!uiActive && !isAdmin) return <SiteOffline />
   return (
     <NotificationProvider>
-    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/shop" element={<ShopPage />} />
@@ -99,7 +99,7 @@ export default function App() {
           </Route>
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
     </NotificationProvider>
   )
 }
