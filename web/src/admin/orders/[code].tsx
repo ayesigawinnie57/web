@@ -100,25 +100,45 @@ export default function AdminOrderDetail() {
         {!isCancelled && (
           <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
             <p className="text-[13px] font-extrabold text-[#071A2B] mb-4">Order Progress</p>
-            <div className="flex">
-              {STATUS_STEPS.map((step, i) => {
-                const done = currentStep >= i
-                const StepIcon = STATUS_META[step].icon
-                return (
-                  <div key={step} className="flex-1 flex flex-col items-center">
-                    <div className="flex items-center w-full">
-                      <div className={`flex-1 h-0.5 ${i === 0 ? 'invisible' : done ? 'bg-[#22C55E]' : 'bg-[#E2E8F0]'}`} />
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center border-2 ${done ? 'bg-[#22C55E] border-[#22C55E]' : 'bg-white border-[#E2E8F0]'}`}>
-                        <StepIcon size={12} color={done ? '#fff' : '#CBD5E1'} />
+            <div className="w-full">
+              {/* circles + connectors */}
+              <div className="flex items-center w-full mb-2">
+                {STATUS_STEPS.map((step, i) => {
+                  const done = currentStep >= i
+                  const active = currentStep === i
+                  const StepIcon = STATUS_META[step].icon
+                  return (
+                    <div key={step} className="flex items-center flex-1 last:flex-none">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
+                        done ? 'bg-[#22C55E] border-[#22C55E] shadow-md' : 'bg-white border-[#E2E8F0]'
+                      } ${active ? 'ring-4 ring-green-100' : ''}`}>
+                        <StepIcon size={15} color={done ? '#fff' : '#CBD5E1'} />
                       </div>
-                      <div className={`flex-1 h-0.5 ${i === STATUS_STEPS.length - 1 ? 'invisible' : currentStep > i ? 'bg-[#22C55E]' : 'bg-[#E2E8F0]'}`} />
+                      {i < STATUS_STEPS.length - 1 && (
+                        <div className="flex-1 h-1 mx-1 rounded-full overflow-hidden bg-[#E2E8F0]">
+                          <div className={`h-full rounded-full transition-all duration-500 ${
+                            currentStep > i ? 'bg-[#22C55E] w-full' : 'w-0'
+                          }`} />
+                        </div>
+                      )}
                     </div>
-                    <p className={`text-[10px] mt-1.5 font-semibold text-center ${done ? 'text-[#071A2B] font-bold' : 'text-[#94A3B8]'}`}>
-                      {STATUS_META[step].label}
-                    </p>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
+              {/* labels */}
+              <div className="flex w-full">
+                {STATUS_STEPS.map((step, i) => {
+                  const done = currentStep >= i
+                  const active = currentStep === i
+                  return (
+                    <div key={step} className="flex-1 last:flex-none text-center" style={{ minWidth: 0 }}>
+                      <p className={`text-[11px] font-bold truncate ${
+                        active ? 'text-[#22C55E]' : done ? 'text-[#071A2B]' : 'text-[#94A3B8]'
+                      }`}>{STATUS_META[step].label}</p>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
         )}
