@@ -52,11 +52,23 @@ api.interceptors.request.use(config => {
 
 api.interceptors.response.use(
   res => res,
-  err => {
-    if (err?.response?.status === 401) {
+  async err => {
+    const original = err.config
+    if (err?.response?.status === 401 && !original._retry) {
+      original._retry = true
+      const refresh = localStorage.getItem('refresh_token')
+      if (refresh) {
+        try {
+          const { data } = await axios.post<{ access: string }>(`${BASE_URL}/api/auth/token/refresh/`, { refresh })
+          localStorage.setItem('access_token', data.access)
+          original.headers.Authorization = `Bearer ${data.access}`
+          return api(original)
+        } catch {
+          // refresh failed — fall through to logout
+        }
+      }
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
-      // Only redirect if currently on an admin route
       if (window.location.pathname.startsWith('/admin')) {
         window.location.replace('/login')
       }
