@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle, ChevronDown, CreditCard, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
-import { BASE_URL, cartApi, hasAccessToken, ordersApi, type ApiOrder, type CartItem } from '../lib/api'
+import { CheckCircle, ChevronDown, CreditCard, MapPin, PackageCheck, Pencil, ShieldCheck, Truck } from 'lucide-react'
+import { authApi, BASE_URL, cartApi, hasAccessToken, ordersApi, type ApiOrder, type CartItem } from '../lib/api'
 import { pushNotification } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -16,128 +16,133 @@ const REGIONS = [
 const money = (value: string | number) => Number(value).toLocaleString()
 
 type District = { id: number; name: string; price: string; region: string }
-type Form = { name: string; phone: string; region: string; district: string; village: string; note: string }
+type DeliveryForm = { region: string; district: string; village: string; note: string }
 
 export default function CheckoutPage() {
   const [items, setItems] = useState<CartItem[]>([])
   const [districts, setDistricts] = useState<District[]>([])
-  const [form, setForm] = useState<Form>({ name: '', phone: '', region: '', district: '', village: '', note: '' })
+  const [profile, setProfile] = useState<{ name: string; phone: string } | null>(null)
+  const [form, setForm] = useState<DeliveryForm>({ region: '', district: '', village: '', note: '' })
+  const [editingDelivery, setEditingDelivery] = useState(false)
   const [loading, setLoading] = useState(true)
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
   const [order, setOrder] = useState<ApiOrder | null>(null)
 
   useEffect(() => {
+    const cached = (() => { try { return JSON.parse(localStorage.getItem('majo_user') ?? 'null') } catch { return null } })()
+
     Promise.all([
       cartApi.list(),
       fetch(`${BASE_URL}/api/settings/districts/`)
-        .then(res => (res.ok ? res.json() : []))
-        .then(data => (Array.isArray(data) ? data : (data.results ?? []))),
-    ])
-      .then(([cartItems, districtList]) => {
-        setItems(cartItems)
-        setDistricts(districtList)
-      })
-      .catch(() => setError('Unable to load your cart.'))
+        .then(r => r.ok ? r.json() : [])
+        .then(d => Array.isArray(d) ? d : (d.results ?? [])),
+      hasAccessToken() ? authApi.profile().then(r => r.data) : Promise.resolve(null),
+    ]).then(([cartItems, districtList, profileData]) => {
+      setItems(cartItems)
+      setDistricts(districtList)
+
+      // Merge: backend profile takes priority, fallback to localStorage cache
+      const name = profileData?.name ?? cached?.name ?? ''
+      const phone = profileData?.phone ?? cached?.phone ?? ''
+      const region = profileData?.region ?? cached?.region ?? ''
+      const district = profileData?.district ?? cached?.district ?? ''
+      const village = profileData?.village ?? cached?.village ?? ''
+
+      setProfile({ name, phone })
+      setForm({ region, district, village, note: '' })
+
+      // Persist fresh profile data to localStorage
+      if (profileData) {
+        localStorage.setItem('majo_user', JSON.stringify({
+          ...cached,
+          name: profileData.name,
+          phone: profileData.phone,
+          region: profileData.region,
+          district: profileData.district,
+          village: profileData.village,
+        }))
+      }
+    }).catch(() => setError('Unable to load checkout data.'))
       .finally(() => setLoading(false))
   }, [])
 
-  const set = (key: keyof Form, value: string) => setForm(current => ({ ...current, [key]: value }))
-  const subtotal = items.reduce((total, item) => total + Number(item.product_price) * item.quantity, 0)
+  const set = (key: keyof DeliveryForm, value: string) => setForm(f => ({ ...f, [key]: value }))
+  const subtotal = items.reduce((t, i) => t + Number(i.product_price) * i.quantity, 0)
   const regionDistricts = useMemo(() => districts.filter(d => d.region === form.region), [districts, form.region])
   const selectedDistrict = useMemo(() => regionDistricts.find(d => d.name === form.district), [regionDistricts, form.district])
   const districtFee = Number(selectedDistrict?.price ?? 0)
 
-  const handleRegionChange = (value: string) => {
-    set('region', value)
-    set('district', '')
-  }
+  const handleRegionChange = (value: string) => { set('region', value); set('district', '') }
 
-  const placeOrder = async (event: React.FormEvent) => {
-    event.preventDefault()
+  const placeOrder = async (e: React.FormEvent) => {
+    e.preventDefault()
     setError('')
-    if (!hasAccessToken()) {
-      setError('Please sign in before placing your order.')
-      return
-    }
-    if (!items.length) {
-      setError('Your cart is empty.')
-      return
-    }
-    if (!form.name.trim() || !form.phone.trim()) {
-      setError('Full name and phone number are required.')
-      return
-    }
-    if (!form.region || !form.district) {
-      setError('Please select your region and district before placing the order.')
-      return
-    }
+    if (!hasAccessToken()) { setError('Please sign in before placing your order.'); return }
+    if (!items.length) { setError('Your cart is empty.'); return }
+    if (!form.region || !form.district) { setError('Please select your region and district.'); return }
 
     setPlacing(true)
     try {
       const response = await ordersApi.create({
         delivery_address: [form.region, form.district, form.village].filter(Boolean).join(', ') || 'Uganda',
-        phone: form.phone.trim(),
+        phone: profile?.phone ?? '',
         note: form.note.trim(),
-        guest_name: form.name.trim(),
+        guest_name: profile?.name ?? '',
         delivery_fee: districtFee,
-        items: items.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
+        items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
       })
       setOrder(response.data)
       pushNotification({
         type: 'order',
         title: `Order #${response.data.code} Placed!`,
-        body: `Your order has been received and is being processed. Total: UGX ${Number(response.data.total).toLocaleString()}`,
+        body: `Your order has been received. Total: UGX ${Number(response.data.total).toLocaleString()}`,
         time: 'Just now',
       })
-      await Promise.all(items.map(item => cartApi.remove(item.product_id)))
-    } catch (requestError: any) {
-      const data = requestError?.response?.data
-      setError(data?.detail ?? data?.non_field_errors?.[0] ?? 'Failed to place order. Please try again.')
+      await Promise.all(items.map(i => cartApi.remove(i.product_id)))
+    } catch (err: any) {
+      const d = err?.response?.data
+      setError(d?.detail ?? d?.non_field_errors?.[0] ?? 'Failed to place order. Please try again.')
     } finally {
       setPlacing(false)
     }
   }
 
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <div className="pt-16 py-24 text-center text-[#64748B]">Loading checkout...</div>
-      </>
-    )
-  }
+  if (loading) return (
+    <>
+      <Navbar />
+      <div className="pt-16 py-24 text-center text-[#64748B]">Loading checkout...</div>
+    </>
+  )
 
-  if (order) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-        <Navbar />
-        <main className="pt-14 lg:pt-16 max-w-xl mx-auto px-4 py-16 text-center">
-          <CheckCircle className="mx-auto text-green-600" size={64} />
-          <h1 className="text-3xl font-extrabold text-[#071A2B] mt-5">Order placed!</h1>
-          <p className="text-[13px] text-[#64748B] mt-2">Your order has been received and is being processed.</p>
-          <div className="mt-7 py-4 border-y border-[#E2E8F0] flex justify-between text-[14px]">
-            <span>Order No.</span>
-            <strong>{order.code}</strong>
+  if (order) return (
+    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Navbar />
+      <main className="pt-14 lg:pt-16 max-w-xl mx-auto px-4 py-16 text-center">
+        <CheckCircle className="mx-auto text-green-600" size={64} />
+        <h1 className="text-3xl font-extrabold text-[#071A2B] mt-5">Order placed!</h1>
+        <p className="text-[13px] text-[#64748B] mt-2">Your order has been received and is being processed.</p>
+        <div className="mt-7 py-4 border-y border-[#E2E8F0] flex justify-between text-[14px]">
+          <span>Order No.</span><strong>{order.code}</strong>
+        </div>
+        <div className="mt-5 space-y-3 text-[13px] text-[#64748B]">
+          <div className="flex justify-between"><span>Subtotal</span><span>UGX {money(order.subtotal)}</span></div>
+          <div className="flex justify-between"><span>Delivery fee</span><span>UGX {money(order.delivery_fee)}</span></div>
+          <div className="flex justify-between pt-4 border-t border-[#E2E8F0] text-[16px] font-extrabold text-[#071A2B]">
+            <span>Total</span><span className="text-[#1E3A8A]">UGX {money(order.total)}</span>
           </div>
-          <div className="mt-5 space-y-3 text-[13px] text-[#64748B]">
-            <div className="flex justify-between"><span>Subtotal</span><span>UGX {money(order.subtotal)}</span></div>
-            <div className="flex justify-between"><span>Delivery fee</span><span>UGX {money(order.delivery_fee)}</span></div>
-            <div className="flex justify-between pt-4 border-t border-[#E2E8F0] text-[16px] font-extrabold text-[#071A2B]">
-              <span>Total</span>
-              <span className="text-[#1E3A8A]">UGX {money(order.total)}</span>
-            </div>
-          </div>
-          <div className="flex items-center justify-center gap-2 mt-7 text-[13px] text-green-700">
-            <Truck size={17} />
-            Expected delivery after 3 days
-          </div>
-          <Link to="/" className="inline-block mt-8 bg-[#1E3A8A] text-white px-6 py-3 rounded-xl text-[13px] font-bold">Back to home</Link>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
+        </div>
+        <div className="flex items-center justify-center gap-2 mt-7 text-[13px] text-green-700">
+          <Truck size={17} /> Expected delivery after 3 days
+        </div>
+        <div className="flex gap-3 justify-center mt-8">
+          <Link to={`/orders/${order.code}`} className="bg-[#1E3A8A] text-white px-6 py-3 rounded-xl text-[13px] font-bold">Track Order</Link>
+          <Link to="/" className="border border-[#E2E8F0] text-[#071A2B] px-6 py-3 rounded-xl text-[13px] font-bold">Back to home</Link>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -156,7 +161,6 @@ export default function CheckoutPage() {
             Please <Link to="/login" className="font-extrabold underline">sign in</Link> to place your order.
           </div>
         )}
-
         {error && <div className="mb-6 p-4 border border-red-100 bg-red-50 text-[13px] font-semibold text-red-600">{error}</div>}
 
         <form onSubmit={placeOrder} className="grid lg:grid-cols-[1fr_320px] gap-8 items-start">
@@ -171,41 +175,92 @@ export default function CheckoutPage() {
               </div>
 
               <div className="bg-white border border-[#E2E8F0] divide-y divide-[#E2E8F0]">
-                <Field label="Full Name" required value={form.name} onChange={value => set('name', value)} placeholder="Enter your full name" />
-                <Field label="Phone Number" required value={form.phone} onChange={value => set('phone', value)} placeholder="Enter your phone number" type="tel" />
 
+                {/* Name — read only */}
+                <ReadOnlyField label="Full Name" value={profile?.name ?? ''} />
+
+                {/* Phone — read only */}
+                <ReadOnlyField label="Phone Number" value={profile?.phone ?? ''} hint={
+                  <Link to="/account" className="text-[11px] text-[#1E3A8A] font-bold hover:underline">Edit in account</Link>
+                } />
+
+                {/* Country — always Uganda */}
                 <div className="p-4">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Country</label>
                   <div className="mt-2 px-3 py-2.5 bg-[#F8FAFC] text-[13px] text-[#64748B]">Uganda</div>
                 </div>
 
-                <div className="p-4">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Region</label>
-                  <div className="relative mt-2">
-                    <select value={form.region} onChange={event => handleRegionChange(event.target.value)} className="appearance-none w-full px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none">
-                      <option value="">Select region</option>
-                      {REGIONS.map(region => <option key={region.value} value={region.value}>{region.label}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-2.5 text-[#64748B] pointer-events-none" size={16} />
+                {/* Delivery location — editable */}
+                {!editingDelivery ? (
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Delivery Location</label>
+                      <button type="button" onClick={() => setEditingDelivery(true)}
+                        className="flex items-center gap-1 text-[11px] font-bold text-[#1E3A8A] hover:underline">
+                        <Pencil size={11} /> Edit
+                      </button>
+                    </div>
+                    {form.region && form.district ? (
+                      <p className="text-[13px] text-[#071A2B]">
+                        {[form.region, form.district, form.village].filter(Boolean).join(', ')}
+                      </p>
+                    ) : (
+                      <p className="text-[13px] text-[#94A3B8] italic">No delivery location set — click Edit to add one</p>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="p-4">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Region</label>
+                      <div className="relative mt-2">
+                        <select value={form.region} onChange={e => handleRegionChange(e.target.value)}
+                          className="appearance-none w-full px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none focus:border-[#1E3A8A]">
+                          <option value="">Select region</option>
+                          {REGIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-2.5 text-[#64748B] pointer-events-none" size={16} />
+                      </div>
+                    </div>
 
+                    <div className="p-4">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">District</label>
+                      <div className="relative mt-2">
+                        <select value={form.district} disabled={!form.region || regionDistricts.length === 0}
+                          onChange={e => set('district', e.target.value)}
+                          className="appearance-none w-full px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none disabled:opacity-50 focus:border-[#1E3A8A]">
+                          <option value="">{form.region ? 'Select district' : 'Choose a region first'}</option>
+                          {regionDistricts.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-2.5 text-[#64748B] pointer-events-none" size={16} />
+                      </div>
+                    </div>
+
+                    <div className="p-4">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Village / Street <span className="text-[#CBD5E1] font-normal normal-case">(optional)</span></label>
+                      <input value={form.village} onChange={e => set('village', e.target.value)}
+                        placeholder="e.g. Nakawa" className="w-full mt-2 px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none focus:border-[#1E3A8A]" />
+                    </div>
+
+                    <div className="p-4">
+                      <button type="button" onClick={() => setEditingDelivery(false)}
+                        className="text-[12px] font-bold text-[#1E3A8A] hover:underline">
+                        ✓ Done editing
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Note */}
                 <div className="p-4">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">District</label>
-                  <div className="relative mt-2">
-                    <select value={form.district} disabled={!form.region || regionDistricts.length === 0} onChange={event => set('district', event.target.value)} className="appearance-none w-full px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none disabled:opacity-50">
-                      <option value="">{form.region ? 'Select district' : 'Choose a region first'}</option>
-                      {regionDistricts.map(district => <option key={district.id} value={district.name}>{district.name}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-2.5 text-[#64748B] pointer-events-none" size={16} />
-                  </div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Order Note <span className="text-[#CBD5E1] font-normal normal-case">(optional)</span></label>
+                  <input value={form.note} onChange={e => set('note', e.target.value)}
+                    placeholder="Add delivery instructions (optional)"
+                    className="w-full mt-2 px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none focus:border-[#1E3A8A]" />
                 </div>
-
-                <Field label="Village / Street" value={form.village} onChange={value => set('village', value)} placeholder="e.g. Nakawa" />
-                <Field label="Order Note" value={form.note} onChange={value => set('note', value)} placeholder="Add delivery instructions (optional)" />
               </div>
             </section>
 
+            {/* Items */}
             <section>
               <div className="flex items-center gap-3 mb-4">
                 <PackageCheck className="text-[#1E3A8A]" size={19} />
@@ -239,6 +294,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
+          {/* Payment sidebar */}
           <aside className="bg-white border border-[#E2E8F0] p-5 lg:sticky lg:top-24">
             <div className="flex items-center gap-2">
               <CreditCard size={18} className="text-[#1E3A8A]" />
@@ -246,9 +302,13 @@ export default function CheckoutPage() {
             </div>
             <p className="text-[12px] text-[#64748B] mt-2">Pay via MTN, Airtel or card.</p>
             <div className="flex justify-between mt-6 text-[13px] text-[#64748B]"><span>Subtotal</span><span>UGX {subtotal.toLocaleString()}</span></div>
-            <div className="flex justify-between mt-3 text-[13px] text-[#64748B]"><span>Delivery</span><span className="font-bold text-[#071A2B]">{selectedDistrict ? `UGX ${money(districtFee)}` : 'Select district'}</span></div>
-            <p className="text-[11px] text-[#94A3B8] mt-3">Selected district delivery fee overrides the default product delivery amount.</p>
-            <button type="submit" disabled={placing || !items.length || !hasAccessToken()} className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold disabled:opacity-40">
+            <div className="flex justify-between mt-3 text-[13px] text-[#64748B]">
+              <span>Delivery</span>
+              <span className="font-bold text-[#071A2B]">{selectedDistrict ? `UGX ${money(districtFee)}` : 'Select district'}</span>
+            </div>
+            <p className="text-[11px] text-[#94A3B8] mt-3">District delivery fee applies at checkout.</p>
+            <button type="submit" disabled={placing || !items.length || !hasAccessToken()}
+              className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold disabled:opacity-40">
               {placing ? 'Placing order...' : 'Place Order'}
             </button>
           </aside>
@@ -259,14 +319,16 @@ export default function CheckoutPage() {
   )
 }
 
-function Field({ label, required, value, onChange, placeholder, type = 'text' }: { label: string; required?: boolean; value: string; onChange: (value: string) => void; placeholder: string; type?: string }) {
+function ReadOnlyField({ label, value, hint }: { label: string; value: string; hint?: React.ReactNode }) {
   return (
-    <label className="block p-4">
-      <span className="flex justify-between text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">
-        <span>{label}</span>
-        <span className={required ? 'text-red-500' : 'text-[#CBD5E1]'}>{required ? 'Required *' : 'Optional'}</span>
-      </span>
-      <input required={required} type={type} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="w-full mt-2 px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none focus:border-[#1E3A8A]" />
-    </label>
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">{label}</label>
+        {hint}
+      </div>
+      <p className="px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B]">
+        {value || <span className="text-[#94A3B8] italic">Not set</span>}
+      </p>
+    </div>
   )
 }

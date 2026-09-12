@@ -73,7 +73,12 @@ export default function RegisterPage() {
         village: form.village.trim(),
       })
       authApi.saveTokens(data.access, data.refresh)
-      authApi.saveProfile(form.name.trim(), form.email.trim())
+      authApi.saveProfile(form.name.trim(), form.email.trim(), false, {
+        phone: form.phone.trim(),
+        region: form.region,
+        district: form.district.trim(),
+        village: form.village.trim(),
+      })
       navigate('/', { replace: true })
     } catch (requestError: any) {
       const data = requestError?.response?.data

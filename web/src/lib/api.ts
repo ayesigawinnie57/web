@@ -229,13 +229,13 @@ export const productsApi = {
 export const authApi = {
   login: (email: string, password: string) => api.post<{ access: string; refresh: string }>('/api/auth/login/', { email, password }),
   register: (payload: { name: string; email: string; phone: string; password: string; country: string; region: string; district: string; village: string }) => api.post<{ access: string; refresh: string }>('/api/auth/register/', payload),
-  profile: () => api.get<{ id: number; email: string; name: string; is_staff: boolean; is_superuser: boolean }>('/api/auth/profile/'),
+  profile: () => api.get<{ id: number; email: string; name: string; phone: string; region: string; district: string; village: string; is_staff: boolean; is_superuser: boolean }>('/api/auth/profile/'),
   saveTokens: (access: string, refresh: string) => {
     localStorage.setItem('access_token', access)
     localStorage.setItem('refresh_token', refresh)
   },
-  saveProfile: (name: string, email: string, isAdmin = false) => {
-    localStorage.setItem('majo_user', JSON.stringify({ name, email, isAdmin }))
+  saveProfile: (name: string, email: string, isAdmin = false, extra?: { phone?: string; region?: string; district?: string; village?: string }) => {
+    localStorage.setItem('majo_user', JSON.stringify({ name, email, isAdmin, ...extra }))
   },
 }
 
