@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Package, Truck, MapPin, XCircle, Clock, Loader2 } from 'lucide-react'
+import { Package, Truck, MapPin, XCircle, Clock, Loader2, CheckCheck, ClipboardList, PackageCheck } from 'lucide-react'
 import { ordersApi, hasAccessToken, type ApiOrderDetail } from '../lib/api'
 import { pushNotification } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
@@ -10,19 +10,19 @@ const money = (v: string | number) => Number(v).toLocaleString()
 
 type Status = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
 
-const STEPS: { key: Status; label: string; icon: string }[] = [
-  { key: 'pending',    label: 'Placed',     icon: '📋' },
-  { key: 'processing', label: 'Confirmed',  icon: '⚙️'  },
-  { key: 'shipped',    label: 'Shipped',    icon: '🚚' },
-  { key: 'delivered',  label: 'Delivered',  icon: '✅' },
+const STEPS: { key: Status; label: string; icon: any }[] = [
+  { key: 'pending',    label: 'Placed',     icon: ClipboardList },
+  { key: 'processing', label: 'Confirmed',  icon: PackageCheck },
+  { key: 'shipped',    label: 'Shipped',    icon: Truck },
+  { key: 'delivered',  label: 'Delivered',  icon: CheckCheck },
 ]
 const STEP_ORDER: Status[] = ['pending', 'processing', 'shipped', 'delivered']
 
 const STATUS_MESSAGES: Record<Status, { title: string; body: string }> = {
-  processing: { title: 'Order Confirmed! ✅', body: 'Your order has been confirmed and is being prepared.' },
-  shipped:    { title: 'Order Shipped! 🚚',   body: 'Your order is on its way to you.' },
-  delivered:  { title: 'Order Delivered! 🎉', body: 'Your order has been delivered. Enjoy!' },
-  cancelled:  { title: 'Order Cancelled ❌',  body: 'Your order has been cancelled.' },
+  processing: { title: 'Order Confirmed!', body: 'Your order has been confirmed and is being prepared.' },
+  shipped:    { title: 'Order Shipped!', body: 'Your order is on its way to you.' },
+  delivered:  { title: 'Order Delivered!', body: 'Your order has been delivered. Enjoy!' },
+  cancelled:  { title: 'Order Cancelled', body: 'This order has been cancelled.' },
   pending:    { title: '', body: '' },
 }
 
@@ -48,23 +48,24 @@ function HorizontalProgress({ status }: { status: Status }) {
         {STEPS.map((step, idx) => {
           const done = idx <= currentIdx
           const active = idx === currentIdx
+          const Icon = step.icon
           return (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               {/* circle */}
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-[16px] border-2 transition-all ${
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
                 done
-                  ? 'bg-[#1E3A8A] border-[#1E3A8A] shadow-md'
+                  ? 'bg-[#16A34A] border-[#16A34A] shadow-md'
                   : 'bg-white border-[#E2E8F0]'
-              } ${active ? 'ring-4 ring-blue-100' : ''}`}>
+              } ${active ? 'ring-4 ring-green-100' : ''}`}>
                 {done
-                  ? <span className="text-[14px]">{step.icon}</span>
-                  : <span className="text-[14px] opacity-30">{step.icon}</span>
+                  ? <Icon size={15} className="text-white" />
+                  : <Icon size={15} className="text-[#94A3B8] opacity-50" />
                 }
               </div>
               {/* connector */}
               {idx < STEPS.length - 1 && (
                 <div className="flex-1 h-1 mx-1 rounded-full overflow-hidden bg-[#E2E8F0]">
-                  <div className={`h-full rounded-full transition-all duration-500 ${idx < currentIdx ? 'bg-[#1E3A8A] w-full' : 'w-0'}`} />
+                  <div className={`h-full rounded-full transition-all duration-500 ${idx < currentIdx ? 'bg-[#16A34A] w-full' : 'w-0'}`} />
                 </div>
               )}
             </div>
@@ -79,7 +80,7 @@ function HorizontalProgress({ status }: { status: Status }) {
           return (
             <div key={step.key} className="flex-1 last:flex-none text-center" style={{ minWidth: 0 }}>
               <p className={`text-[11px] font-bold truncate ${
-                active ? 'text-[#1E3A8A]' : done ? 'text-[#334155]' : 'text-[#94A3B8]'
+                active ? 'text-[#15803D]' : done ? 'text-[#334155]' : 'text-[#94A3B8]'
               }`}>{step.label}</p>
             </div>
           )
