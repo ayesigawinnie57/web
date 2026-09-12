@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Package, Truck, MapPin, XCircle, Clock, Loader2, CheckCheck, ClipboardList, PackageCheck } from 'lucide-react'
-import { ordersApi, hasAccessToken, type ApiOrderDetail } from '../lib/api'
+import { Package, Truck, MapPin, XCircle, Clock, Loader2, CheckCheck, ClipboardList, PackageCheck, RotateCcw } from 'lucide-react'
+import { ordersApi, hasAccessToken, type ApiOrderDetail, type ReturnRequest } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -90,6 +90,10 @@ export default function OrderDetailPage() {
   const [error, setError] = useState('')
   const [cancelling, setCancelling] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(null)
+  const [showReturnForm, setShowReturnForm] = useState(false)
+  const [returnReason, setReturnReason] = useState('')
+  const [submittingReturn, setSubmittingReturn] = useState(false)
   const prevStatusRef = useRef<string | null>(null)
   const { refresh: refreshNotifications } = useNotifications()
 
@@ -116,6 +120,10 @@ export default function OrderDetailPage() {
       .catch(() => setError('Order not found.'))
       .finally(() => setLoading(false))
 
+    ordersApi.getReturn(code)
+      .then(r => setReturnRequest(r.data))
+      .catch(() => {})
+
     // Poll every 15 seconds to pick up admin status changes
     const interval = setInterval(fetchOrder, 15000)
     return () => clearInterval(interval)
@@ -133,6 +141,21 @@ export default function OrderDetailPage() {
       setError('Failed to cancel order.')
     } finally {
       setCancelling(false)
+    }
+  }
+
+  const handleReturn = async () => {
+    if (!order || !returnReason.trim()) return
+    setSubmittingReturn(true)
+    try {
+      const r = await ordersApi.submitReturn(order.code, returnReason.trim())
+      setReturnRequest(r.data)
+      setShowReturnForm(false)
+      setReturnReason('')
+    } catch (e: any) {
+      setError(e?.response?.data?.detail ?? 'Failed to submit return.')
+    } finally {
+      setSubmittingReturn(false)
     }
   }
 
@@ -268,6 +291,51 @@ export default function OrderDetailPage() {
                 className="block text-center bg-[#1E3A8A] text-white py-3 rounded-xl text-[13px] font-bold hover:opacity-90 transition-opacity">
                 Rate This Order ⭐
               </Link>
+            )}
+
+            {order.status === 'delivered' && (
+              returnRequest ? (
+                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <RotateCcw size={13} className="text-[#64748B]" />
+                    <span className="text-[12px] font-bold text-[#64748B]">Return Request</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      returnRequest.status === 'approved' ? 'bg-green-50 text-green-700 border-green-200'
+                      : returnRequest.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200'
+                      : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                    }`}>{returnRequest.status.charAt(0).toUpperCase() + returnRequest.status.slice(1)}</span>
+                  </div>
+                  {returnRequest.admin_note && (
+                    <p className="text-[12px] text-[#334155] mt-1">Note: {returnRequest.admin_note}</p>
+                  )}
+                </div>
+              ) : showReturnForm ? (
+                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 space-y-3">
+                  <p className="text-[12px] font-bold text-[#071A2B]">Return Reason</p>
+                  <textarea
+                    rows={3}
+                    placeholder="Describe the issue..."
+                    value={returnReason}
+                    onChange={e => setReturnReason(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[13px] outline-none focus:border-[#1E3A8A] resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={handleReturn} disabled={submittingReturn || !returnReason.trim()}
+                      className="flex-1 bg-[#1E3A8A] text-white py-2.5 rounded-xl text-[13px] font-bold disabled:opacity-50 hover:opacity-90">
+                      {submittingReturn ? 'Submitting...' : 'Submit'}
+                    </button>
+                    <button onClick={() => setShowReturnForm(false)}
+                      className="flex-1 border border-[#E2E8F0] text-[#64748B] py-2.5 rounded-xl text-[13px] font-bold hover:border-[#071A2B]">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setShowReturnForm(true)}
+                  className="w-full flex items-center justify-center gap-2 border border-[#E2E8F0] text-[#071A2B] py-3 rounded-xl text-[13px] font-bold hover:bg-[#F8FAFC] transition-colors">
+                  <RotateCcw size={14} /> Request Return
+                </button>
+              )
             )}
           </div>
         </div>

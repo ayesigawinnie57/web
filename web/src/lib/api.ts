@@ -356,6 +356,16 @@ export type ApiOrderDetail = {
   updated_at: string
 }
 
+export type ReturnRequest = {
+  id: number
+  order_code: string
+  reason: string
+  status: 'pending' | 'approved' | 'rejected'
+  admin_note: string
+  created_at: string
+  updated_at: string
+}
+
 export const ordersApi = {
   create: (payload: { delivery_address: string; phone: string; note: string; guest_name: string; delivery_fee?: number; items: { product_id: number; quantity: number }[] }) => api.post<ApiOrder>('/api/orders/', payload),
   list: () => api.get<ApiOrderDetail[]>('/api/orders/'),
@@ -363,6 +373,9 @@ export const ordersApi = {
   cancel: (code: string) => api.post<ApiOrderDetail>(`/api/orders/${code}/cancel/`),
   rate: (code: string, payload: { overall: number; areas: string[]; area_ratings: Record<string, number>; comment: string }) =>
     api.post(`/api/orders/${code}/rate/`, payload),
+  submitReturn: (code: string, reason: string) => api.post<ReturnRequest>(`/api/orders/${code}/return/`, { reason }),
+  getReturn: (code: string) => api.get<ReturnRequest | null>(`/api/orders/${code}/return/`),
+  listReturns: () => api.get<ReturnRequest[]>('/api/orders/returns/'),
 }
 
 export type ApiAdminOrder = {

@@ -21,6 +21,7 @@ const NotificationDetailPage = lazy(() => import('./pages/NotificationDetailPage
 const ForgotPasswordPage     = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage      = lazy(() => import('./pages/ResetPasswordPage'))
 const RateOrderPage          = lazy(() => import('./pages/RateOrderPage'))
+const ReturnPage             = lazy(() => import('./pages/ReturnPage'))
 
 const AdminGuard      = lazy(() => import('./admin/AdminGuard'))
 const AdminLayout     = lazy(() => import('./admin/AdminLayout'))
@@ -84,6 +85,7 @@ export default function App() {
           <Route path="/notifications/:slug" element={<NotificationDetailPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/rate/:code" element={<RateOrderPage />} />
+          <Route path="/returns" element={<ReturnPage />} />
           <Route element={<AdminGuard />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />

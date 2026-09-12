@@ -234,6 +234,9 @@ export default function AccountPage() {
               <Link to="/orders" className="w-full flex items-center justify-between px-4 py-3.5 text-[13px] font-semibold text-[#071A2B] hover:bg-[#F8FAFC] transition-colors border-b border-[#E2E8F0]">
                 My Orders <span className="text-[#94A3B8]">›</span>
               </Link>
+              <Link to="/returns" className="w-full flex items-center justify-between px-4 py-3.5 text-[13px] font-semibold text-[#071A2B] hover:bg-[#F8FAFC] transition-colors border-b border-[#E2E8F0]">
+                Returns <span className="text-[#94A3B8]">›</span>
+              </Link>
               <button onClick={() => setConfirmLogout(true)} className="w-full flex items-center justify-between px-4 py-3.5 text-[13px] font-semibold text-[#071A2B] hover:bg-[#F8FAFC] transition-colors">
                 Logout <span className="text-[#94A3B8]">›</span>
               </button>
