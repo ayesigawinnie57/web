@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Package, Truck, MapPin, XCircle, CheckCircle, Clock, Loader2 } from 'lucide-react'
+import { Package, Truck, MapPin, XCircle, Clock, Loader2 } from 'lucide-react'
 import { ordersApi, hasAccessToken, type ApiOrderDetail } from '../lib/api'
 import { pushNotification } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
