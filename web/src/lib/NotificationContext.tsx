@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { notificationsApi, hasAccessToken, type ApiNotification } from './api'
 
+export const NOTIFICATION_UPDATED_EVENT = 'notification_updated'
+
 export type NotificationType = 'order' | 'welcome' | 'promo' | 'system' | 'service_rating' | 'product_rating'
 
 export type Notification = {
@@ -71,6 +73,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (!hasAccessToken()) return
     const id = setInterval(refresh, 30_000)
     return () => clearInterval(id)
+  }, [refresh])
+
+  // Refresh when tab becomes visible again
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [refresh])
+
+  // Refresh on custom event (e.g. after order placed)
+  useEffect(() => {
+    window.addEventListener(NOTIFICATION_UPDATED_EVENT, refresh)
+    return () => window.removeEventListener(NOTIFICATION_UPDATED_EVENT, refresh)
   }, [refresh])
 
   const unreadCount = notifications.filter(n => !n.read).length
