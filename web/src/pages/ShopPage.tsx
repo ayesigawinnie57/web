@@ -8,6 +8,7 @@ import { productsApi, toProduct, type ApiCategory, type Product } from '../lib/a
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
+  const [related, setRelated] = useState<Product[]>([])
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -18,18 +19,31 @@ export default function ShopPage() {
 
   useEffect(() => {
     setLoading(true)
+    setRelated([])
     const params = new URLSearchParams()
     if (query) params.set('search', query)
     if (category) params.set('category', category)
+
     Promise.all([
       productsApi.list(params.toString()),
       productsApi.categories(),
-    ]).then(([productResponse, categoryResponse]) => {
+    ]).then(async ([productResponse, categoryResponse]) => {
       const raw = Array.isArray(productResponse.data) ? productResponse.data : (productResponse.data as any).results ?? []
-      const available = raw.map(toProduct)
-      setProducts(saleOnly ? available.filter((product: Product) => product.originalPrice && product.originalPrice > product.price) : available)
+      let available = raw.map(toProduct)
+      if (saleOnly) available = available.filter((p: Product) => p.originalPrice && p.originalPrice > p.price)
+
       const rawCategories = Array.isArray(categoryResponse.data) ? categoryResponse.data : (categoryResponse.data as any).results ?? []
       setCategories(rawCategories)
+      setProducts(available)
+
+      // If filtering by category and no products found, load related from other categories
+      if (category && available.length === 0) {
+        const { data } = await productsApi.list('')
+        const all = Array.isArray(data) ? data : (data as any).results ?? []
+        const mixed = all.map(toProduct).filter((p: Product) => p.category !== category)
+        setRelated(mixed.slice(0, 12))
+      }
+
       setError(false)
     }).catch(() => setError(true)).finally(() => setLoading(false))
   }, [query, category, saleOnly])
@@ -41,7 +55,8 @@ export default function ShopPage() {
     setSearchParams(next)
   }
 
-  const heading = saleOnly ? 'Deals' : category ? categories.find(item => item.slug === category)?.name ?? 'Shop' : query ? `Results for "${query}"` : 'Shop all products'
+  const categoryName = categories.find(c => c.slug === category)?.name
+  const heading = saleOnly ? 'Deals' : categoryName ?? (query ? `Results for "${query}"` : 'Shop all products')
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -51,14 +66,16 @@ export default function ShopPage() {
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1E3A8A]">Majo Gadgets</p>
             <h1 className="text-3xl font-extrabold text-[#071A2B] mt-1">{heading}</h1>
-            {!loading && <p className="text-[13px] text-[#64748B] mt-2">{products.length} product{products.length === 1 ? '' : 's'} available</p>}
+            {!loading && products.length > 0 && (
+              <p className="text-[13px] text-[#64748B] mt-2">{products.length} product{products.length === 1 ? '' : 's'} available</p>
+            )}
           </div>
           <div className="flex items-center gap-3">
-            <select value={category} onChange={event => updateFilter('category', event.target.value)} className="h-10 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none">
+            <select value={category} onChange={e => updateFilter('category', e.target.value)} className="h-10 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none">
               <option value="">All categories</option>
-              {categories.map(item => <option key={item.id} value={item.slug}>{item.name}</option>)}
+              {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
             </select>
-            <select value={saleOnly ? 'sale' : ''} onChange={event => updateFilter('sale', event.target.value ? 'true' : '')} className="h-10 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none">
+            <select value={saleOnly ? 'sale' : ''} onChange={e => updateFilter('sale', e.target.value ? 'true' : '')} className="h-10 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none">
               <option value="">All products</option>
               <option value="sale">On sale</option>
             </select>
@@ -66,13 +83,36 @@ export default function ShopPage() {
         </div>
 
         {error ? (
-          <div className="py-20 text-center"><p className="text-[15px] font-bold text-[#071A2B]">Products could not be loaded</p><p className="text-[13px] text-[#64748B] mt-2">Please try again in a moment.</p></div>
+          <div className="py-20 text-center">
+            <p className="text-[15px] font-bold text-[#071A2B]">Products could not be loaded</p>
+            <p className="text-[13px] text-[#64748B] mt-2">Please try again in a moment.</p>
+          </div>
         ) : loading ? (
           <div className="py-20 text-center text-[13px] text-[#64748B]">Loading products...</div>
-        ) : products.length ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">{products.map(product => <ProductCard key={product.id} product={product} />)}</div>
+        ) : products.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {products.map(p => <ProductCard key={p.id} product={p} />)}
+          </div>
         ) : (
-          <div className="py-20 text-center"><p className="text-[15px] font-bold text-[#071A2B]">No products found</p><Link to="/shop" className="inline-block mt-4 text-[13px] font-bold text-[#1E3A8A]">Clear filters</Link></div>
+          <div>
+            <div className="py-12 text-center">
+              <p className="text-[15px] font-bold text-[#071A2B]">
+                No products in {categoryName ?? 'this category'} yet
+              </p>
+              <p className="text-[13px] text-[#64748B] mt-1">Check back soon or explore related products below.</p>
+              <Link to="/shop" className="inline-block mt-4 text-[13px] font-bold text-[#1E3A8A]">Browse all products</Link>
+            </div>
+
+            {related.length > 0 && (
+              <div className="mt-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1E3A8A] mb-1">You might also like</p>
+                <h2 className="text-xl font-extrabold text-[#071A2B] mb-5">Related Products</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                  {related.map(p => <ProductCard key={p.id} product={p} />)}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </main>
       <Footer />
