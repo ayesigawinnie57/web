@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { BASE_URL } from '../lib/api'
 import { parseError } from '../admin/ErrorBanner'
 import Navbar from '../landing/Navbar'
@@ -231,6 +231,9 @@ export default function AccountPage() {
           <div className="lg:pt-2">
             <div className="border border-[#E2E8F0] rounded-xl overflow-hidden bg-white">
               <p className="px-4 py-3 text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest border-b border-[#E2E8F0]">Account Actions</p>
+              <Link to="/orders" className="w-full flex items-center justify-between px-4 py-3.5 text-[13px] font-semibold text-[#071A2B] hover:bg-[#F8FAFC] transition-colors border-b border-[#E2E8F0]">
+                My Orders <span className="text-[#94A3B8]">›</span>
+              </Link>
               <button onClick={() => setConfirmLogout(true)} className="w-full flex items-center justify-between px-4 py-3.5 text-[13px] font-semibold text-[#071A2B] hover:bg-[#F8FAFC] transition-colors">
                 Logout <span className="text-[#94A3B8]">›</span>
               </button>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle, ChevronDown, CreditCard, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
 import { BASE_URL, cartApi, hasAccessToken, ordersApi, type ApiOrder, type CartItem } from '../lib/api'
+import { pushNotification } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
@@ -83,6 +84,12 @@ export default function CheckoutPage() {
         items: items.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
       })
       setOrder(response.data)
+      pushNotification({
+        type: 'order',
+        title: `Order #${response.data.code} Placed!`,
+        body: `Your order has been received and is being processed. Total: UGX ${Number(response.data.total).toLocaleString()}`,
+        time: 'Just now',
+      })
       await Promise.all(items.map(item => cartApi.remove(item.product_id)))
     } catch (requestError: any) {
       const data = requestError?.response?.data

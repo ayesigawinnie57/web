@@ -30,6 +30,8 @@ import AdminAccount from './admin/account'
 import AdminSettings from './admin/settings'
 import WishlistPage from './pages/WishlistPage'
 import AccountPage from './pages/AccountPage'
+import OrdersPage from './pages/OrdersPage'
+import OrderDetailPage from './pages/OrderDetailPage'
 import NotificationsPage from './pages/NotificationsPage'
 import NotificationDetailPage from './pages/NotificationDetailPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -72,6 +74,8 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/orders/:code" element={<OrderDetailPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/notifications/:slug" element={<NotificationDetailPage />} />
         <Route path="/account" element={<AccountPage />} />

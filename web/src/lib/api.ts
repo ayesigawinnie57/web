@@ -327,8 +327,28 @@ export const cartApi = {
   },
 }
 
+export type ApiOrderDetail = {
+  id: number
+  code: string
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  subtotal: string
+  delivery_fee: string
+  total: string
+  delivery_address: string
+  phone: string
+  note: string
+  cancel_reason: string
+  has_service_rating: boolean
+  items: { id: number; product: ApiProduct; quantity: number; price: string }[]
+  created_at: string
+  updated_at: string
+}
+
 export const ordersApi = {
   create: (payload: { delivery_address: string; phone: string; note: string; guest_name: string; delivery_fee?: number; items: { product_id: number; quantity: number }[] }) => api.post<ApiOrder>('/api/orders/', payload),
+  list: () => api.get<ApiOrderDetail[]>('/api/orders/'),
+  get: (code: string) => api.get<ApiOrderDetail>(`/api/orders/${code}/`),
+  cancel: (code: string) => api.post<ApiOrderDetail>(`/api/orders/${code}/cancel/`),
 }
 
 export type ApiAdminOrder = {
