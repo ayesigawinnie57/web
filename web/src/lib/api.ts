@@ -361,6 +361,8 @@ export const ordersApi = {
   list: () => api.get<ApiOrderDetail[]>('/api/orders/'),
   get: (code: string) => api.get<ApiOrderDetail>(`/api/orders/${code}/`),
   cancel: (code: string) => api.post<ApiOrderDetail>(`/api/orders/${code}/cancel/`),
+  rate: (code: string, payload: { overall: number; areas: string[]; area_ratings: Record<string, number>; comment: string }) =>
+    api.post(`/api/orders/${code}/rate/`, payload),
 }
 
 export type ApiAdminOrder = {

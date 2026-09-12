@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { authApi, LOGO } from '../lib/api'
 import Navbar from '../landing/Navbar'
@@ -7,6 +7,8 @@ import Footer from '../landing/Footer'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const nextPath = new URLSearchParams(location.search).get('next')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -33,7 +35,7 @@ export default function LoginPage() {
       } catch {
         authApi.saveProfile(email.trim(), email.trim(), isStaff)
       }
-      navigate(isStaff ? '/admin' : '/', { replace: true })
+      navigate(isStaff ? '/admin' : (nextPath ?? '/'), { replace: true })
     } catch (requestError: any) {
       setError(requestError?.response?.data?.detail ?? 'Invalid email or password.')
     } finally { setLoading(false) }

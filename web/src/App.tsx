@@ -36,6 +36,7 @@ import NotificationsPage from './pages/NotificationsPage'
 import NotificationDetailPage from './pages/NotificationDetailPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import RateOrderPage from './pages/RateOrderPage'
 
 function SiteOffline() {
   return (
@@ -79,6 +80,7 @@ export default function App() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/notifications/:slug" element={<NotificationDetailPage />} />
         <Route path="/account" element={<AccountPage />} />
+        <Route path="/rate/:code" element={<RateOrderPage />} />
         <Route element={<AdminGuard />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
