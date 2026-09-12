@@ -1,42 +1,44 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { NotificationProvider } from './lib/NotificationContext'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BASE_URL } from './lib/api'
-import LandingPage from './landing'
-import ProductPage from './pages/ProductPage'
-import CartPage from './pages/CartPage'
-import CheckoutPage from './pages/CheckoutPage'
-import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
-import ShopPage from './pages/ShopPage'
-import CategoryPage from './pages/CategoryPage'
-import DealsPage from './pages/DealsPage'
-import AdminGuard from './admin/AdminGuard'
-import AdminLayout from './admin/AdminLayout'
-import AdminDashboard from './admin/AdminDashboard'
-import AdminProducts from './admin/products/index'
-import AddProduct from './admin/products/add'
-import EditProduct from './admin/products/[id]'
-import AdminCategories from './admin/categories/index'
-import AddCategory from './admin/categories/add'
-import EditCategory from './admin/categories/[id]'
-import AdminOrders from './admin/orders/index'
-import AdminOrderDetail from './admin/orders/[code]'
-import AdminFlashSales from './admin/flashsales/index'
-import AddFlashSale from './admin/flashsales/add'
-import AdminUsers from './admin/users/index'
-import AdminPayments from './admin/payments/index'
-import AdminAccount from './admin/account'
-import AdminSettings from './admin/settings'
-import WishlistPage from './pages/WishlistPage'
-import AccountPage from './pages/AccountPage'
-import OrdersPage from './pages/OrdersPage'
-import OrderDetailPage from './pages/OrderDetailPage'
-import NotificationsPage from './pages/NotificationsPage'
-import NotificationDetailPage from './pages/NotificationDetailPage'
-import ForgotPasswordPage from './pages/ForgotPasswordPage'
-import ResetPasswordPage from './pages/ResetPasswordPage'
-import RateOrderPage from './pages/RateOrderPage'
+
+const LandingPage            = lazy(() => import('./landing'))
+const ProductPage            = lazy(() => import('./pages/ProductPage'))
+const CartPage               = lazy(() => import('./pages/CartPage'))
+const CheckoutPage           = lazy(() => import('./pages/CheckoutPage'))
+const LoginPage              = lazy(() => import('./pages/LoginPage'))
+const RegisterPage           = lazy(() => import('./pages/RegisterPage'))
+const ShopPage               = lazy(() => import('./pages/ShopPage'))
+const CategoryPage           = lazy(() => import('./pages/CategoryPage'))
+const DealsPage              = lazy(() => import('./pages/DealsPage'))
+const WishlistPage           = lazy(() => import('./pages/WishlistPage'))
+const AccountPage            = lazy(() => import('./pages/AccountPage'))
+const OrdersPage             = lazy(() => import('./pages/OrdersPage'))
+const OrderDetailPage        = lazy(() => import('./pages/OrderDetailPage'))
+const NotificationsPage      = lazy(() => import('./pages/NotificationsPage'))
+const NotificationDetailPage = lazy(() => import('./pages/NotificationDetailPage'))
+const ForgotPasswordPage     = lazy(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage      = lazy(() => import('./pages/ResetPasswordPage'))
+const RateOrderPage          = lazy(() => import('./pages/RateOrderPage'))
+
+const AdminGuard      = lazy(() => import('./admin/AdminGuard'))
+const AdminLayout     = lazy(() => import('./admin/AdminLayout'))
+const AdminDashboard  = lazy(() => import('./admin/AdminDashboard'))
+const AdminProducts   = lazy(() => import('./admin/products/index'))
+const AddProduct      = lazy(() => import('./admin/products/add'))
+const EditProduct     = lazy(() => import('./admin/products/[id]'))
+const AdminCategories = lazy(() => import('./admin/categories/index'))
+const AddCategory     = lazy(() => import('./admin/categories/add'))
+const EditCategory    = lazy(() => import('./admin/categories/[id]'))
+const AdminOrders     = lazy(() => import('./admin/orders/index'))
+const AdminOrderDetail = lazy(() => import('./admin/orders/[code]'))
+const AdminFlashSales = lazy(() => import('./admin/flashsales/index'))
+const AddFlashSale    = lazy(() => import('./admin/flashsales/add'))
+const AdminUsers      = lazy(() => import('./admin/users/index'))
+const AdminPayments   = lazy(() => import('./admin/payments/index'))
+const AdminAccount    = lazy(() => import('./admin/account'))
+const AdminSettings   = lazy(() => import('./admin/settings'))
 
 function SiteOffline() {
   return (
@@ -62,45 +64,47 @@ export default function App() {
   return (
     <NotificationProvider>
     <HashRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/shop" element={<ShopPage />} />
-        <Route path="/categories" element={<CategoryPage />} />
-        <Route path="/deals" element={<DealsPage />} />
-        <Route path="/shop/:slug" element={<ProductPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/wishlist" element={<WishlistPage />} />
-        <Route path="/orders" element={<OrdersPage />} />
-        <Route path="/orders/:code" element={<OrderDetailPage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/notifications/:slug" element={<NotificationDetailPage />} />
-        <Route path="/account" element={<AccountPage />} />
-        <Route path="/rate/:code" element={<RateOrderPage />} />
-        <Route element={<AdminGuard />}>
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="products/add" element={<AddProduct />} />
-            <Route path="products/:id" element={<EditProduct />} />
-            <Route path="categories" element={<AdminCategories />} />
-            <Route path="categories/add" element={<AddCategory />} />
-            <Route path="categories/:id" element={<EditCategory />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="orders/:code" element={<AdminOrderDetail />} />
-            <Route path="flashsales" element={<AdminFlashSales />} />
-            <Route path="flashsales/add" element={<AddFlashSale />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="payments" element={<AdminPayments />} />
-            <Route path="account" element={<AdminAccount />} />
-            <Route path="settings" element={<AdminSettings />} />
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/categories" element={<CategoryPage />} />
+          <Route path="/deals" element={<DealsPage />} />
+          <Route path="/shop/:slug" element={<ProductPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/orders/:code" element={<OrderDetailPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/notifications/:slug" element={<NotificationDetailPage />} />
+          <Route path="/account" element={<AccountPage />} />
+          <Route path="/rate/:code" element={<RateOrderPage />} />
+          <Route element={<AdminGuard />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="products/add" element={<AddProduct />} />
+              <Route path="products/:id" element={<EditProduct />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="categories/add" element={<AddCategory />} />
+              <Route path="categories/:id" element={<EditCategory />} />
+              <Route path="orders" element={<AdminOrders />} />
+              <Route path="orders/:code" element={<AdminOrderDetail />} />
+              <Route path="flashsales" element={<AdminFlashSales />} />
+              <Route path="flashsales/add" element={<AddFlashSale />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="account" element={<AdminAccount />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
+        </Routes>
+      </Suspense>
     </HashRouter>
     </NotificationProvider>
   )

@@ -28,6 +28,7 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false)
   const [error, setError] = useState('')
   const [order, setOrder] = useState<ApiOrder | null>(null)
+  const { refresh: refreshNotifications } = useNotifications()
 
   useEffect(() => {
     const cached = (() => { try { return JSON.parse(localStorage.getItem('majo_user') ?? 'null') } catch { return null } })()
