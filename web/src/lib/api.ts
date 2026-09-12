@@ -219,7 +219,7 @@ export const productsApi = {
   list: (params?: string) => cachedRequest(`products:list:${params ?? ''}`, () => api.get<{ results: ApiProduct[] }>(`/api/products/${params ? '?' + params : ''}`)),
   bySlug: (slug: string) => cachedRequest(`products:slug:${slug}`, () => api.get<ApiProduct>(`/api/products/${slug}/`)),
   byCategory: (categorySlug: string) => cachedRequest(`products:category:${categorySlug}`, () => api.get<{ results: ApiProduct[] }>(`/api/products/?category=${categorySlug}`)),
-  categories: () => cachedRequest('products:categories', () => api.get<ApiCategory[]>('/api/products/categories/')),
+  categories: () => cachedRequest('products:categories:v2', () => api.get<ApiCategory[]>('/api/products/categories/')),
   flashSales: () => cachedRequest('products:flash-sales', () => api.get<ApiFlashSale[]>('/api/products/flash-sales/?active=1')),
   reviews: (slug: string) => api.get<ApiReview[]>(`/api/products/${slug}/reviews/`),
   ratingSummary: (slug: string) => api.get<{ average: number; total: number; breakdown: Record<string, number>; with_photos: number }>(`/api/products/${slug}/reviews/summary/`),
