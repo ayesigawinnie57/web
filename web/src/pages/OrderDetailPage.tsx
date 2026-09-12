@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { CheckCircle, Circle, Package, Truck, MapPin, XCircle } from 'lucide-react'
-import { ordersApi, type ApiOrderDetail } from '../lib/api'
+import { ordersApi, hasAccessToken, type ApiOrderDetail } from '../lib/api'
 import { pushNotification } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -67,6 +67,7 @@ function StatusTimeline({ status }: { status: Status }) {
 
 export default function OrderDetailPage() {
   const { code } = useParams<{ code: string }>()
+  const navigate = useNavigate()
   const [order, setOrder] = useState<ApiOrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -74,6 +75,7 @@ export default function OrderDetailPage() {
   const [confirmCancel, setConfirmCancel] = useState(false)
 
   useEffect(() => {
+    if (!hasAccessToken()) { navigate('/login'); return }
     if (!code) return
     ordersApi.get(code)
       .then(r => setOrder(r.data))

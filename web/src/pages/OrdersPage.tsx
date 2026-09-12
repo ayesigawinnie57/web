@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Package } from 'lucide-react'
-import { ordersApi, type ApiOrderDetail } from '../lib/api'
+import { ordersApi, hasAccessToken, type ApiOrderDetail } from '../lib/api'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
@@ -24,13 +24,15 @@ const STATUS_LABEL: Record<string, string> = {
 const money = (v: string | number) => Number(v).toLocaleString()
 
 export default function OrdersPage() {
+  const navigate = useNavigate()
   const [orders, setOrders] = useState<ApiOrderDetail[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (!hasAccessToken()) { navigate('/login'); return }
     ordersApi.list()
-      .then(r => setOrders(r.data))
+      .then(r => setOrders(Array.isArray(r.data) ? r.data : (r.data as any).results ?? []))
       .catch(() => setError('Failed to load orders.'))
       .finally(() => setLoading(false))
   }, [])
