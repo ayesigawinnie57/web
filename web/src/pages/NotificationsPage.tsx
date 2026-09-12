@@ -44,7 +44,7 @@ export default function NotificationsPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <main className="pt-14 lg:pt-16 px-4 py-8 max-w-2xl mx-auto">
+      <main className="pt-14 lg:pt-16 px-4 lg:px-8 py-8 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           {selecting ? (
             <>
