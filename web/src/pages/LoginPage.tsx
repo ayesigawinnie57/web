@@ -68,19 +68,6 @@ export default function LoginPage() {
 
   const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
 
-  useEffect(() => {
-    const hash = new URLSearchParams(window.location.hash.slice(1))
-    const accessToken = hash.get('access_token')
-    if (accessToken) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
-      setLoading(true)
-      authApi.googleLogin(accessToken)
-        .then(({ data }) => afterLogin(data.access, data.refresh))
-        .catch(() => setError('Google sign-in failed. Please try again.'))
-        .finally(() => setLoading(false))
-    }
-  }, [])
-
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
