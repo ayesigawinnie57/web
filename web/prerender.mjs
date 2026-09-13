@@ -74,3 +74,25 @@ for (const p of products) {
 }
 
 console.log('Pre-rendering complete.')
+
+// Generate sitemap with all product URLs
+const staticUrls = [
+  { loc: 'https://www.majogadgets.com/', priority: '1.0', changefreq: 'daily' },
+  { loc: 'https://www.majogadgets.com/shop', priority: '0.9', changefreq: 'daily' },
+  { loc: 'https://www.majogadgets.com/categories', priority: '0.8', changefreq: 'weekly' },
+  { loc: 'https://www.majogadgets.com/deals', priority: '0.8', changefreq: 'daily' },
+  { loc: 'https://www.majogadgets.com/login', priority: '0.4', changefreq: 'never' },
+  { loc: 'https://www.majogadgets.com/register', priority: '0.4', changefreq: 'never' },
+]
+const productUrls = products.map(p => ({
+  loc: `https://www.majogadgets.com/shop/${p.slug}`,
+  priority: '0.7',
+  changefreq: 'weekly',
+}))
+const allUrls = [...staticUrls, ...productUrls]
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${allUrls.map(u => `  <url><loc>${u.loc}</loc><changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority></url>`).join('\n')}
+</urlset>`
+writeFileSync(join(DIST, 'sitemap.xml'), sitemap)
+console.log(`Sitemap generated with ${allUrls.length} URLs.`)
