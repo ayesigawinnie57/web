@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { BookOpen, Grid2X2, Home, ShoppingBag, Sparkles, Trophy } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -30,6 +31,11 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Categories – Majo Gadgets</title>
+        <meta name="description" content="Browse all product categories on Majo Gadgets. Find electronics, accessories, and more." />
+        <link rel="canonical" href="https://www.majogadgets.com/categories" />
+      </Helmet>
       <Navbar />
       <main className="pt-14 lg:pt-16 max-w-6xl mx-auto px-4 py-8">
         <div className="mb-8"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1E3A8A]">Explore Majo Gadgets</p><h1 className="text-3xl font-extrabold text-[#071A2B] mt-1">Categories</h1><p className="text-[13px] text-[#64748B] mt-2">Find products by category.</p></div>

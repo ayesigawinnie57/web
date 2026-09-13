@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cartApi, productsApi, wishlistApi, notifyWishlistUpdated, toProduct, type Product, type ApiReview } from '../lib/api'
 import ProductCard from '../components/ProductCard'
@@ -92,6 +93,11 @@ export default function ProductPage() {
 
   if (!product) return null
 
+  const pageTitle = `${product.name} – Majo Gadgets`
+  const pageDesc = product.shortDescription.trim() || `Buy ${product.name} at UGX ${product.price.toLocaleString()} on Majo Gadgets. Fast delivery across Uganda.`
+  const pageImage = product.image || 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789111152/Majo_Gadgets_logo_an2hbc.png'
+  const pageUrl = `https://www.majogadgets.com/shop/${product.slug}`
+
   const discount = product.originalPrice
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null
@@ -157,6 +163,20 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDesc} />
+        <link rel="canonical" href={pageUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDesc} />
+        <meta property="og:image" content={pageImage} />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:type" content="product" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDesc} />
+        <meta name="twitter:image" content={pageImage} />
+      </Helmet>
       <Navbar />
       {cartToast && (
         <div className="fixed top-20 right-4 z-[100] flex items-center gap-2 bg-[#071A2B] text-white px-4 py-3 rounded-xl shadow-xl text-[13px] font-semibold" role="status">

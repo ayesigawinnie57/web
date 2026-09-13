@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { Flame, Timer } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -38,6 +39,11 @@ export default function DealsPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Deals &amp; Flash Sales – Majo Gadgets</title>
+        <meta name="description" content="Grab limited-time deals and flash sales on Majo Gadgets. Save big on electronics and accessories while stock lasts." />
+        <link rel="canonical" href="https://www.majogadgets.com/deals" />
+      </Helmet>
       <Navbar />
       <main className="pt-14 lg:pt-16">
         <section className="bg-[#071A2B] px-4 py-12 sm:py-16">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -60,6 +61,11 @@ export default function ShopPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>{heading} – Majo Gadgets</title>
+        <meta name="description" content={`Shop ${heading.toLowerCase()} on Majo Gadgets. Great prices, fast delivery across Uganda.`} />
+        <link rel="canonical" href="https://www.majogadgets.com/shop" />
+      </Helmet>
       <Navbar />
       <main className="pt-14 lg:pt-16 max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-7">
