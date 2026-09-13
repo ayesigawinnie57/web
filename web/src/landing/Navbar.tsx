@@ -306,24 +306,21 @@ export default function Navbar() {
             </div>
             <div className="border-b border-[#E2E8F0] py-2">
               {user && (
-                <Link to="/account" onClick={() => setAccountOpen(false)} className="w-full flex items-center justify-between py-3.5 text-[15px] font-semibold text-[#071A2B]">
+                <Link to="/account" onClick={() => setAccountOpen(false)} className="w-full flex items-center justify-between py-3.5 text-[13px] font-semibold text-[#071A2B]">
                   My Account<span className="text-2xl text-[#64748B] leading-none">›</span>
                 </Link>
               )}
-              <Link to="/orders" onClick={() => setAccountOpen(false)} className="w-full flex items-center justify-between py-3.5 text-[15px] font-semibold text-[#071A2B]">
+              <Link to="/orders" onClick={() => setAccountOpen(false)} className="w-full flex items-center justify-between py-3.5 text-[13px] font-semibold text-[#071A2B]">
                 My Orders<span className="text-2xl text-[#64748B] leading-none">›</span>
               </Link>
-              <Link to="/wishlist" onClick={() => setAccountOpen(false)} className="w-full flex items-center justify-between py-3.5 text-[15px] font-semibold text-[#071A2B]">
+              <Link to="/wishlist" onClick={() => setAccountOpen(false)} className="w-full flex items-center justify-between py-3.5 text-[13px] font-semibold text-[#071A2B]">
                 Wishlist<span className="text-2xl text-[#64748B] leading-none">›</span>
               </Link>
             </div>
             {user ? (
-              <button onClick={signOut} className="mt-6 bg-red-500 text-white text-[15px] font-bold py-3.5 rounded-[10px] text-center block w-full">Sign Out</button>
+              <button onClick={signOut} className="mt-6 bg-red-500 text-white text-[13px] font-bold py-3.5 rounded-xl text-center block w-full">Sign Out</button>
             ) : (
-              <>
-                <Link to="/login" onClick={() => setAccountOpen(false)} className="mt-6 bg-[#1E3A8A] text-white text-[15px] font-bold py-3.5 rounded-[10px] text-center block">Sign In</Link>
-                <Link to="/register" onClick={() => setAccountOpen(false)} className="mt-3 border border-[#E2E8F0] text-[#071A2B] text-[15px] font-bold py-3.5 rounded-[10px] text-center block">Create Account</Link>
-              </>
+              <Link to="/login" onClick={() => setAccountOpen(false)} className="mt-6 bg-[#1E3A8A] text-white text-[13px] font-bold py-3.5 text-center block">Sign In</Link>
             )}
           </div>
         </div>

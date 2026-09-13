@@ -87,10 +87,9 @@ export default function LoginPage() {
         <form onSubmit={submit} className="space-y-5">
           <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
           <label className="block"><span className="block text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] mb-2">Password</span><div className="relative"><input required type={showPassword ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder="Enter your password" className="w-full px-3 py-3 pr-11 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] outline-none focus:border-[#1E3A8A]" /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-2.5 text-[#64748B]">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
-          <button disabled={loading} className="w-full h-12 bg-[#1E3A8A] text-white text-[14px] font-bold disabled:opacity-50">{loading ? 'Signing in...' : 'Sign In'}</button>
+          <button disabled={loading} className="w-full h-12 bg-[#1E3A8A] text-white rounded-xl text-[13px] font-bold disabled:opacity-60 hover:opacity-90">{loading ? 'Signing in...' : 'Sign In'}</button>
         </form>
-        <p className="text-center text-[13px] text-[#64748B] mt-6">Don't have an account? <Link to="/register" className="font-bold text-[#1E3A8A]">Sign Up</Link></p>
-        <p className="text-center text-[13px] text-[#64748B] mt-2"><Link to="/forgot-password" className="font-bold text-[#1E3A8A]">Forgot password?</Link></p>
+        <p className="text-center text-[13px] text-[#64748B] mt-6"><Link to="/forgot-password" className="font-bold text-[#1E3A8A]">Forgot password?</Link></p>
         {hasGoogleClientId && <GoogleButton loading={loading} onSuccess={afterLogin} onError={setError} onNeedsProfile={setPendingProfile} />}
       </section>
     </div>
@@ -125,7 +124,7 @@ function GoogleButton({ loading, onSuccess, onError, onNeedsProfile }: {
         <span className="text-[12px] text-[#94A3B8]">or</span>
         <div className="flex-1 h-px bg-[#E2E8F0]" />
       </div>
-      <button type="button" onClick={() => googleLogin()} disabled={loading} className="w-full h-12 flex items-center justify-center gap-3 border border-[#E2E8F0] bg-white text-[#071A2B] text-[14px] font-bold hover:bg-[#F8FAFC] transition-colors disabled:opacity-50">
+      <button type="button" onClick={() => googleLogin()} disabled={loading} className="w-full h-12 flex items-center justify-center gap-3 border border-[#E2E8F0] rounded-xl bg-white text-[#071A2B] text-[13px] font-bold hover:bg-[#F8FAFC] transition-colors disabled:opacity-50">
         <svg width="20" height="20" viewBox="0 0 48 48">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
