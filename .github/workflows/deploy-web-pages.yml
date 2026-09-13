@@ -31,10 +31,11 @@ jobs:
       - name: Build web app
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_BASE_PATH: /
         run: |
           npm run build
           cp dist/index.html dist/404.html
+          echo 'www.majogadgets.com' > dist/CNAME
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
