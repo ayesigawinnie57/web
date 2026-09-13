@@ -178,7 +178,6 @@ export default function AccountPage() {
               <div>
                 <p className="text-[18px] font-extrabold text-[#071A2B]">{cached?.name ?? 'User'}</p>
                 <p className="text-[12px] text-[#64748B]">{cached?.email ?? ''}</p>
-                <span className="inline-block mt-1 text-[10px] font-bold text-[#1E3A8A] bg-blue-50 px-2 py-0.5 rounded-full">My Account</span>
               </div>
             </div>
 
