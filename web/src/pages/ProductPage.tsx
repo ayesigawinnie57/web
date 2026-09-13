@@ -162,13 +162,27 @@ export default function ProductPage() {
     finally { setSharing(false) }
   }
 
-  const addToCart = async (goToCart = false) => {
-    if (inCart || goToCart) { navigate(goToCart ? '/checkout' : '/cart'); return }
+  const addToCart = async () => {
+    if (inCart) { navigate('/cart'); return }
     setCartBusy(true)
     try {
       await cartApi.add(product, qty)
       setInCart(true)
       showToast(`${product.name} added to cart`)
+    } catch {
+      showToast('Could not add to cart. Please try again.')
+    } finally {
+      setCartBusy(false)
+    }
+  }
+
+  const buyNow = async () => {
+    if (inCart) { navigate('/cart'); return }
+    setCartBusy(true)
+    try {
+      await cartApi.add(product, qty)
+      setInCart(true)
+      navigate('/cart')
     } catch {
       showToast('Could not add to cart. Please try again.')
     } finally {
@@ -345,7 +359,7 @@ export default function ProductPage() {
                   {/* Add to cart */}
                   <button
                     disabled={product.stock === 0 || cartBusy}
-                    onClick={() => addToCart()}
+                    onClick={addToCart}
                     className="flex-1 h-11 bg-[#1E3A8A] text-white font-bold text-[14px] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -356,11 +370,11 @@ export default function ProductPage() {
 
                   {/* Buy now */}
                   <button
-                    disabled={product.stock === 0}
-                    onClick={() => addToCart(true)}
+                    disabled={product.stock === 0 || cartBusy}
+                    onClick={buyNow}
                     className="flex-1 h-11 border-2 border-[#1E3A8A] text-[#1E3A8A] font-bold text-[14px] rounded-xl hover:bg-[#EFF6FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    Buy Now
+                    {inCart ? 'Go to Cart' : 'Buy Now'}
                   </button>
                 </div>
 
