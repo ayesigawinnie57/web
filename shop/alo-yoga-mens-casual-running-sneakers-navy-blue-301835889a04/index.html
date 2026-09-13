@@ -31,6 +31,16 @@
     <meta name="twitter:image" content="https://res.cloudinary.com/fhklnn0f/image/upload/v1789139349/products/uarawxucpdmwznzlqlpq.jpg" />
     <meta name="google-site-verification" content="YpMx-4-WEJOxN-UR38wasbXGabCvi_HYuBG0324faN8" />
     <script>var r=sessionStorage.redirect;delete sessionStorage.redirect;if(r&&r!==location.href)history.replaceState(null,null,r)</script>
+    <script>
+      window.addEventListener('vite:preloadError', function() {
+        if (!sessionStorage.getItem('reloaded')) {
+          sessionStorage.setItem('reloaded', '1')
+          window.location.reload(true)
+        } else {
+          sessionStorage.removeItem('reloaded')
+        }
+      })
+    </script>
     <script type="module" crossorigin src="/assets/index-7cpcPW2N.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-B-EtLU_X.css">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Alo Yoga Men'S Casual Running Sneakers – Navy Blue","description":"Stylish navy blue Alo Yoga sneakers with a lightweight sporty design, cushioned sole, and comfortable fit for everyday wear and active lifestyles.","image":["https://res.cloudinary.com/fhklnn0f/image/upload/v1789139349/products/uarawxucpdmwznzlqlpq.jpg"],"url":"https://www.majogadgets.com/shop/alo-yoga-mens-casual-running-sneakers-navy-blue-301835889a04","sku":"8","brand":{"@type":"Brand","name":"Majo Gadgets"},"category":"Shoes","offers":{"@type":"Offer","priceCurrency":"UGX","price":150000,"availability":"https://schema.org/InStock","url":"https://www.majogadgets.com/shop/alo-yoga-mens-casual-running-sneakers-navy-blue-301835889a04","seller":{"@type":"Organization","name":"Majo Gadgets"}}}</script>

@@ -31,6 +31,16 @@
     <meta name="twitter:image" content="https://res.cloudinary.com/fhklnn0f/image/upload/v1789139036/products/knkz1gtt4cji4xc7q5hj.webp" />
     <meta name="google-site-verification" content="YpMx-4-WEJOxN-UR38wasbXGabCvi_HYuBG0324faN8" />
     <script>var r=sessionStorage.redirect;delete sessionStorage.redirect;if(r&&r!==location.href)history.replaceState(null,null,r)</script>
+    <script>
+      window.addEventListener('vite:preloadError', function() {
+        if (!sessionStorage.getItem('reloaded')) {
+          sessionStorage.setItem('reloaded', '1')
+          window.location.reload(true)
+        } else {
+          sessionStorage.removeItem('reloaded')
+        }
+      })
+    </script>
     <script type="module" crossorigin src="/assets/index-7cpcPW2N.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-B-EtLU_X.css">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"64Gb Raspberry Pi Microsd Card With Raspberry Pi Os Pre-Installed","description":"Ready-to-use 64GB microSD card with Raspberry Pi OS pre-installed, providing convenient storage and a quick setup solution for Raspberry Pi projects.","image":["https://res.cloudinary.com/fhklnn0f/image/upload/v1789139036/products/knkz1gtt4cji4xc7q5hj.webp"],"url":"https://www.majogadgets.com/shop/64gb-raspberry-pi-microsd-card-with-raspberry-pi-os-pre-installed-2c565c96360c","sku":"6","brand":{"@type":"Brand","name":"Majo Gadgets"},"category":"Arduino","offers":{"@type":"Offer","priceCurrency":"UGX","price":40000,"availability":"https://schema.org/InStock","url":"https://www.majogadgets.com/shop/64gb-raspberry-pi-microsd-card-with-raspberry-pi-os-pre-installed-2c565c96360c","seller":{"@type":"Organization","name":"Majo Gadgets"}}}</script>
