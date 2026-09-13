@@ -318,7 +318,7 @@ export default function Navbar() {
               </Link>
             </div>
             {user ? (
-              <button onClick={signOut} className="mt-6 bg-red-500 text-white text-[13px] font-bold py-3.5 rounded-xl text-center block w-full">Sign Out</button>
+              <button onClick={signOut} className="mt-6 bg-red-500 text-white text-[13px] font-bold py-3.5 text-center block w-full">Sign Out</button>
             ) : (
               <Link to="/login" onClick={() => setAccountOpen(false)} className="mt-6 bg-[#1E3A8A] text-white text-[13px] font-bold py-3.5 text-center block">Sign In</Link>
             )}
