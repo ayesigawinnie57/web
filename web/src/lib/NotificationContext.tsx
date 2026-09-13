@@ -12,6 +12,15 @@ export type Notification = {
   body: string
   read: boolean
   createdAt: string
+  slug: string
+}
+
+function toSlug(id: string, title: string) {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 50) + '-' + id
 }
 
 function fromApi(n: ApiNotification): Notification {
@@ -22,6 +31,7 @@ function fromApi(n: ApiNotification): Notification {
     body: n.body,
     read: n.read,
     createdAt: n.created_at,
+    slug: toSlug(String(n.id), n.title),
   }
 }
 

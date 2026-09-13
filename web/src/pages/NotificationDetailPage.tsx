@@ -32,12 +32,14 @@ function formatDate(iso: string) {
 }
 
 export default function NotificationDetailPage() {
-  const { slug } = useParams<{ slug: string }>()   // slug is actually the id now
+  const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const { notifications, markRead, deleteNotification } = useNotifications()
   const [products, setProducts] = useState<Product[]>([])
 
-  const n = notifications.find(x => x.id === slug)
+  // slug format: "some-title-123" — extract id from the last segment
+  const id = slug?.split('-').pop() ?? ''
+  const n = notifications.find(x => x.id === id)
 
   useEffect(() => {
     if (n && !n.read) markRead(n.id)
