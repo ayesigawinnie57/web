@@ -172,7 +172,24 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        <form onSubmit={placeOrder} className={`grid lg:grid-cols-[1fr_320px] gap-8 items-start ${!hasAccessToken() ? 'opacity-40 pointer-events-none select-none' : ''}`}>
+        <form onSubmit={placeOrder} className={`grid lg:grid-cols-[1fr_320px] gap-6 items-start ${!hasAccessToken() ? 'opacity-40 pointer-events-none select-none' : ''}`}>
+          {/* Payment sidebar — shown first on mobile */}
+          <aside className="bg-white border border-[#E2E8F0] p-5 lg:hidden">
+            <div className="flex items-center gap-2">
+              <CreditCard size={18} className="text-[#1E3A8A]" />
+              <h2 className="text-[17px] font-extrabold text-[#071A2B]">Payment</h2>
+            </div>
+            <p className="text-[12px] text-[#64748B] mt-2">Pay via MTN, Airtel or card.</p>
+            <div className="flex justify-between mt-4 text-[13px] text-[#64748B]"><span>Subtotal</span><span>UGX {subtotal.toLocaleString()}</span></div>
+            <div className="flex justify-between mt-2 text-[13px] text-[#64748B]">
+              <span>Delivery</span>
+              <span className="font-bold text-[#071A2B]">{selectedDistrict ? `UGX ${money(districtFee)}` : 'Select district'}</span>
+            </div>
+            <button type="submit" disabled={placing || !items.length || !hasAccessToken()}
+              className="w-full h-11 mt-4 bg-[#1E3A8A] text-white text-[13px] font-bold disabled:opacity-40">
+              {placing ? 'Placing order...' : 'Place Order'}
+            </button>
+          </aside>
           <div className="space-y-8">
             <section>
               <div className="flex items-center gap-3 mb-4">
@@ -303,8 +320,8 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Payment sidebar */}
-          <aside className="bg-white border border-[#E2E8F0] p-5 lg:sticky lg:top-24">
+          {/* Payment sidebar — desktop only */}
+          <aside className="hidden lg:block bg-white border border-[#E2E8F0] p-5 lg:sticky lg:top-24">
             <div className="flex items-center gap-2">
               <CreditCard size={18} className="text-[#1E3A8A]" />
               <h2 className="text-[17px] font-extrabold text-[#071A2B]">Payment</h2>
@@ -317,7 +334,7 @@ export default function CheckoutPage() {
             </div>
             <p className="text-[11px] text-[#94A3B8] mt-3">District delivery fee applies at checkout.</p>
             <button type="submit" disabled={placing || !items.length || !hasAccessToken()}
-              className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold disabled:opacity-40">
+              className="w-full h-11 mt-6 bg-[#1E3A8A] text-white text-[13px] font-bold disabled:opacity-40">
               {placing ? 'Placing order...' : 'Place Order'}
             </button>
           </aside>

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { BASE_URL } from '../lib/api'
+import { Camera } from 'lucide-react'
+import { BASE_URL, authApi } from '../lib/api'
 import { parseError } from '../admin/ErrorBanner'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -49,6 +50,19 @@ async function patchProfile(payload: Record<string, string>) {
   return res.json()
 }
 
+async function uploadAvatar(file: File) {
+  const token = localStorage.getItem('access_token')
+  const form = new FormData()
+  form.append('avatar', file)
+  const res = await fetch(`${BASE_URL}/api/auth/profile/`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  if (!res.ok) throw new Error('Failed to upload avatar.')
+  return res.json()
+}
+
 export default function AccountPage() {
   const navigate = useNavigate()
   const cached = getCachedUser()
@@ -62,7 +76,16 @@ export default function AccountPage() {
   })
   const [editing, setEditing] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   const [toast, setToast] = useState<Toast | null>(null)
+
+  useEffect(() => {
+    authApi.profile().then(r => {
+      if ((r.data as any).avatar) setAvatarUrl((r.data as any).avatar)
+    }).catch(() => {})
+  }, [])
   const [confirmLogout, setConfirmLogout] = useState(false)
 
   const showToast = (message: string, type: Toast['type'] = 'success') => setToast({ message, type })
@@ -74,6 +97,21 @@ export default function AccountPage() {
     setEditing(null)
     setForm(f => ({ ...f, currentPassword: '', newPassword: '', passwordConfirm: '' }))
     setToast(null)
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingAvatar(true)
+    try {
+      const updated = await uploadAvatar(file)
+      setAvatarUrl(updated.avatar ?? null)
+      showToast('Profile picture updated.')
+    } catch (err) {
+      showToast(parseError(err, 'Failed to upload picture.'), 'error')
+    } finally {
+      setUploadingAvatar(false)
+    }
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -123,11 +161,20 @@ export default function AccountPage() {
 
         <div className="lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.9fr)] lg:gap-6 xl:gap-8">
           <div>
-            {/* Avatar + name */}
+            {/* Avatar */}
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 rounded-full bg-[#1E3A8A] flex items-center justify-center shrink-0">
-                <span className="text-white text-xl font-extrabold">{initials}</span>
-              </div>
+              <button type="button" onClick={() => avatarInputRef.current?.click()}
+                className="relative w-16 h-16 rounded-full bg-[#1E3A8A] flex items-center justify-center shrink-0 overflow-hidden group">
+                {avatarUrl
+                  ? <img src={avatarUrl} className="w-full h-full object-cover" />
+                  : <span className="text-white text-xl font-extrabold">{initials}</span>}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {uploadingAvatar
+                    ? <svg className="w-5 h-5 animate-spin text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    : <Camera size={18} className="text-white" />}
+                </div>
+              </button>
+              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
               <div>
                 <p className="text-[18px] font-extrabold text-[#071A2B]">{cached?.name ?? 'User'}</p>
                 <p className="text-[12px] text-[#64748B]">{cached?.email ?? ''}</p>
