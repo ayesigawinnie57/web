@@ -31,6 +31,16 @@
     <meta name="twitter:image" content="https://www.majogadgets.com/OG.png" />
     <meta name="google-site-verification" content="YpMx-4-WEJOxN-UR38wasbXGabCvi_HYuBG0324faN8" />
     <script>var r=sessionStorage.redirect;delete sessionStorage.redirect;if(r&&r!==location.href)history.replaceState(null,null,r)</script>
+    <script>
+      window.addEventListener('vite:preloadError', function() {
+        if (!sessionStorage.getItem('reloaded')) {
+          sessionStorage.setItem('reloaded', '1')
+          window.location.reload(true)
+        } else {
+          sessionStorage.removeItem('reloaded')
+        }
+      })
+    </script>
   </head>
   <body>
     <div id="root"></div>
