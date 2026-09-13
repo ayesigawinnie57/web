@@ -176,6 +176,34 @@ export default function ProductPage() {
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDesc} />
         <meta name="twitter:image" content={pageImage} />
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: product.name,
+          description: pageDesc,
+          image: allImages,
+          url: pageUrl,
+          sku: String(product.id),
+          brand: { '@type': 'Brand', name: 'Majo Gadgets' },
+          category: product.categoryName,
+          offers: {
+            '@type': 'Offer',
+            priceCurrency: 'UGX',
+            price: product.price,
+            availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            url: pageUrl,
+            seller: { '@type': 'Organization', name: 'Majo Gadgets' },
+          },
+          ...(summary && summary.total > 0 ? {
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: summary.average.toFixed(1),
+              reviewCount: summary.total,
+              bestRating: 5,
+              worstRating: 1,
+            }
+          } : {}),
+        })}</script>
       </Helmet>
       <Navbar />
       {cartToast && (
