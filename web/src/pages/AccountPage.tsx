@@ -156,7 +156,7 @@ export default function AccountPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <main className="pt-14 lg:pt-16 pb-24 lg:pb-12 px-4 py-8 max-w-6xl mx-auto">
+      <main className="pt-28 lg:pt-24 pb-24 lg:pb-12 px-4 py-8 max-w-6xl mx-auto">
         <ToastAlert toast={toast} onDone={() => setToast(null)} />
 
         <div className="lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.9fr)] lg:gap-6 xl:gap-8">
