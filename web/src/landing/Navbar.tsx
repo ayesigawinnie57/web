@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings, ShoppingBag } from 'lucide-react'
-import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory } from '../lib/api'
+import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
@@ -72,8 +72,15 @@ export default function Navbar() {
     }
   }, [])
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+
   useEffect(() => {
-    if (accountOpen) setUser(getCachedUser())
+    if (accountOpen && hasAccessToken()) {
+      setUser(getCachedUser())
+      authApi.profile().then(r => {
+        if ((r.data as any).avatar) setAvatarUrl(cloudinaryUrl((r.data as any).avatar))
+      }).catch(() => {})
+    }
   }, [accountOpen])
 
   const [catNav, setCatNav] = useState<ApiCategory[]>([])
@@ -296,8 +303,10 @@ export default function Navbar() {
               </button>
             </div>
             <div className="flex items-center gap-2 py-6 border-b border-[#E2E8F0]">
-              <div className="w-[52px] h-[52px] rounded-full bg-[#1E3A8A] flex items-center justify-center shrink-0">
-                <span className="text-white text-lg font-extrabold">{user ? user.name.slice(0, 2).toUpperCase() : 'UN'}</span>
+              <div className="w-[52px] h-[52px] rounded-full bg-[#1E3A8A] flex items-center justify-center shrink-0 overflow-hidden">
+                {avatarUrl
+                  ? <img src={avatarUrl} className="w-full h-full object-cover" />
+                  : <span className="text-white text-lg font-extrabold">{user ? user.name.slice(0, 2).toUpperCase() : 'UN'}</span>}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-bold text-[#071A2B]">{user ? user.name : 'Guest'}</p>
