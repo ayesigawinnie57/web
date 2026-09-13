@@ -1,7 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.majogadgets.com/</loc><priority>1.0</priority></url>
-  <url><loc>https://www.majogadgets.com/shop</loc><priority>0.9</priority></url>
-  <url><loc>https://www.majogadgets.com/categories</loc><priority>0.8</priority></url>
-  <url><loc>https://www.majogadgets.com/deals</loc><priority>0.8</priority></url>
+  <url><loc>https://www.majogadgets.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.majogadgets.com/shop</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.majogadgets.com/categories</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.majogadgets.com/deals</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.majogadgets.com/login</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+  <url><loc>https://www.majogadgets.com/register</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/hc-sr04-ultrasonic-distance-sensor-module-8d831b44cd57</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/12v-dc-solenoid-valve-im3-54e8eefa5e7b</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/gy-neo6mv2-gps-module-with-ceramic-antenna-4552dff6677a</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/micro-sd-card-module-spi-interface-tf-card-reader-80b2d48b8911</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/esp32-cam-wifi-camera-module-with-ov2640-72267f1aee15</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/jsn-sr04t-30-waterproof-ultrasonic-distance-sensor-023a2a7706e5</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/esp32-wroom-32-wifi-bluetooth-development-board-b134b327545a</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/alo-yoga-mens-casual-running-sneakers-navy-blue-301835889a04</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/aneng-m118a-digital-mini-multimeter-tester-584c941a1283</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/64gb-raspberry-pi-microsd-card-with-raspberry-pi-os-pre-installed-2c565c96360c</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/ds3231-high-precision-real-time-clock-rtc-module-0f935d5ae07d</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/1n4007-diode-e9774bb82206</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/24-in-1-precision-screwdriver-set-5a9689244f82</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/5-in-1-automatic-wire-stripper-cutter-crimping-tool-cd5289ac2355</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/2-in-1-9v-battery-charger-boost-converter-module-dd09cvsa-69e864ee5146</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
 </urlset>
