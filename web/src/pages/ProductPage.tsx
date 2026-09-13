@@ -36,6 +36,7 @@ export default function ProductPage() {
   const [productDetailsExpanded, setProductDetailsExpanded] = useState(false)
   const [cartBusy, setCartBusy] = useState(false)
   const [cartToast, setCartToast] = useState<string | null>(null)
+  const [inCart, setInCart] = useState(false)
 
   useEffect(() => {
     if (!slug) return
@@ -50,6 +51,9 @@ export default function ProductPage() {
     productsApi.bySlug(slug).then(({ data }) => {
       const p = toProduct(data)
       setProduct(p)
+      cartApi.list().then(items => {
+        setInCart(items.some(i => i.product_id === p.id))
+      }).catch(() => undefined)
 
       // Track browsed categories for Recommended section
       if (p.category) {
@@ -149,13 +153,14 @@ export default function ProductPage() {
   }
 
   const addToCart = async (goToCart = false) => {
+    if (inCart || goToCart) { navigate(goToCart ? '/checkout' : '/cart'); return }
     setCartBusy(true)
     try {
       await cartApi.add(product, qty)
-      if (goToCart) navigate('/cart')
-      else showToast(`${product.name} is added to the cart`)
+      setInCart(true)
+      showToast(`${product.name} added to cart`)
     } catch {
-      showToast('We could not add this product to your cart. Please try again.')
+      showToast('Could not add to cart. Please try again.')
     } finally {
       setCartBusy(false)
     }
@@ -329,14 +334,14 @@ export default function ProductPage() {
                 <div className="flex gap-3">
                   {/* Add to cart */}
                   <button
-                    disabled={product.stock === 0}
+                    disabled={product.stock === 0 || cartBusy}
                     onClick={() => addToCart()}
                     className="flex-1 h-11 bg-[#1E3A8A] text-white font-bold text-[14px] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9M9 21a1 1 0 100-2 1 1 0 000 2zm10 0a1 1 0 100-2 1 1 0 000 2z" />
                     </svg>
-                    {cartBusy ? 'Adding...' : 'Add to Cart'}
+                    {cartBusy ? 'Adding...' : inCart ? 'Go to Cart' : 'Add to Cart'}
                   </button>
 
                   {/* Buy now */}
@@ -345,7 +350,7 @@ export default function ProductPage() {
                     onClick={() => addToCart(true)}
                     className="flex-1 h-11 border-2 border-[#1E3A8A] text-[#1E3A8A] font-bold text-[14px] rounded-xl hover:bg-[#EFF6FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {cartBusy ? 'Adding...' : 'Buy Now'}
+                    Buy Now
                   </button>
                 </div>
 
