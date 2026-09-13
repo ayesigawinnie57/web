@@ -152,14 +152,27 @@ export default function CheckoutPage() {
           <Link to="/cart" className="text-[13px] font-bold text-[#1E3A8A]">Back to cart</Link>
         </div>
 
-        {!hasAccessToken() && (
-          <div className="mb-6 p-4 border border-blue-100 bg-blue-50 text-[13px] text-[#1E3A8A]">
-            Please <Link to="/login" className="font-extrabold underline">sign in</Link> to place your order.
-          </div>
-        )}
         {error && <div className="mb-6 p-4 border border-red-100 bg-red-50 text-[13px] font-semibold text-red-600">{error}</div>}
 
-        <form onSubmit={placeOrder} className="grid lg:grid-cols-[1fr_320px] gap-8 items-start">
+        {!hasAccessToken() && (
+          <div className="mb-8 bg-white border border-[#E2E8F0] p-6 text-center">
+            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck size={24} className="text-[#1E3A8A]" />
+            </div>
+            <h2 className="text-[18px] font-extrabold text-[#071A2B]">Sign in to continue</h2>
+            <p className="text-[13px] text-[#64748B] mt-1 mb-5">Sign in to place your order and track it easily.</p>
+            <Link to="/login" state={{ from: '/checkout' }}
+              className="inline-block bg-[#1E3A8A] text-white px-8 py-3 rounded-xl text-[14px] font-bold">
+              Sign in
+            </Link>
+            <p className="text-[12px] text-[#94A3B8] mt-4">
+              No account?{' '}
+              <Link to="/register" state={{ from: '/checkout' }} className="text-[#1E3A8A] font-bold hover:underline">Create one free</Link>
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={placeOrder} className={`grid lg:grid-cols-[1fr_320px] gap-8 items-start ${!hasAccessToken() ? 'opacity-40 pointer-events-none select-none' : ''}`}>
           <div className="space-y-8">
             <section>
               <div className="flex items-center gap-3 mb-4">
