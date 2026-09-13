@@ -1,4 +1,4 @@
-import { type FormEvent, useState, useEffect } from 'react'
+import { type FormEvent, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
@@ -106,9 +106,15 @@ export default function LoginPage() {
 
 function GoogleButton({ loading, onSuccess, onError }: { loading: boolean; onSuccess: (access: string, refresh: string) => Promise<void>; onError: (msg: string) => void }) {
   const googleLogin = useGoogleLogin({
-    flow: 'implicit',
-    ux_mode: 'redirect',
-    redirect_uri: window.location.origin + '/login',
+    onSuccess: async (tokenResponse) => {
+      try {
+        const { data } = await authApi.googleLogin(tokenResponse.access_token)
+        await onSuccess(data.access, data.refresh)
+      } catch {
+        onError('Google sign-in failed. Please try again.')
+      }
+    },
+    onError: () => onError('Google sign-in was cancelled or failed.'),
   })
   return (
     <>
