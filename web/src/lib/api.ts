@@ -243,7 +243,9 @@ export const productsApi = {
 
 export const authApi = {
   login: (email: string, password: string) => api.post<{ access: string; refresh: string }>('/api/auth/login/', { email, password }),
-  googleLogin: (credential: string) => api.post<{ access: string; refresh: string }>('/api/auth/login/google/', { credential }),
+  googleLogin: (credential: string) => api.post<{ access: string; refresh: string } | { needs_profile: true; tmp_token: string; name: string; email: string }>('/api/auth/login/google/', { credential }),
+  completeGoogleProfile: (tmp_token: string, payload: { phone: string; region: string; district: string; village: string }) =>
+    api.post<{ access: string; refresh: string }>('/api/auth/login/google/complete/', { tmp_token, ...payload }),
   register: (payload: { name: string; email: string; phone: string; password: string; country: string; region: string; district: string; village: string }) => api.post<{ access: string; refresh: string }>('/api/auth/register/', payload),
   profile: () => api.get<{ id: number; email: string; name: string; phone: string; region: string; district: string; village: string; is_staff: boolean; is_superuser: boolean }>('/api/auth/profile/'),
   saveTokens: (access: string, refresh: string) => {

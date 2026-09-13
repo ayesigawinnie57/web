@@ -1,8 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { LOGO, BASE_URL } from '../lib/api'
-import Navbar from '../landing/Navbar'
-import Footer from '../landing/Footer'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -29,10 +27,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <Navbar />
-      <main className="pt-14 lg:pt-16 min-h-[calc(100vh-320px)] flex items-center justify-center px-4 py-12">
-        <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
           <img src={LOGO} alt="Majo Gadgets" className="h-12 w-auto object-contain mx-auto mb-7" />
           {sent ? (
             <div className="text-center">
@@ -67,8 +63,6 @@ export default function ForgotPasswordPage() {
             </>
           )}
         </section>
-      </main>
-      <Footer />
     </div>
   )
 }

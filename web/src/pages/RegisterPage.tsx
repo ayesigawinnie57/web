@@ -2,8 +2,6 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown, Eye, EyeOff, UserPlus } from 'lucide-react'
 import { authApi, BASE_URL, LOGO } from '../lib/api'
-import Navbar from '../landing/Navbar'
-import Footer from '../landing/Footer'
 
 const REGIONS = [
   { value: 'Central Region', label: 'Central Uganda' },
@@ -89,10 +87,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <Navbar />
-      <main className="pt-14 lg:pt-16 px-4 py-10">
-        <section className="w-full max-w-2xl mx-auto bg-white border border-[#E2E8F0] p-6 sm:p-8">
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 py-10" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <section className="w-full max-w-2xl bg-white border border-[#E2E8F0] p-6 sm:p-8">
           <img src={LOGO} alt="Majo Gadgets" className="h-12 w-auto object-contain mx-auto mb-7" />
           <div className="flex items-center gap-3 mb-7">
             <div className="w-10 h-10 rounded-full bg-[#EFF6FF] flex items-center justify-center">
@@ -147,9 +143,7 @@ export default function RegisterPage() {
             </button>
           </form>
         </section>
-      </main>
-      <Footer />
-    </div>
+      </div>
   )
 }
 
