@@ -4,6 +4,12 @@ export const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 export const LOGO = 'https://res.cloudinary.com/d5qqtsou/image/upload/v1788691351/Majo_Gadgets_logo_an2hbc.png'
 
+const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME ?? 'fhklnn0f'
+export const cloudinaryUrl = (publicId: string | null | undefined) =>
+  publicId && !publicId.startsWith('http')
+    ? `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/upload/${publicId}`
+    : publicId ?? null
+
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'ngrok-skip-browser-warning': 'true' },

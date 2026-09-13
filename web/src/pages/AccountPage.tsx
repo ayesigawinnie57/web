@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Camera } from 'lucide-react'
-import { BASE_URL, authApi } from '../lib/api'
+import { BASE_URL, authApi, cloudinaryUrl } from '../lib/api'
 import { parseError } from '../admin/ErrorBanner'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -83,7 +83,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     authApi.profile().then(r => {
-      if ((r.data as any).avatar) setAvatarUrl((r.data as any).avatar)
+      if ((r.data as any).avatar) setAvatarUrl(cloudinaryUrl((r.data as any).avatar))
     }).catch(() => {})
   }, [])
   const [confirmLogout, setConfirmLogout] = useState(false)
@@ -105,7 +105,7 @@ export default function AccountPage() {
     setUploadingAvatar(true)
     try {
       const updated = await uploadAvatar(file)
-      setAvatarUrl(updated.avatar ?? null)
+      setAvatarUrl(cloudinaryUrl(updated.avatar))
       showToast('Profile picture updated.')
     } catch (err) {
       showToast(parseError(err, 'Failed to upload picture.'), 'error')
@@ -156,7 +156,7 @@ export default function AccountPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <main className="pt-28 lg:pt-24 pb-24 lg:pb-12 px-4 py-8 max-w-6xl mx-auto">
+      <main className="pt-36 lg:pt-28 pb-24 lg:pb-12 px-4 py-8 max-w-6xl mx-auto">
         <ToastAlert toast={toast} onDone={() => setToast(null)} />
 
         <div className="lg:grid lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.9fr)] lg:gap-6 xl:gap-8">
