@@ -265,7 +265,7 @@ export default function Navbar() {
         {/* Category bar — mobile + desktop */}
         {catNav.length > 0 && (
           <div className="flex items-center border-t border-[#E2E8F0] overflow-x-auto scrollbar-none">
-            <div className="flex items-center max-w-7xl mx-auto w-full px-2 lg:px-4">
+            <div className="flex items-center max-w-7xl mx-auto w-full px-2 lg:px-4 pr-14 lg:pr-4">
               {catNav.map((cat) => (
                 <Link
                   key={cat.slug}
