@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { NotificationProvider } from './lib/NotificationContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { BASE_URL } from './lib/api'
@@ -64,7 +64,7 @@ export default function App() {
   if (!uiActive && !isAdmin) return <SiteOffline />
   return (
     <NotificationProvider>
-    <HashRouter>
+    <BrowserRouter>
       <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -107,7 +107,7 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
-    </HashRouter>
+    </BrowserRouter>
     </NotificationProvider>
   )
 }
