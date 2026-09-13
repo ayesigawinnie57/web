@@ -124,6 +124,11 @@ export default function ProductPage() {
   }
 
   const toggleWishlist = async () => {
+    if (!hasAccessToken()) {
+      localStorage.setItem('majo_pending_wishlist', JSON.stringify(product))
+      navigate(`/login?next=${encodeURIComponent(`/shop/${product.slug}`)}`)
+      return
+    }
     try {
       if (wishlisted) {
         await wishlistApi.remove(product.id)
@@ -133,8 +138,13 @@ export default function ProductPage() {
         setWishlisted(true)
       }
       notifyWishlistUpdated()
-    } catch {
-      showToast('Please sign in to save products to your wishlist.')
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        localStorage.setItem('majo_pending_wishlist', JSON.stringify(product))
+        navigate(`/login?next=${encodeURIComponent(`/shop/${product.slug}`)}`)
+      } else {
+        showToast('Could not update wishlist. Please try again.')
+      }
     }
   }
 

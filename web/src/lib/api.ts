@@ -69,7 +69,10 @@ api.interceptors.response.use(
       }
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
-      if (window.location.pathname.startsWith('/admin')) {
+      // redirect all non-admin pages to login, preserving current path
+      if (!window.location.pathname.startsWith('/admin')) {
+        window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`)
+      } else {
         window.location.replace('/login')
       }
     }

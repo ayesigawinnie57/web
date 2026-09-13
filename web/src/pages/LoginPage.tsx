@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
-import { authApi, LOGO } from '../lib/api'
+import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -37,7 +37,32 @@ export default function LoginPage() {
       } catch {
         authApi.saveProfile(email.trim(), email.trim(), isStaff)
       }
-      navigate(isStaff ? '/admin' : (nextPath ?? '/'), { replace: true })
+
+      // Merge guest cart into server cart
+      try {
+        const guestCart = JSON.parse(localStorage.getItem('majo_guest_cart') ?? '[]')
+        if (guestCart.length > 0) {
+          await Promise.all(guestCart.map((item: any) =>
+            cartApi.add({ id: item.product_id, slug: item.product_slug, name: item.product_name, price: Number(item.product_price), image: item.product_image, images: [], rating: Number(item.product_rating), reviewsCount: 0, stock: 99, deliveryFee: 0, shortDescription: '', longDescription: '', category: item.product_category, categoryName: '' }, item.quantity)
+          ))
+          localStorage.removeItem('majo_guest_cart')
+          notifyCartUpdated()
+        }
+      } catch { /* ignore cart merge errors */ }
+
+      // Execute pending wishlist add
+      try {
+        const pending = localStorage.getItem('majo_pending_wishlist')
+        if (pending) {
+          const product = JSON.parse(pending)
+          await wishlistApi.add(product)
+          localStorage.removeItem('majo_pending_wishlist')
+          notifyWishlistUpdated()
+        }
+      } catch { /* ignore wishlist errors */ }
+
+      const from = (location.state as any)?.from
+      navigate(isStaff ? '/admin' : (from ?? nextPath ?? '/'), { replace: true })
       refreshNotifications()
     } catch (requestError: any) {
       setError(requestError?.response?.data?.detail ?? 'Invalid email or password.')
