@@ -31,6 +31,7 @@ jobs:
       - name: Build web app
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_BASE_PATH: /
         run: |
           npm run build
