@@ -59,6 +59,13 @@ for (const p of products) {
       /<link rel="canonical"[^>]*>/,
       `<link rel="canonical" href="${url}" />`
     )
+    .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${url}" />`)
+    .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${title}" />`)
+    .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${desc.replace(/"/g, '&quot;')}" />`)
+    .replace(/<meta property="og:image"[^>]*>/, `<meta property="og:image" content="${image}" />`)
+    .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${title}" />`)
+    .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${desc.replace(/"/g, '&quot;')}" />`)
+    .replace(/<meta name="twitter:image"[^>]*>/, `<meta name="twitter:image" content="${image}" />`)
     .replace('</head>', `<script type="application/ld+json">${jsonLd}</script>\n</head>`)
 
   const dir = join(DIST, 'shop', p.slug)
