@@ -34,7 +34,12 @@ jobs:
           VITE_BASE_PATH: /
         run: |
           npm run build
-          cp dist/index.html dist/404.html
+          node prerender.mjs
+          cat > dist/404.html << 'EOF'
+          <!doctype html><html><head><meta charset="UTF-8">
+          <script>sessionStorage.redirect=location.href</script>
+          <meta http-equiv="refresh" content="0;URL=/"></head></html>
+          EOF
           echo 'www.majogadgets.com' > dist/CNAME
 
       - name: Deploy to gh-pages
