@@ -403,6 +403,8 @@ export type ApiAdminOrder = {
   phone: string
   note: string
   cancel_reason: string
+  user_name: string
+  user_email: string
   items: { id: number; product: ApiProduct; quantity: number; price: string }[]
 }
 
@@ -517,33 +519,96 @@ export const inventoryApi = {
     api.post<ApiStockMovement>('/api/inventory/movements/', data),
 }
 
-export type ApiAccountingSummary = {
-  total_revenue: number
-  pending_payouts: number
-  total_orders: number
-  delivered_orders: number
-  cancelled_orders: number
+export type ApiAccountingDashboard = {
+  total_revenue: number; cogs: number; gross_profit: number
+  total_expenses: number; net_profit: number
+  gross_margin: number; net_margin: number
+  cash_bank: number; inventory_cost: number; inventory_sales_value: number
+  receivables: number; payables: number
+  today_revenue: number; today_expenses: number; today_orders: number; today_refunds: number
+  accounts: { name: string; type: string; balance: number; currency: string }[]
   monthly: { month: string; revenue: number; count: number }[]
 }
-
-export type ApiTransaction = {
-  id: number
-  order_code: string | null
-  amount: number
-  currency: string
-  status: string
-  payment_method: string
-  created_at: string
-}
+export type ApiSupplier = { id: number; name: string; contact_name: string; email: string; phone: string; country: string; address: string; payment_terms: string; notes: string; created_at: string }
+export type ApiPurchase = { id: number; supplier: number; supplier_name: string; product: number; product_name: string; purchase_date: string; quantity: number; unit_cost: string; shipping_cost: string; customs_cost: string; other_cost: string; amount_paid: string; landed_cost: string; outstanding: string; status: string; invoice_ref: string; notes: string }
+export type ApiExpenseCategory = { id: number; name: string; group: string }
+export type ApiExpense = { id: number; date: string; category: number; category_name: string; category_group: string; description: string; amount: string; payment_method: string; vendor: string; receipt_url: string; approved_by_name: string | null; notes: string; created_at: string }
+export type ApiAccount = { id: number; name: string; type: string; balance: string; currency: string; notes: string }
+export type ApiTransfer = { id: number; from_account: number; from_account_name: string; to_account: number; to_account_name: string; amount: string; date: string; notes: string }
+export type ApiReceivable = { id: number; customer_name: string; customer_email: string; invoice_ref: string; amount: string; amount_paid: string; balance: string; due_date: string; status: string; notes: string }
+export type ApiPayable = { id: number; supplier: number; supplier_name: string; invoice_ref: string; amount: string; amount_paid: string; balance: string; due_date: string; status: string; notes: string }
+export type ApiTaxRecord = { id: number; tax_type: string; period_start: string; period_end: string; taxable_amount: string; tax_amount: string; status: string; notes: string }
+export type ApiRefund = { id: number; order: number | null; order_code: string | null; customer_name: string; product_name: string; return_reason: string; product_condition: string; refund_amount: string; refund_method: string; restock: boolean; return_delivery_cost: string; status: string; created_at: string }
+export type ApiEmployee = { id: number; name: string; email: string; phone: string; role: string; salary: string; commission_pct: string; is_active: boolean; joined_at: string | null }
+export type ApiFixedAsset = { id: number; name: string; purchase_price: string; purchase_date: string; useful_life_years: number; location: string; disposal_date: string | null; disposal_value: string | null; annual_depreciation: string; notes: string }
+export type ApiAuditLog = { id: number; user_name: string | null; action: string; model_name: string; object_id: string; old_value: any; new_value: any; reason: string; created_at: string }
 
 export const accountingApi = {
-  summary: () => api.get<ApiAccountingSummary>('/api/accounting/summary/'),
-  transactions: () => api.get<ApiTransaction[]>('/api/accounting/transactions/'),
+  dashboard: () => api.get<ApiAccountingDashboard>('/api/accounting/dashboard/'),
+  suppliers: () => api.get<ApiSupplier[]>('/api/accounting/suppliers/'),
+  createSupplier: (d: Partial<ApiSupplier>) => api.post<ApiSupplier>('/api/accounting/suppliers/', d),
+  purchases: () => api.get<ApiPurchase[]>('/api/accounting/purchases/'),
+  createPurchase: (d: object) => api.post<ApiPurchase>('/api/accounting/purchases/', d),
+  expenseCategories: () => api.get<ApiExpenseCategory[]>('/api/accounting/expense-categories/'),
+  createExpenseCategory: (d: object) => api.post<ApiExpenseCategory>('/api/accounting/expense-categories/', d),
+  expenses: (group?: string) => api.get<ApiExpense[]>(`/api/accounting/expenses/${group ? `?group=${group}` : ''}`),
+  createExpense: (d: object) => api.post<ApiExpense>('/api/accounting/expenses/', d),
+  accounts: () => api.get<ApiAccount[]>('/api/accounting/accounts/'),
+  createAccount: (d: object) => api.post<ApiAccount>('/api/accounting/accounts/', d),
+  updateAccount: (id: number, d: object) => api.patch<ApiAccount>(`/api/accounting/accounts/${id}/`, d),
+  transfers: () => api.get<ApiTransfer[]>('/api/accounting/transfers/'),
+  createTransfer: (d: object) => api.post<ApiTransfer>('/api/accounting/transfers/', d),
+  receivables: () => api.get<ApiReceivable[]>('/api/accounting/receivables/'),
+  createReceivable: (d: object) => api.post<ApiReceivable>('/api/accounting/receivables/', d),
+  payables: () => api.get<ApiPayable[]>('/api/accounting/payables/'),
+  createPayable: (d: object) => api.post<ApiPayable>('/api/accounting/payables/', d),
+  taxes: () => api.get<ApiTaxRecord[]>('/api/accounting/taxes/'),
+  createTax: (d: object) => api.post<ApiTaxRecord>('/api/accounting/taxes/', d),
+  refunds: () => api.get<ApiRefund[]>('/api/accounting/refunds/'),
+  createRefund: (d: object) => api.post<ApiRefund>('/api/accounting/refunds/', d),
+  updateRefund: (id: number, d: object) => api.patch<ApiRefund>(`/api/accounting/refunds/${id}/`, d),
+  employees: () => api.get<ApiEmployee[]>('/api/accounting/employees/'),
+  createEmployee: (d: object) => api.post<ApiEmployee>('/api/accounting/employees/', d),
+  assets: () => api.get<ApiFixedAsset[]>('/api/accounting/assets/'),
+  createAsset: (d: object) => api.post<ApiFixedAsset>('/api/accounting/assets/', d),
+  auditLog: () => api.get<ApiAuditLog[]>('/api/accounting/audit/'),
 }
 
 export const dataApi = {
   exportUrl: (type: 'products' | 'orders' | 'users', format: 'csv' | 'json') =>
     `${BASE_URL}/api/data/export/${type}/?format=${format}`,
+}
+
+export type ApiTraderApplication = {
+  id: number
+  full_name: string
+  email: string
+  phone: string
+  national_id: string
+  business_name: string
+  business_type: string
+  business_reg_no: string
+  tin: string
+  location: string
+  district: string
+  website: string
+  product_categories: string
+  monthly_volume: string
+  experience: string
+  agreed_to_terms: boolean
+  status: 'pending' | 'approved' | 'rejected'
+  admin_note: string
+  reviewed_by_name: string | null
+  reviewed_at: string | null
+  created_at: string
+}
+
+export const tradersApi = {
+  apply: (data: object) => api.post<ApiTraderApplication>('/api/traders/apply/', data),
+  adminList: (status?: string) => api.get<ApiTraderApplication[]>(`/api/traders/admin/${status ? `?status=${status}` : ''}`),
+  adminGet: (id: number) => api.get<ApiTraderApplication>(`/api/traders/admin/${id}/`),
+  approve: (id: number, note?: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/approve/`, { admin_note: note ?? '' }),
+  reject: (id: number, note: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/reject/`, { admin_note: note }),
 }
 
 export type ApiNotification = {

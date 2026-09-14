@@ -58,6 +58,10 @@ export default function AdminDashboard() {
       actions: [{ label: 'View All', route: '/admin/payments' }],
     },
     {
+      label: 'Traders', desc: 'Manage trader applications', color: '#22C55E',
+      actions: [{ label: 'View All', route: '/admin/traders' }],
+    },
+    {
       label: 'Inventory', desc: 'Track stock levels', color: '#6366f1',
       actions: [{ label: 'View All', route: '/admin/inventory' }],
     },

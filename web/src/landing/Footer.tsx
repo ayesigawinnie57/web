@@ -48,7 +48,7 @@ export default function Footer() {
           </div>
         </div>
         {allowSelling && (
-          <Link to="/register" className="text-[13px] text-[#94A3B8] hover:text-white transition text-center md:text-left mt-4 block">Sell with Majo Gadgets</Link>
+          <Link to="/become-a-trader" className="text-[13px] text-[#94A3B8] hover:text-white transition text-center md:text-left mt-4 block">Sell with Majo Gadgets</Link>
         )}
         <p className="text-[12px] text-[#64748B] text-center md:text-left pt-6">© {new Date().getFullYear()} Majo Gadgets. All rights reserved.</p>
       </div>

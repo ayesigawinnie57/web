@@ -21,7 +21,8 @@ const NotificationDetailPage = lazy(() => import('./pages/NotificationDetailPage
 const ForgotPasswordPage     = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage      = lazy(() => import('./pages/ResetPasswordPage'))
 const RateOrderPage          = lazy(() => import('./pages/RateOrderPage'))
-const ReturnPage             = lazy(() => import('./pages/ReturnPage'))
+const ReturnPage       = lazy(() => import('./pages/ReturnPage'))
+const BecomeTraderPage = lazy(() => import('./pages/BecomeTraderPage'))
 
 const AdminGuard      = lazy(() => import('./admin/AdminGuard'))
 const AdminLayout     = lazy(() => import('./admin/AdminLayout'))
@@ -43,6 +44,7 @@ const AdminSettings   = lazy(() => import('./admin/settings'))
 const AdminData       = lazy(() => import('./admin/data/index'))
 const AdminAccounting = lazy(() => import('./admin/accounting/index'))
 const AdminInventory  = lazy(() => import('./admin/inventory/index'))
+const AdminTraders    = lazy(() => import('./admin/traders/index'))
 
 function SiteOffline() {
   return (
@@ -89,6 +91,7 @@ export default function App() {
           <Route path="/account" element={<AccountPage />} />
           <Route path="/rate/:code" element={<RateOrderPage />} />
           <Route path="/returns" element={<ReturnPage />} />
+          <Route path="/become-a-trader" element={<BecomeTraderPage />} />
           <Route element={<AdminGuard />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
@@ -109,6 +112,7 @@ export default function App() {
               <Route path="data" element={<AdminData />} />
               <Route path="accounting" element={<AdminAccounting />} />
               <Route path="inventory" element={<AdminInventory />} />
+              <Route path="traders" element={<AdminTraders />} />
             </Route>
           </Route>
         </Routes>
