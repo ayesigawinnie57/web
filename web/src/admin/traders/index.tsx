@@ -74,7 +74,6 @@ export default function AdminTraders() {
   // Detail view
   if (selected) {
     const cfg = STATUS_COLOR[selected.status]
-    const Icon = cfg.icon
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-3 px-6 py-4 border-b border-[#E2E8F0] bg-white shrink-0">
@@ -212,12 +211,11 @@ export default function AdminTraders() {
         <div className="flex flex-col gap-3">
           {filtered.map(a => {
             const cfg = STATUS_COLOR[a.status]
-            const Icon = cfg.icon
             return (
               <button key={a.id} onClick={() => setSelected(a)}
                 className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex items-center gap-4 text-left hover:border-[#071A2B] transition-colors">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: cfg.bg }}>
-                  <Icon size={18} color={cfg.color} />
+                  <cfg.icon size={18} color={cfg.color} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-extrabold text-[#071A2B] truncate">{a.business_name}</p>

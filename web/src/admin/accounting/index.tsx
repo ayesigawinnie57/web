@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
-  DollarSign, TrendingUp, TrendingDown, ShoppingBag, Users, Package,
-  CreditCard, RefreshCw, Plus, AlertTriangle, CheckCircle2, Clock,
-  FileText, Truck, Building2, Wrench, BarChart2, Shield, ReceiptText,
+  DollarSign, TrendingUp, TrendingDown, ShoppingBag, Package,
+  CreditCard, Plus, ReceiptText,
 } from 'lucide-react'
 import {
   accountingApi,
@@ -458,10 +457,10 @@ function AccountsTab() {
 
 // ── Simple list+add tabs ──────────────────────────────────────────────────────
 function SimpleListTab<T extends { id: number }>({
-  title, cols, rows, renderRow, modal, setModal, form, children, onSave, saving,
+  title, cols, rows, renderRow, modal, setModal, children, onSave, saving,
 }: {
   title: string; cols: string[]; rows: T[]; renderRow: (r: T) => React.ReactNode
-  modal: boolean; setModal: (v: boolean) => void; form?: any; children?: React.ReactNode
+  modal: boolean; setModal: (v: boolean) => void; children?: React.ReactNode
   onSave: () => void; saving: boolean
 }) {
   return (
