@@ -490,6 +490,62 @@ export const adminPaymentsApi = {
   list: () => api.get<ApiPayment[]>('/api/orders/admin/payments/'),
 }
 
+export type ApiInventorySummary = {
+  total: number
+  in_stock: number
+  low_stock: number
+  out_of_stock: number
+  low_stock_items: { id: number; name: string; stock: number }[]
+  out_of_stock_items: { id: number; name: string; stock: number }[]
+}
+
+export type ApiStockMovement = {
+  id: number
+  product: number
+  product_name: string
+  type: 'in' | 'out' | 'adjust' | 'return'
+  quantity: number
+  note: string
+  created_by_name: string | null
+  created_at: string
+}
+
+export const inventoryApi = {
+  summary: () => api.get<ApiInventorySummary>('/api/inventory/summary/'),
+  movements: (productId?: number) => api.get<ApiStockMovement[]>(`/api/inventory/movements/${productId ? `?product=${productId}` : ''}`),
+  addMovement: (data: { product: number; type: string; quantity: number; note?: string }) =>
+    api.post<ApiStockMovement>('/api/inventory/movements/', data),
+}
+
+export type ApiAccountingSummary = {
+  total_revenue: number
+  pending_payouts: number
+  total_orders: number
+  delivered_orders: number
+  cancelled_orders: number
+  monthly: { month: string; revenue: number; count: number }[]
+}
+
+export type ApiTransaction = {
+  id: number
+  order_code: string | null
+  amount: number
+  currency: string
+  status: string
+  payment_method: string
+  created_at: string
+}
+
+export const accountingApi = {
+  summary: () => api.get<ApiAccountingSummary>('/api/accounting/summary/'),
+  transactions: () => api.get<ApiTransaction[]>('/api/accounting/transactions/'),
+}
+
+export const dataApi = {
+  exportUrl: (type: 'products' | 'orders' | 'users', format: 'csv' | 'json') =>
+    `${BASE_URL}/api/data/export/${type}/?format=${format}`,
+}
+
 export type ApiNotification = {
   id: number
   type: 'order' | 'welcome' | 'promo' | 'system' | 'service_rating' | 'product_rating'

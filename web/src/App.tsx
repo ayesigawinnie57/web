@@ -40,6 +40,9 @@ const AdminUsers      = lazy(() => import('./admin/users/index'))
 const AdminPayments   = lazy(() => import('./admin/payments/index'))
 const AdminAccount    = lazy(() => import('./admin/account'))
 const AdminSettings   = lazy(() => import('./admin/settings'))
+const AdminData       = lazy(() => import('./admin/data/index'))
+const AdminAccounting = lazy(() => import('./admin/accounting/index'))
+const AdminInventory  = lazy(() => import('./admin/inventory/index'))
 
 function SiteOffline() {
   return (
@@ -103,6 +106,9 @@ export default function App() {
               <Route path="payments" element={<AdminPayments />} />
               <Route path="account" element={<AdminAccount />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="data" element={<AdminData />} />
+              <Route path="accounting" element={<AdminAccounting />} />
+              <Route path="inventory" element={<AdminInventory />} />
             </Route>
           </Route>
         </Routes>

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle } from 'lucide-react'
+import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes } from 'lucide-react'
 import { LOGO } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 
@@ -12,6 +12,9 @@ const NAV = [
   { to: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/payments', label: 'Payments', icon: CreditCard },
+  { to: '/admin/inventory', label: 'Inventory', icon: Boxes },
+  { to: '/admin/accounting', label: 'Accounting', icon: DollarSign },
+  { to: '/admin/data', label: 'Data', icon: Database },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 

@@ -57,6 +57,18 @@ export default function AdminDashboard() {
       label: 'Payments', desc: 'Pesapal transactions', color: '#0ea5e9',
       actions: [{ label: 'View All', route: '/admin/payments' }],
     },
+    {
+      label: 'Inventory', desc: 'Track stock levels', color: '#6366f1',
+      actions: [{ label: 'View All', route: '/admin/inventory' }],
+    },
+    {
+      label: 'Accounting', desc: 'Revenue & expenses', color: '#10b981',
+      actions: [{ label: 'View All', route: '/admin/accounting' }],
+    },
+    {
+      label: 'Data Management', desc: 'Export, import & manage data', color: '#8b5cf6',
+      actions: [{ label: 'Manage', route: '/admin/data' }],
+    },
   ]
 
   return (
