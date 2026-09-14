@@ -13,7 +13,7 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       <div className="relative bg-[#F8FAFC] aspect-square overflow-hidden">
         {product.image
-          ? <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+          ? <img src={product.image} alt={product.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
           : <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
         }
         {/* hover overlay */}
