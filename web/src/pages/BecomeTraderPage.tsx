@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Store, CheckCircle, ArrowLeft } from 'lucide-react'
-import { tradersApi } from '../lib/api'
+import { Store, CheckCircle, ArrowLeft, Clock, XCircle } from 'lucide-react'
+import { tradersApi, authApi, hasAccessToken } from '../lib/api'
 
 const BUSINESS_TYPES = [
   { value: 'sole_proprietor', label: 'Sole Proprietor' },
@@ -18,6 +18,8 @@ export default function BecomeTraderPage() {
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [checking, setChecking] = useState(true)
+  const [traderStatus, setTraderStatus] = useState<'pending' | 'rejected' | null>(null)
 
   const [form, setForm] = useState({
     full_name: '', email: '', phone: '', national_id: '',
@@ -28,6 +30,51 @@ export default function BecomeTraderPage() {
   })
 
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
+
+  useEffect(() => {
+    if (!hasAccessToken()) {
+      navigate(`/login?next=/become-a-trader`, { replace: true })
+      return
+    }
+
+    let active = true
+    Promise.all([tradersApi.me(), authApi.profile()])
+      .then(([meRes, profileRes]) => {
+        if (!active) return
+        const me = meRes.data
+        const profile = profileRes.data
+        // Pre-fill name, email, phone from user profile
+        setForm(f => ({
+          ...f,
+          full_name: f.full_name || profile.name || '',
+          email: f.email || profile.email || '',
+          phone: f.phone || profile.phone || '',
+        }))
+        if (me) {
+          if (me.status === 'approved') {
+            navigate(`/trader/${me.uuid}`, { replace: true })
+          } else {
+            setTraderStatus(me.status as 'pending' | 'rejected')
+          }
+        }
+      })
+      .catch(() => {
+        if (!active) return
+        // profile fetch failed — still allow form
+        authApi.profile().then(r => {
+          if (!active) return
+          setForm(f => ({
+            ...f,
+            full_name: f.full_name || r.data.name || '',
+            email: f.email || r.data.email || '',
+            phone: f.phone || (r.data as any).phone || '',
+          }))
+        }).catch(() => {})
+      })
+      .finally(() => { if (active) setChecking(false) })
+
+    return () => { active = false }
+  }, [navigate])
 
   const handleSubmit = async () => {
     if (!form.agreed_to_terms) { setError('You must agree to the terms.'); return }
@@ -44,27 +91,61 @@ export default function BecomeTraderPage() {
   }
 
   const handleContinue = () => {
-    if (step === 0) {
-      if (!form.full_name.trim() || !form.email.trim() || !form.phone.trim() || !form.national_id.trim()) {
-        setError('All fields including National ID / Passport are required.')
-        return
-      }
+    if (step === 0 && (!form.full_name.trim() || !form.email.trim() || !form.phone.trim() || !form.national_id.trim())) {
+      setError('All fields including National ID / Passport are required.'); return
     }
-    if (step === 1) {
-      if (!form.business_name.trim() || !form.location.trim()) {
-        setError('Business Name and Location are required.')
-        return
-      }
+    if (step === 1 && (!form.business_name.trim() || !form.location.trim())) {
+      setError('Business Name and Location are required.'); return
     }
-    if (step === 2) {
-      if (!form.product_categories.trim()) {
-        setError('Please describe the products / categories you want to sell.')
-        return
-      }
+    if (step === 2 && !form.product_categories.trim()) {
+      setError('Please describe the products / categories you want to sell.'); return
     }
     setError('')
     setStep(s => s + 1)
   }
+
+  if (checking) return (
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" />
+        <p className="text-[12px] font-bold text-[#64748B]">Checking trader access...</p>
+      </div>
+    </div>
+  )
+
+  if (traderStatus === 'pending') return (
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-sm border border-[#E2E8F0]">
+        <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+          <Clock size={32} color="#F59E0B" />
+        </div>
+        <h2 className="text-[20px] font-extrabold text-[#071A2B] mb-2">Application Under Review</h2>
+        <p className="text-[14px] text-[#64748B] mb-6 leading-relaxed">
+          Your trader application is currently being reviewed by our team. We'll notify you once a decision is made — usually within 2–3 business days.
+        </p>
+        <button onClick={() => navigate('/')} className="w-full py-3 rounded-none bg-[#071A2B] text-white text-[14px] font-bold hover:opacity-80">
+          Back to Store
+        </button>
+      </div>
+    </div>
+  )
+
+  if (traderStatus === 'rejected') return (
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-sm border border-[#E2E8F0]">
+        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+          <XCircle size={32} color="#EF4444" />
+        </div>
+        <h2 className="text-[20px] font-extrabold text-[#071A2B] mb-2">Application Not Approved</h2>
+        <p className="text-[14px] text-[#64748B] mb-6 leading-relaxed">
+          Unfortunately your trader application was not approved at this time. Please contact support for more information.
+        </p>
+        <button onClick={() => navigate('/')} className="w-full py-3 rounded-none bg-[#071A2B] text-white text-[14px] font-bold hover:opacity-80">
+          Back to Store
+        </button>
+      </div>
+    </div>
+  )
 
   if (submitted) return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
@@ -85,7 +166,6 @@ export default function BecomeTraderPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Header */}
       <div className="bg-[#071A2B] px-6 py-5">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <button onClick={() => navigate('/')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10">
@@ -99,7 +179,6 @@ export default function BecomeTraderPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-6 py-8">
-        {/* Intro */}
         {step === 0 && (
           <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 mb-6">
             <p className="text-[13px] font-extrabold text-[#071A2B] mb-1">Sell on Majo Gadgets</p>
@@ -109,7 +188,6 @@ export default function BecomeTraderPage() {
           </div>
         )}
 
-        {/* Step indicator */}
         <div className="flex items-center gap-2 mb-6">
           {STEPS.map((s, i) => (
             <div key={s} className="flex items-center gap-2 flex-1 last:flex-none">
@@ -125,8 +203,6 @@ export default function BecomeTraderPage() {
         {error && <p className="text-[12px] text-red-500 mb-4 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{error}</p>}
 
         <div className="bg-white border border-[#E2E8F0] rounded-xl p-6">
-
-          {/* Step 0 — Personal Info */}
           {step === 0 && (
             <div className="flex flex-col gap-4">
               <p className="text-[14px] font-extrabold text-[#071A2B]">Personal Information</p>
@@ -145,7 +221,6 @@ export default function BecomeTraderPage() {
             </div>
           )}
 
-          {/* Step 1 — Business Info */}
           {step === 1 && (
             <div className="flex flex-col gap-4">
               <p className="text-[14px] font-extrabold text-[#071A2B]">Business Information</p>
@@ -177,7 +252,6 @@ export default function BecomeTraderPage() {
             </div>
           )}
 
-          {/* Step 2 — What You Sell */}
           {step === 2 && (
             <div className="flex flex-col gap-4">
               <p className="text-[14px] font-extrabold text-[#071A2B]">What You Want to Sell</p>
@@ -202,7 +276,6 @@ export default function BecomeTraderPage() {
             </div>
           )}
 
-          {/* Step 3 — Review */}
           {step === 3 && (
             <div className="flex flex-col gap-4">
               <p className="text-[14px] font-extrabold text-[#071A2B]">Review Your Application</p>
@@ -229,7 +302,6 @@ export default function BecomeTraderPage() {
           )}
         </div>
 
-        {/* Navigation */}
         <div className="flex gap-3 mt-6">
           {step > 0 && (
             <button onClick={() => { setError(''); setStep(s => s - 1) }} className="flex-1 py-3 rounded-none border border-[#E2E8F0] text-[13px] font-bold text-[#64748B] hover:bg-[#F8FAFC]">

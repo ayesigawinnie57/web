@@ -603,12 +603,71 @@ export type ApiTraderApplication = {
   created_at: string
 }
 
+export type ApiTraderDashboard = {
+  total_revenue: number
+  total_expenses: number
+  net_profit: number
+  today_revenue: number
+  today_orders: number
+  total_products: number
+  active_products: number
+  total_sales: number
+}
+
+export type ApiTraderProduct = {
+  id: number
+  uuid: string
+  name: string
+  description: string
+  price: string
+  stock: number
+  image_url: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type ApiTraderSale = {
+  id: number
+  uuid: string
+  product: number | null
+  product_name: string
+  quantity: number
+  unit_price: string
+  total: string
+  customer_name: string
+  note: string
+  created_at: string
+}
+
+export type ApiTraderExpense = {
+  id: number
+  uuid: string
+  description: string
+  amount: string
+  date: string
+  note: string
+  created_at: string
+}
+
 export const tradersApi = {
   apply: (data: object) => api.post<ApiTraderApplication>('/api/traders/apply/', data),
+  me: () => api.get<{ id: number; uuid: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; email: string; full_name: string } | null>('/api/traders/me/').catch(() => ({ data: null })),
   adminList: (status?: string) => api.get<ApiTraderApplication[]>(`/api/traders/admin/${status ? `?status=${status}` : ''}`),
   adminGet: (id: number) => api.get<ApiTraderApplication>(`/api/traders/admin/${id}/`),
   approve: (id: number, note?: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/approve/`, { admin_note: note ?? '' }),
   reject: (id: number, note: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/reject/`, { admin_note: note }),
+  // Trader portal
+  profile: (uuid: string) => api.get<ApiTraderApplication>(`/api/traders/${uuid}/profile/`),
+  dashboard: (uuid: string) => api.get<ApiTraderDashboard>(`/api/traders/${uuid}/dashboard/`),
+  products: (uuid: string) => api.get<ApiTraderProduct[]>(`/api/traders/${uuid}/products/`),
+  createProduct: (uuid: string, data: object) => api.post<ApiTraderProduct>(`/api/traders/${uuid}/products/`, data),
+  updateProduct: (uuid: string, productUuid: string, data: object) => api.patch<ApiTraderProduct>(`/api/traders/${uuid}/products/${productUuid}/`, data),
+  deleteProduct: (uuid: string, productUuid: string) => api.delete(`/api/traders/${uuid}/products/${productUuid}/`),
+  sales: (uuid: string) => api.get<ApiTraderSale[]>(`/api/traders/${uuid}/sales/`),
+  createSale: (uuid: string, data: object) => api.post<ApiTraderSale>(`/api/traders/${uuid}/sales/`, data),
+  expenses: (uuid: string) => api.get<ApiTraderExpense[]>(`/api/traders/${uuid}/expenses/`),
+  createExpense: (uuid: string, data: object) => api.post<ApiTraderExpense>(`/api/traders/${uuid}/expenses/`, data),
 }
 
 export type ApiNotification = {

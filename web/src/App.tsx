@@ -45,6 +45,12 @@ const AdminData       = lazy(() => import('./admin/data/index'))
 const AdminAccounting = lazy(() => import('./admin/accounting/index'))
 const AdminInventory  = lazy(() => import('./admin/inventory/index'))
 const AdminTraders    = lazy(() => import('./admin/traders/index'))
+const TraderGuard      = lazy(() => import('./trader/TraderGuard'))
+const TraderLayout     = lazy(() => import('./trader/TraderLayout'))
+const TraderDashboard  = lazy(() => import('./trader/TraderDashboard'))
+const TraderProducts   = lazy(() => import('./trader/TraderProducts'))
+const TraderSales      = lazy(() => import('./trader/TraderSales'))
+const TraderAccounting = lazy(() => import('./trader/TraderAccounting'))
 
 function SiteOffline() {
   return (
@@ -92,6 +98,14 @@ export default function App() {
           <Route path="/rate/:code" element={<RateOrderPage />} />
           <Route path="/returns" element={<ReturnPage />} />
           <Route path="/become-a-trader" element={<BecomeTraderPage />} />
+          <Route element={<TraderGuard />}>
+            <Route path="/trader/:traderUuid" element={<TraderLayout />}>
+              <Route index element={<TraderDashboard />} />
+              <Route path="products" element={<TraderProducts />} />
+              <Route path="sales" element={<TraderSales />} />
+              <Route path="accounting" element={<TraderAccounting />} />
+            </Route>
+          </Route>
           <Route element={<AdminGuard />}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />

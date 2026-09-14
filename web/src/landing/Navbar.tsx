@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings, ShoppingBag } from 'lucide-react'
-import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl } from '../lib/api'
+import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings, ShoppingBag, Store } from 'lucide-react'
+import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, tradersApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
@@ -72,6 +72,27 @@ export default function Navbar() {
     }
   }, [])
 
+  const [traderUuid, setTraderUuid] = useState<string | null>(() => {
+    try { return localStorage.getItem('majo_trader_uuid') } catch { return null }
+  })
+
+  useEffect(() => {
+    if (!hasAccessToken()) return
+    tradersApi.me().then(r => {
+      const d = r.data
+      if (d && d.status === 'approved') {
+        localStorage.setItem('majo_trader_uuid', d.uuid)
+        setTraderUuid(d.uuid)
+      } else {
+        localStorage.removeItem('majo_trader_uuid')
+        setTraderUuid(null)
+      }
+    }).catch(() => {
+      localStorage.removeItem('majo_trader_uuid')
+      setTraderUuid(null)
+    })
+  }, [])
+
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -98,7 +119,9 @@ export default function Navbar() {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('majo_user')
+    localStorage.removeItem('majo_trader_uuid')
     setUser(null)
+    setTraderUuid(null)
     setAccountOpen(false)
     refreshNotifications()
     navigate('/')
@@ -155,10 +178,16 @@ export default function Navbar() {
               <Link to="/categories" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Category</Link>
               <Link to="/deals" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Deals</Link>
             </div>
-            {/* Admin icon — visible on shop navbar for admins, navigates to admin */}
+            {/* Admin icon */}
             {user?.isAdmin && (
               <Link to="/admin" title="Admin Panel" className="w-[34px] h-[34px] rounded-full bg-[#1E3A8A] flex items-center justify-center">
                 <ShieldCheck className="w-[18px] h-[18px] text-white" />
+              </Link>
+            )}
+            {/* Trader icon — desktop only */}
+            {traderUuid && (
+              <Link to={`/trader/${traderUuid}`} title="Trader Portal" className="hidden lg:flex w-[34px] h-[34px] rounded-full bg-[#22C55E] items-center justify-center">
+                <Store className="w-[18px] h-[18px] text-white" />
               </Link>
             )}
             {/* Account */}
@@ -355,6 +384,12 @@ export default function Navbar() {
           </span>
           <span className="text-[10px] font-semibold">Notifications</span>
         </Link>
+        {traderUuid && (
+          <Link to={`/trader/${traderUuid}`} className="flex flex-col items-center gap-1 text-[#22C55E]">
+            <Store size={20} />
+            <span className="text-[10px] font-semibold">Trader</span>
+          </Link>
+        )}
         <button onClick={() => setAccountOpen(true)} className="flex flex-col items-center gap-1 text-[#64748B]">
           <Settings size={20} />
           <span className="text-[10px] font-semibold">Settings</span>
