@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Package, ArrowLeft, ImagePlus, X } from 'lucide-react'
-import { tradersApi, type ApiTraderProduct } from '../lib/api'
+import { tradersApi, productsApi, type ApiTraderProduct, type ApiCategory } from '../lib/api'
+import RichTextEditor from '../components/RichTextEditor'
 
 const fmt = (n: string | number) => `UGX ${Number(n).toLocaleString()}`
 
@@ -9,13 +10,23 @@ type View = 'list' | 'add' | 'edit'
 
 type Form = {
   name: string
-  description: string
+  short_description: string
+  long_description: string
   price: string
+  original_price: string
+  delivery_fee: string
   stock: string
+  category_id: string
   is_active: boolean
+  is_featured: boolean
+  is_new_deal: boolean
 }
 
-const EMPTY: Form = { name: '', description: '', price: '', stock: '', is_active: true }
+const EMPTY: Form = {
+  name: '', short_description: '', long_description: '',
+  price: '', original_price: '', delivery_fee: '', stock: '',
+  category_id: '', is_active: true, is_featured: false, is_new_deal: false,
+}
 
 function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -52,6 +63,7 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: {
 export default function TraderProducts() {
   const { traderUuid } = useParams<{ traderUuid: string }>()
   const [products, setProducts] = useState<ApiTraderProduct[]>([])
+  const [categories, setCategories] = useState<ApiCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<View>('list')
   const [editing, setEditing] = useState<ApiTraderProduct | null>(null)
@@ -59,9 +71,8 @@ export default function TraderProducts() {
   const [form, setForm] = useState<Form>(EMPTY)
   const set = (k: keyof Form) => (v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
 
-  // image state
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [images, setImages] = useState<File[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
   const [existingImage, setExistingImage] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -69,43 +80,59 @@ export default function TraderProducts() {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  const load = () => {
+  useEffect(() => {
     setLoading(true)
-    tradersApi.products(traderUuid!).then(r => setProducts(r.data)).finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [traderUuid])
+    Promise.all([tradersApi.products(traderUuid!), productsApi.categories()])
+      .then(([prodRes, catRes]) => {
+        setProducts(prodRes.data)
+        const cats = Array.isArray(catRes.data) ? catRes.data : (catRes.data as any).results ?? []
+        setCategories(cats)
+      })
+      .finally(() => setLoading(false))
+  }, [traderUuid])
 
   const openAdd = () => {
-    setForm(EMPTY)
-    setImageFile(null)
-    setImagePreview(null)
-    setExistingImage(null)
-    setError('')
-    setEditing(null)
-    setView('add')
+    const firstCat = categories[0]
+    setForm({ ...EMPTY, category_id: firstCat ? String(firstCat.id) : '' })
+    setImages([]); setPreviews([]); setExistingImage(null)
+    setError(''); setEditing(null); setView('add')
   }
 
   const openEdit = (p: ApiTraderProduct) => {
-    setForm({ name: p.name, description: p.description, price: p.price, stock: String(p.stock), is_active: p.is_active })
-    setImageFile(null)
-    setImagePreview(null)
+    setForm({
+      name: p.name,
+      short_description: p.short_description ?? '',
+      long_description: p.long_description ?? '',
+      price: p.price,
+      original_price: p.original_price ?? '',
+      delivery_fee: p.delivery_fee ?? '',
+      stock: String(p.stock),
+      category_id: p.category_id ? String(p.category_id) : '',
+      is_active: p.is_active,
+      is_featured: p.is_featured,
+      is_new_deal: p.is_new_deal,
+    })
+    setImages([]); setPreviews([])
     setExistingImage(p.image_url || null)
-    setError('')
-    setEditing(p)
-    setView('edit')
+    setError(''); setEditing(p); setView('edit')
   }
 
-  const handleFile = (files: FileList | null) => {
+  const handleFilesAdd = (files: FileList | null) => {
+    if (!files) return
+    const arr = Array.from(files)
+    setImages(prev => [...prev, ...arr])
+    setPreviews(prev => [...prev, ...arr.map(f => URL.createObjectURL(f))])
+  }
+
+  const removePreview = (i: number) => {
+    setImages(prev => prev.filter((_, idx) => idx !== i))
+    setPreviews(prev => prev.filter((_, idx) => idx !== i))
+  }
+
+  const handleFileEdit = (files: FileList | null) => {
     if (!files?.[0]) return
-    setImageFile(files[0])
-    setImagePreview(URL.createObjectURL(files[0]))
-  }
-
-  const removeImage = () => {
-    setImageFile(null)
-    setImagePreview(null)
-    setExistingImage(null)
+    setImages([files[0]])
+    setPreviews([URL.createObjectURL(files[0])])
   }
 
   const handleSave = async () => {
@@ -115,10 +142,16 @@ export default function TraderProducts() {
       const fd = new FormData()
       fd.append('name', form.name.trim())
       fd.append('price', form.price)
+      if (form.original_price) fd.append('original_price', form.original_price)
+      if (form.delivery_fee) fd.append('delivery_fee', form.delivery_fee)
       fd.append('stock', form.stock || '0')
-      fd.append('description', form.description)
+      if (form.short_description) fd.append('short_description', form.short_description)
+      if (form.long_description) fd.append('long_description', form.long_description)
+      if (form.category_id) fd.append('category_id', form.category_id)
       fd.append('is_active', String(form.is_active))
-      if (imageFile) fd.append('image', imageFile)
+      fd.append('is_featured', String(form.is_featured))
+      fd.append('is_new_deal', String(form.is_new_deal))
+      if (images[0]) fd.append('image', images[0])
 
       if (view === 'add') {
         const r = await tradersApi.createProduct(traderUuid!, fd)
@@ -142,8 +175,8 @@ export default function TraderProducts() {
 
   // ── Add / Edit view ────────────────────────────────────────────────────────
   if (view === 'add' || view === 'edit') {
-    const previewSrc = imagePreview ?? existingImage
     const isEdit = view === 'edit'
+    const previewSrc = previews[0] ?? existingImage
 
     return (
       <div className="p-8">
@@ -163,10 +196,10 @@ export default function TraderProducts() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Left column: image + active toggle */}
+          {/* Left column */}
           <div className="space-y-4 lg:sticky lg:top-0 lg:self-start">
+
             {isEdit ? (
-              // Edit: single large image picker (same as admin edit)
               <>
                 <button
                   type="button"
@@ -175,57 +208,79 @@ export default function TraderProducts() {
                 >
                   {previewSrc
                     ? <img src={previewSrc} className="w-full h-full object-cover" />
-                    : <><ImagePlus size={28} color="#94A3B8" /><span className="text-[13px] text-[#94A3B8] font-semibold">Click to add image</span></>
+                    : <><ImagePlus size={28} color="#94A3B8" /><span className="text-[13px] text-[#94A3B8] font-semibold">Click to change image</span></>
                   }
                 </button>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e.target.files)} />
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileEdit(e.target.files)} />
               </>
             ) : (
-              // Add: thumbnail grid (same as admin add)
               <div>
-                <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Image</label>
+                <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Images</label>
                 <div className="flex gap-3 flex-wrap">
-                  {previewSrc && (
-                    <div className="relative">
-                      <img src={previewSrc} className="w-20 h-20 rounded-lg object-cover" />
-                      <button type="button" onClick={removeImage} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5">
+                  {previews.map((src, i) => (
+                    <div key={i} className="relative">
+                      <img src={src} className="w-20 h-20 rounded-lg object-cover" />
+                      <button type="button" onClick={() => removePreview(i)} className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5">
                         <X size={10} color="#fff" />
                       </button>
                     </div>
-                  )}
-                  {!previewSrc && (
-                    <button
-                      type="button"
-                      onClick={() => fileRef.current?.click()}
-                      className="w-20 h-20 rounded-lg border border-dashed border-[#E2E8F0] bg-white flex flex-col items-center justify-center gap-1 hover:border-[#22C55E]"
-                    >
-                      <ImagePlus size={20} color="#94A3B8" />
-                      <span className="text-[10px] text-[#94A3B8] font-semibold">Add</span>
-                    </button>
-                  )}
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e.target.files)} />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="w-20 h-20 rounded-lg border border-dashed border-[#E2E8F0] bg-white flex flex-col items-center justify-center gap-1 hover:border-[#22C55E]"
+                  >
+                    <ImagePlus size={20} color="#94A3B8" />
+                    <span className="text-[10px] text-[#94A3B8] font-semibold">Add</span>
+                  </button>
+                  <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFilesAdd(e.target.files)} />
                 </div>
               </div>
             )}
 
-            <Toggle label="Active (visible to customers)" value={form.is_active} onChange={v => set('is_active')(v)} />
+            <div className="flex gap-4 flex-wrap">
+              <Toggle label="Featured" value={form.is_featured} onChange={v => set('is_featured')(v)} />
+              <Toggle label="New Deal" value={form.is_new_deal} onChange={v => set('is_new_deal')(v)} />
+            </div>
+
+            <div>
+              <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Category</label>
+              {categories.length === 0 && <p className="text-[12px] text-[#94A3B8] mb-2">Loading categories...</p>}
+              <div className="flex flex-wrap gap-2">
+                {categories.map(cat => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => set('category_id')(String(cat.id))}
+                    className={`px-3 py-1.5 rounded-full border text-[12px] font-semibold capitalize transition-colors ${
+                      form.category_id === String(cat.id)
+                        ? 'bg-[#22C55E] border-[#22C55E] text-white'
+                        : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#22C55E]'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Right columns: fields */}
+          {/* Right columns */}
           <div className="lg:col-span-2 space-y-4">
             <Field label="Product Name *" value={form.name} onChange={set('name')} placeholder="e.g. Wireless Earbuds" />
             <div className="grid grid-cols-2 gap-4">
               <Field label="Price (UGX) *" value={form.price} onChange={set('price')} placeholder="e.g. 29000" type="number" />
+              <Field label="Original Price (UGX)" value={form.original_price} onChange={set('original_price')} placeholder="e.g. 59000" type="number" />
               <Field label="Stock" value={form.stock} onChange={set('stock')} placeholder="e.g. 50" type="number" />
+              <Field label="Delivery Fee (UGX)" value={form.delivery_fee} onChange={set('delivery_fee')} placeholder="e.g. 5000" type="number" />
             </div>
+            <Field label="Short Description" value={form.short_description} onChange={set('short_description')} placeholder="Brief summary" />
             <div>
-              <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Description</label>
-              <textarea
-                value={form.description}
-                onChange={e => set('description')(e.target.value)}
-                rows={4}
-                placeholder="Describe your product..."
-                className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px] text-[#071A2B] outline-none focus:border-[#22C55E] resize-none"
+              <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
+              <RichTextEditor
+                value={form.long_description}
+                onChange={v => set('long_description')(v)}
+                placeholder="Full product details..."
               />
             </div>
 
@@ -291,6 +346,7 @@ export default function TraderProducts() {
                   </span>
                 </div>
                 <p className="text-[13px] font-bold text-[#22C55E] mb-1">{fmt(p.price)}</p>
+                {p.category_name && <p className="text-[11px] text-[#94A3B8] mb-0.5">{p.category_name}</p>}
                 <p className="text-[11px] text-[#94A3B8]">Stock: {p.stock}</p>
                 <div className="flex gap-2 mt-3">
                   <button onClick={() => openEdit(p)} className="flex-1 flex items-center justify-center gap-1 py-2 border border-[#E2E8F0] rounded-lg text-[12px] font-bold text-[#071A2B] hover:bg-[#F8FAFC]">

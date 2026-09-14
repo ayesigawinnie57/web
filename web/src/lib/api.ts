@@ -618,11 +618,19 @@ export type ApiTraderProduct = {
   id: number
   uuid: string
   name: string
+  short_description: string
+  long_description: string
   description: string
   price: string
+  original_price: string | null
+  delivery_fee: string
   stock: number
-  image_url: string
+  category_id: number | null
+  category_name: string | null
+  image_url: string | null
   is_active: boolean
+  is_featured: boolean
+  is_new_deal: boolean
   created_at: string
   updated_at: string
 }
