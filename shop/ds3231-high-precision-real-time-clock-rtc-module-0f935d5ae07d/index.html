@@ -32,9 +32,8 @@
     <meta name="google-site-verification" content="YpMx-4-WEJOxN-UR38wasbXGabCvi_HYuBG0324faN8" />
     <script>var r=sessionStorage.redirect;delete sessionStorage.redirect;if(r&&r!==location.href)history.replaceState(null,null,r)</script>
     <script>
-      // Register cache-clearing service worker
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw-clear.js')
+        navigator.serviceWorker.register('/sw-clear.js').catch(function(){})
       }
       window.addEventListener('vite:preloadError', function() {
         if (!sessionStorage.getItem('reloaded')) {
