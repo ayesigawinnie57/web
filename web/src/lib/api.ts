@@ -488,6 +488,7 @@ export const adminOrdersApi = {
 
 export const adminUsersApi = {
   list: () => api.get<ApiAdminUser[]>('/api/auth/admin/users/'),
+  delete: (id: number) => api.delete(`/api/auth/admin/users/${id}/`),
 }
 
 export const adminPaymentsApi = {
@@ -579,6 +580,15 @@ export const accountingApi = {
 export const dataApi = {
   exportUrl: (type: 'products' | 'orders' | 'users', format: 'csv' | 'json') =>
     `${BASE_URL}/api/data/export/${type}/?format=${format}`,
+  import: (type: 'products' | 'categories', file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post<{ created: number; skipped?: number; errors: string[] }>(
+      `/api/data/import/${type}/`, form, { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+  },
+  clearOrders: (password: string) => api.post<{ deleted: number }>('/api/data/danger/clear-orders/', { password }),
+  resetInventory: (password: string) => api.post<{ products_reset: number; movements_deleted: number }>('/api/data/danger/reset-inventory/', { password }),
 }
 
 export type ApiTraderApplication = {

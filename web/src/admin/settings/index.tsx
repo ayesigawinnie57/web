@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Skull, TriangleAlert, CircleX } from 'lucide-react'
+import { Skull, TriangleAlert, CircleX, ChevronDown, Settings as SettingsIcon, Users as UsersIcon, Truck } from 'lucide-react'
 import { BASE_URL } from '../../lib/api'
 import { parseError } from '../ErrorBanner'
 
@@ -19,8 +19,12 @@ function ToastAlert({ toast, onDone }: { toast: Toast | null; onDone: () => void
   )
 }
 
-const TABS = ['Platform', 'Users', 'Delivery'] as const
-type Tab = typeof TABS[number]
+const TABS = [
+  { key: 'Platform', icon: SettingsIcon, desc: 'Visibility & charges' },
+  { key: 'Users',    icon: UsersIcon,    desc: 'Staff accounts' },
+  { key: 'Delivery', icon: Truck,        desc: 'Fees & districts' },
+] as const
+type Tab = typeof TABS[number]['key']
 
 const PAGE_OPTIONS = ['Dashboard', 'Products', 'Flash Sales', 'Categories', 'Orders', 'Users', 'Payments', 'Settings']
 
@@ -48,6 +52,107 @@ const CHARGE_FIELDS: { key: keyof PlatformSettings; label: string; desc: string;
   { key: 'vat',                     label: 'VAT',                      desc: 'Tax percentage applied to transactions.',               suffix: '%'   },
   { key: 'free_delivery_threshold', label: 'Free Delivery Threshold',  desc: 'Order amount above which delivery is free.',           suffix: 'UGX' },
 ]
+
+function ChargesAccordion({ settings, setSettings }: {
+  settings: PlatformSettings
+  setSettings: React.Dispatch<React.SetStateAction<PlatformSettings>>
+}) {
+  const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+
+  const startEdit = (key: string, current: string) => {
+    setEditing(key)
+    setDraft(current)
+  }
+
+  const handleSave = async (key: string) => {
+    setSettings(s => ({ ...s, [key]: draft }))
+    // submit just this field
+    const fakeEvent = { preventDefault: () => {} } as React.FormEvent
+    // we need to save only this key — call API directly
+    try {
+      await fetch(`${BASE_URL}/api/settings/platform/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('access_token')}` },
+        body: JSON.stringify({ [key]: draft }),
+      })
+    } catch {}
+    setEditing(null)
+  }
+
+  return (
+    <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#F8FAFC] transition-colors"
+      >
+        <div>
+          <p className="text-[13px] font-extrabold text-[#071A2B] text-left">Charges & Rates</p>
+          <p className="text-[11px] text-[#94A3B8] text-left mt-0.5">{open ? 'Click to collapse' : 'Insert commission, VAT, fees…'}</p>
+        </div>
+        <ChevronDown size={16} color="#94A3B8" className={`shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="divide-y divide-[#E2E8F0] border-t border-[#E2E8F0]">
+          {CHARGE_FIELDS.map(({ key, label, desc, suffix }) => {
+            const isEditing = editing === key
+            const saved = settings[key as keyof PlatformSettings] as string
+            const hasValue = saved && Number(saved) > 0
+            return (
+              <div key={key} className="flex items-center gap-4 px-5 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-[#071A2B]">{label}</p>
+                  <p className="text-[11px] text-[#64748B] mt-0.5">{desc}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {isEditing ? (
+                    <>
+                      <input
+                        autoFocus
+                        type="number" min="0" step="any"
+                        value={draft}
+                        onChange={e => setDraft(e.target.value)}
+                        className="w-24 px-3 py-1.5 border border-[#22C55E] rounded-xl text-[13px] text-right outline-none"
+                      />
+                      <span className="text-[12px] font-bold text-[#94A3B8] w-8">{suffix}</span>
+                      <button
+                        onClick={() => handleSave(key)}
+                        className="px-3 py-1.5 bg-[#071A2B] text-white rounded-lg text-[11px] font-bold hover:opacity-90"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditing(null)}
+                        className="px-3 py-1.5 border border-[#E2E8F0] text-[#64748B] rounded-lg text-[11px] font-bold"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {hasValue && (
+                        <span className="text-[13px] font-bold text-[#071A2B]">{Number(saved).toLocaleString()} {suffix}</span>
+                      )}
+                      <button
+                        onClick={() => startEdit(key, saved)}
+                        className="px-3 py-1.5 border border-[#E2E8F0] rounded-lg text-[11px] font-bold text-[#64748B] hover:border-[#071A2B] hover:text-[#071A2B] transition-colors"
+                      >
+                        {hasValue ? 'Update' : 'Insert'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function PlatformTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => void }) {
   const [settings, setSettings] = useState<PlatformSettings>({
@@ -182,34 +287,9 @@ function PlatformTab({ showToast }: { showToast: (m: string, t?: Toast['type']) 
         </div>
 
         {/* Charges */}
-        <form onSubmit={saveCharges} className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden h-fit">
-          <p className="px-5 py-3 text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest border-b border-[#E2E8F0]">Charges & Rates</p>
-          <div className="divide-y divide-[#E2E8F0]">
-            {CHARGE_FIELDS.map(({ key, label, desc, suffix }) => (
-              <div key={key} className="flex items-center gap-4 px-5 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-[#071A2B]">{label}</p>
-                  <p className="text-[11px] text-[#64748B] mt-0.5">{desc}</p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <input
-                    type="number" min="0" step="any"
-                    value={settings[key] as string}
-                    onChange={e => setSettings(s => ({ ...s, [key]: e.target.value }))}
-                    className="w-24 px-3 py-2 border border-[#E2E8F0] rounded-xl text-[13px] text-right outline-none focus:border-[#22C55E]"
-                  />
-                  <span className="text-[12px] font-bold text-[#94A3B8] w-8">{suffix}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="px-5 py-4 border-t border-[#E2E8F0]">
-            <button type="submit" disabled={savingCharges}
-              className="w-full py-2.5 bg-[#071A2B] text-white rounded-xl text-[13px] font-bold disabled:opacity-60 hover:opacity-90">
-              {savingCharges ? 'Saving...' : 'Save Charges'}
-            </button>
-          </div>
-        </form>
+        <div className="h-fit">
+          <ChargesAccordion settings={settings} setSettings={setSettings} />
+        </div>
       </div>
     </div>
   )
@@ -222,15 +302,15 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState<'add' | { user: AdminUser; action: 'pages' | 'delete' | 'promote' } | null>(null)
+  const [modal, setModal] = useState<'add' | { user: AdminUser; action: 'pages' | 'delete' } | null>(null)
   const [busy, setBusy] = useState(false)
-  const [addForm, setAddForm] = useState({ name: '', email: '', phone: '', password: '', is_staff: false })
+  const [addForm, setAddForm] = useState({ name: '', email: '', phone: '', password: '' })
   const [selectedPages, setSelectedPages] = useState<string[]>([])
 
   const load = () => {
     setLoading(true)
     fetch(`${BASE_URL}/api/auth/admin/users/`, { headers: authHeaders() })
-      .then(r => r.json()).then(d => setUsers(Array.isArray(d) ? d : d.results ?? []))
+      .then(r => r.json()).then(d => setUsers((Array.isArray(d) ? d : d.results ?? []).filter((u: AdminUser) => u.is_staff)))
       .catch(() => {}).finally(() => setLoading(false))
   }
   useEffect(load, [])
@@ -243,12 +323,12 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
     e.preventDefault(); setBusy(true)
     try {
       const res = await fetch(`${BASE_URL}/api/auth/admin/users/`, {
-        method: 'POST', headers: authHeaders(), body: JSON.stringify(addForm),
+        method: 'POST', headers: authHeaders(), body: JSON.stringify({ ...addForm, is_staff: true }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(' ')) }
-      showToast('User added.')
+      showToast('Staff user added.')
       setModal(null)
-      setAddForm({ name: '', email: '', phone: '', password: '', is_staff: false })
+      setAddForm({ name: '', email: '', phone: '', password: '' })
       load()
     } catch (err) { showToast(parseError(err, 'Failed to add user.'), 'error') }
     finally { setBusy(false) }
@@ -261,19 +341,6 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
       if (!res.ok) throw new Error()
       showToast('User deleted.'); setModal(null); load()
     } catch { showToast('Failed to delete user.', 'error') }
-    finally { setBusy(false) }
-  }
-
-  const handlePromote = async (user: AdminUser) => {
-    setBusy(true)
-    try {
-      const res = await fetch(`${BASE_URL}/api/auth/admin/users/${user.id}/`, {
-        method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ is_staff: !user.is_staff }),
-      })
-      if (!res.ok) throw new Error()
-      showToast(user.is_staff ? 'Admin rights removed.' : 'User promoted to admin.')
-      setModal(null); load()
-    } catch { showToast('Failed to update user.', 'error') }
     finally { setBusy(false) }
   }
 
@@ -294,10 +361,10 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
   return (
     <>
       <div className="flex items-center gap-3 mb-4">
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search users..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search staff..."
           className="flex-1 px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-xl text-[13px] outline-none focus:border-[#22C55E]" />
         <button onClick={() => setModal('add')} className="shrink-0 px-4 py-2.5 bg-[#071A2B] text-white rounded-xl text-[13px] font-bold hover:opacity-90">
-          + Add User
+          + Add Staff
         </button>
       </div>
 
@@ -311,22 +378,21 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
                   <span className="text-white text-[12px] font-extrabold">{u.name.slice(0, 2).toUpperCase()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[13px] font-bold text-[#071A2B] truncate">{u.name}</p>
-                    {u.is_staff && <span className="text-[10px] font-bold text-[#1E3A8A] bg-blue-50 px-2 py-0.5 rounded-full shrink-0">Admin</span>}
-                  </div>
+                  <p className="text-[13px] font-bold text-[#071A2B] truncate">{u.name}</p>
                   <p className="text-[11px] text-[#64748B] truncate">{u.email}</p>
+                  {(u.assigned_pages?.length > 0) ? (
+                    <p className="text-[10px] text-[#6366f1] font-semibold mt-0.5">{u.assigned_pages.join(', ')}</p>
+                  ) : (
+                    <p className="text-[10px] text-[#94A3B8] mt-0.5">All pages</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => openPages(u)} className="px-2.5 py-1.5 text-[11px] font-bold text-[#1E3A8A] border border-[#E2E8F0] rounded-lg hover:bg-blue-50">Pages</button>
-                  <button onClick={() => setModal({ user: u, action: 'promote' })} className="px-2.5 py-1.5 text-[11px] font-bold text-amber-600 border border-[#E2E8F0] rounded-lg hover:bg-amber-50">
-                    {u.is_staff ? 'Demote' : 'Promote'}
-                  </button>
                   <button onClick={() => setModal({ user: u, action: 'delete' })} className="px-2.5 py-1.5 text-[11px] font-bold text-red-500 border border-[#E2E8F0] rounded-lg hover:bg-red-50">Delete</button>
                 </div>
               </div>
             ))}
-            {filtered.length === 0 && <p className="text-center text-[#64748B] text-[13px] py-16">No users found.</p>}
+            {filtered.length === 0 && <p className="text-center text-[#64748B] text-[13px] py-16">No staff users found.</p>}
           </div>
         )
       }
@@ -338,20 +404,17 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
 
             {modal === 'add' && (
               <form onSubmit={handleAdd} className="space-y-3">
-                <p className="text-[16px] font-extrabold text-[#071A2B] mb-1">Add User</p>
+                <p className="text-[16px] font-extrabold text-[#071A2B] mb-1">Add Staff User</p>
+                <p className="text-[12px] text-[#64748B] mb-2">This user will be created as staff and can be restricted to specific pages.</p>
                 {(['name', 'email', 'phone', 'password'] as const).map(k => (
                   <input key={k} type={k === 'password' ? 'password' : k === 'email' ? 'email' : 'text'}
                     placeholder={k.charAt(0).toUpperCase() + k.slice(1)}
                     value={addForm[k]} onChange={e => setAddForm(f => ({ ...f, [k]: e.target.value }))}
                     required className="w-full px-3 py-2.5 border border-[#E2E8F0] rounded-xl text-[13px] outline-none focus:border-[#22C55E]" />
                 ))}
-                <label className="flex items-center gap-2 text-[13px] font-semibold text-[#071A2B] cursor-pointer">
-                  <input type="checkbox" checked={addForm.is_staff} onChange={e => setAddForm(f => ({ ...f, is_staff: e.target.checked }))} />
-                  Make Admin
-                </label>
                 <div className="flex gap-2 pt-1">
                   <button type="button" onClick={() => setModal(null)} disabled={busy} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#64748B]">Cancel</button>
-                  <button type="submit" disabled={busy} className="flex-1 py-2.5 bg-[#071A2B] text-white rounded-xl text-[13px] font-bold disabled:opacity-60">{busy ? 'Adding...' : 'Add User'}</button>
+                  <button type="submit" disabled={busy} className="flex-1 py-2.5 bg-[#071A2B] text-white rounded-xl text-[13px] font-bold disabled:opacity-60">{busy ? 'Adding...' : 'Add Staff'}</button>
                 </div>
               </form>
             )}
@@ -359,7 +422,8 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
             {modal !== 'add' && modal.action === 'pages' && (
               <div>
                 <p className="text-[16px] font-extrabold text-[#071A2B] mb-1">Assign Pages</p>
-                <p className="text-[12px] text-[#64748B] mb-4">Pages <span className="font-bold">{modal.user.name}</span> can access.</p>
+                <p className="text-[12px] text-[#64748B] mb-1">Pages <span className="font-bold">{modal.user.name}</span> can access.</p>
+                <p className="text-[11px] text-[#94A3B8] mb-4">Leave all unchecked to grant access to all pages.</p>
                 <div className="space-y-1 mb-4 max-h-64 overflow-y-auto">
                   {PAGE_OPTIONS.map(p => (
                     <label key={p} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#F8FAFC] cursor-pointer">
@@ -376,25 +440,9 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
               </div>
             )}
 
-            {modal !== 'add' && modal.action === 'promote' && (
-              <div>
-                <p className="text-[16px] font-extrabold text-[#071A2B] mb-2">{modal.user.is_staff ? 'Remove Admin Rights?' : 'Promote to Admin?'}</p>
-                <p className="text-[13px] text-[#64748B] mb-6">
-                  {modal.user.is_staff ? `${modal.user.name} will lose all admin privileges.` : `${modal.user.name} will gain full admin access.`}
-                </p>
-                <div className="flex gap-2">
-                  <button onClick={() => setModal(null)} disabled={busy} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#64748B]">Cancel</button>
-                  <button onClick={() => handlePromote(modal.user)} disabled={busy}
-                    className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-60 ${modal.user.is_staff ? 'bg-amber-500' : 'bg-[#1E3A8A]'}`}>
-                    {busy ? 'Please wait...' : modal.user.is_staff ? 'Yes, Demote' : 'Yes, Promote'}
-                  </button>
-                </div>
-              </div>
-            )}
-
             {modal !== 'add' && modal.action === 'delete' && (
               <div>
-                <p className="text-[16px] font-extrabold text-[#071A2B] mb-2">Delete User?</p>
+                <p className="text-[16px] font-extrabold text-[#071A2B] mb-2">Delete Staff User?</p>
                 <p className="text-[13px] text-[#64748B] mb-6">This will permanently delete <span className="font-bold">{modal.user.name}</span> and all their data.</p>
                 <div className="flex gap-2">
                   <button onClick={() => setModal(null)} disabled={busy} className="flex-1 py-2.5 border border-[#E2E8F0] rounded-xl text-[13px] font-bold text-[#64748B]">Cancel</button>
@@ -574,11 +622,20 @@ export default function AdminSettings() {
       <ToastAlert toast={toast} onDone={() => setToast(null)} />
       <p className="text-[20px] font-extrabold text-[#071A2B] mb-6">Settings</p>
 
-      <div className="flex gap-1 bg-[#F1F5F9] rounded-xl p-1 mb-6 max-w-sm">
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-colors ${tab === t ? 'bg-white text-[#071A2B] shadow-sm' : 'text-[#64748B] hover:text-[#071A2B]'}`}>
-            {t}
+      <div className="flex gap-3 mb-8">
+        {TABS.map(({ key, icon: Icon, desc }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex-1 flex flex-col items-start gap-1 px-4 py-3.5 rounded-2xl border-2 transition-all text-left ${
+              tab === key
+                ? 'border-[#071A2B] bg-[#071A2B] shadow-lg'
+                : 'border-[#E2E8F0] bg-white hover:border-[#071A2B]/30'
+            }`}
+          >
+            <Icon size={20} strokeWidth={2} className={tab === key ? 'text-white' : 'text-[#071A2B]'} />
+            <p className={`text-[13px] font-extrabold leading-tight ${ tab === key ? 'text-white' : 'text-[#071A2B]'}`}>{key}</p>
+            <p className={`text-[10px] font-medium leading-tight ${ tab === key ? 'text-white/60' : 'text-[#94A3B8]'}`}>{desc}</p>
           </button>
         ))}
       </div>

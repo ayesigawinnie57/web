@@ -4,31 +4,44 @@ import { LOGO } from '../lib/api'
 
 export type Portal = 'admin' | 'trader' | 'store'
 
-const META: Record<Portal, { label: string; sub: string; color: string; bgFrom: string; bgTo: string }> = {
-  admin:  { label: 'Admin Panel',   sub: 'Management & Analytics',  color: '#F97316', bgFrom: '#0f1f30', bgTo: '#071A2B' },
-  trader: { label: 'Trader Portal', sub: 'Your Business Dashboard', color: '#22C55E', bgFrom: '#071A2B', bgTo: '#061a10' },
-  store:  { label: 'Majo Store',    sub: 'Shopping Experience',     color: '#6366f1', bgFrom: '#0d0d1f', bgTo: '#071A2B' },
+const META: Record<Portal, { label: string; sub: string; color: string; bgFrom: string; bgTo: string; pages: string[] }> = {
+  admin: {
+    label: 'Admin Panel', sub: 'Management & Analytics', color: '#F97316',
+    bgFrom: '#0f1f30', bgTo: '#071A2B',
+    pages: ['Dashboard', 'Products', 'Orders', 'Users', 'Payments', 'Accounting', 'Inventory', 'Settings'],
+  },
+  trader: {
+    label: 'Trader Portal', sub: 'Your Business Dashboard', color: '#22C55E',
+    bgFrom: '#071A2B', bgTo: '#061a10',
+    pages: ['Dashboard', 'Products', 'Orders', 'Sales', 'Accounting', 'Inventory', 'Flash Sales', 'Settings'],
+  },
+  store: {
+    label: 'Majo Store', sub: 'Shopping Experience', color: '#6366f1',
+    bgFrom: '#0d0d1f', bgTo: '#071A2B',
+    pages: ['Home', 'Shop', 'Categories', 'Deals', 'Cart', 'Wishlist', 'Orders', 'Account'],
+  },
 }
 
-const TOTAL     = 6000
-const SWITCH_AT = 1200
-const REVEAL_AT = 4800  // new page starts fading in
-const EXIT_AT   = 5200  // overlay starts fading out
+// Total duration and timing
+const TOTAL      = 6000
+const TICK_START = 600   // when first page ticks
+const TICK_END   = 4400  // when last page ticks
+const REVEAL_AT  = 4800
+const EXIT_AT    = 5200
 
-interface Props {
-  from: Portal
-  to: Portal
-  onDone: () => void
-}
+interface Props { from: Portal; to: Portal; onDone: () => void }
 
 export default function SwitchTransition({ from, to, onDone }: Props) {
-  const [phase, setPhase]       = useState<'enter' | 'switch' | 'exit'>('enter')
-  const [progress, setProgress] = useState(0)
+  const [phase, setPhase]         = useState<'enter' | 'loading' | 'exit'>('enter')
+  const [progress, setProgress]   = useState(0)
+  const [ticked, setTicked]       = useState<number>(-1)   // index of last ticked page
   const [revealing, setRevealing] = useState(false)
 
   const fromMeta = META[from]
   const toMeta   = META[to]
+  const pages    = toMeta.pages
 
+  // Progress bar
   useEffect(() => {
     const start = Date.now()
     let raf: number
@@ -41,33 +54,46 @@ export default function SwitchTransition({ from, to, onDone }: Props) {
     return () => cancelAnimationFrame(raf)
   }, [])
 
+  // Phase + page ticking timeline
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase('switch'),    SWITCH_AT)
-    const t2 = setTimeout(() => setRevealing(true),    REVEAL_AT)
-    const t3 = setTimeout(() => setPhase('exit'),      EXIT_AT)
-    const t4 = setTimeout(() => onDone(),              TOTAL)
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4) }
-  }, [onDone])
+    const timers: ReturnType<typeof setTimeout>[] = []
+
+    // Switch to loading phase
+    timers.push(setTimeout(() => setPhase('loading'), 600))
+
+    // Tick each page evenly between TICK_START and TICK_END
+    const interval = (TICK_END - TICK_START) / pages.length
+    pages.forEach((_, i) => {
+      timers.push(setTimeout(() => setTicked(i), TICK_START + i * interval))
+    })
+
+    timers.push(setTimeout(() => setRevealing(true), REVEAL_AT))
+    timers.push(setTimeout(() => setPhase('exit'),   EXIT_AT))
+    timers.push(setTimeout(() => onDone(),           TOTAL))
+
+    return () => timers.forEach(clearTimeout)
+  }, [onDone, pages.length])
 
   return createPortal(
     <>
       <style>{`
         @keyframes st-ring {
-          0%   { transform: scale(0.5); opacity: 0.22; }
-          70%  { opacity: 0.07; }
+          0%   { transform: scale(0.5); opacity: 0.18; }
+          70%  { opacity: 0.06; }
           100% { transform: scale(1.9); opacity: 0; }
         }
         @keyframes st-pulse {
           0%, 100% { opacity: 1; }
           50%      { opacity: 0.3; }
         }
-        @keyframes st-fadein {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes st-check {
+          0%   { transform: scale(0) rotate(-45deg); opacity: 0; }
+          60%  { transform: scale(1.3) rotate(0deg); opacity: 1; }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
       `}</style>
 
-      {/* Page-reveal layer — solid bg that fades out to show new page underneath */}
+      {/* Page-reveal layer */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: 9998,
         background: toMeta.bgTo,
@@ -92,8 +118,7 @@ export default function SwitchTransition({ from, to, onDone }: Props) {
           {[0, 1, 2, 3, 4].map(i => (
             <div key={i} style={{
               position: 'absolute',
-              width:  200 + i * 170,
-              height: 200 + i * 170,
+              width: 200 + i * 170, height: 200 + i * 170,
               borderRadius: '50%',
               border: `1px solid ${toMeta.color}`,
               animation: `st-ring ${3.2 + i * 0.7}s ease-out infinite`,
@@ -105,115 +130,113 @@ export default function SwitchTransition({ from, to, onDone }: Props) {
         {/* Glow */}
         <div style={{
           position: 'absolute', width: 360, height: 360, borderRadius: '50%',
-          background: `radial-gradient(circle, ${toMeta.color}15 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${toMeta.color}12 0%, transparent 70%)`,
           filter: 'blur(70px)', pointerEvents: 'none',
         }} />
 
-        {/* Logo */}
-        <img
-          src={LOGO}
-          alt="Majo Gadgets"
-          style={{
-            position: 'relative', zIndex: 1,
-            height: 52, width: 'auto', objectFit: 'contain',
-            marginBottom: 52,
-            animation: 'st-fadein 0.6s ease-out both',
-          }}
-        />
+        {/* Content card */}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 340, padding: '0 24px' }}>
 
-        {/* Labels */}
-        <div style={{ position: 'relative', zIndex: 1, minHeight: 108, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Logo */}
+          <img src={LOGO} alt="Majo Gadgets" style={{ height: 44, width: 'auto', objectFit: 'contain', marginBottom: 28, opacity: 0.95 }} />
 
-          {/* FROM */}
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: toMeta.color, marginBottom: 6 }}>
+              {phase === 'enter' ? 'Leaving' : 'Preparing'}
+            </p>
+            <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{toMeta.label}</p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 6 }}>{toMeta.sub}</p>
+          </div>
+
+          {/* Pages checklist */}
           <div style={{
-            position: 'absolute',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-            opacity:   phase === 'enter' ? 1 : 0,
-            transform: phase === 'enter' ? 'translateY(0)' : 'translateY(-52px)',
-            transition: 'opacity 0.65s ease-in-out, transform 0.65s ease-in-out',
+            width: '100%',
+            overflow: 'hidden',
+            marginBottom: 24,
+            position: 'relative',
           }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)', marginBottom: 10 }}>
-              Leaving
-            </p>
-            <p style={{ fontSize: 36, fontWeight: 800, color: 'rgba(255,255,255,0.4)', lineHeight: 1, whiteSpace: 'nowrap' }}>
-              {fromMeta.label}
-            </p>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', marginTop: 10 }}>
-              {fromMeta.sub}
-            </p>
-          </div>
-
-          {/* TO */}
-          <div style={{
-            position: 'absolute',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-            opacity:   phase === 'enter' ? 0 : 1,
-            transform: phase === 'enter' ? 'translateY(52px)' : 'translateY(0)',
-            transition: 'opacity 0.65s ease-in-out, transform 0.65s ease-in-out',
-          }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.24em', textTransform: 'uppercase', color: toMeta.color, marginBottom: 10 }}>
-              Switching to
-            </p>
-            <p style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1, whiteSpace: 'nowrap' }}>
-              {toMeta.label}
-            </p>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.36)', marginTop: 10 }}>
-              {toMeta.sub}
-            </p>
-          </div>
-        </div>
-
-        {/* Progress bar with from/to labels on each end */}
-        <div style={{ position: 'relative', zIndex: 1, marginTop: 68, width: 300 }}>
-          {/* End labels */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>From</p>
-              <p style={{ fontSize: 12, fontWeight: 800, color: fromMeta.color, whiteSpace: 'nowrap' }}>{fromMeta.label}</p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>To</p>
-              <p style={{ fontSize: 12, fontWeight: 800, color: toMeta.color, whiteSpace: 'nowrap' }}>{toMeta.label}</p>
-            </div>
-          </div>
-          {/* Bar */}
-          <div style={{ width: '100%', height: 3, borderRadius: 99, overflow: 'hidden', background: 'rgba(255,255,255,0.07)' }}>
+            {/* Top fade mask */}
             <div style={{
-              height: '100%', borderRadius: 99,
-              width: `${progress * 100}%`,
-              background: `linear-gradient(90deg, ${fromMeta.color}, ${toMeta.color})`,
-              boxShadow: `0 0 14px ${toMeta.color}bb`,
-              transition: 'none',
+              position: 'absolute', top: 0, left: 0, right: 0, height: 28, zIndex: 1,
+              background: 'linear-gradient(to bottom, rgba(15,20,30,0.85), transparent)',
+              pointerEvents: 'none',
             }} />
+            {/* Bottom fade mask */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, height: 28, zIndex: 1,
+              background: 'linear-gradient(to top, rgba(15,20,30,0.85), transparent)',
+              pointerEvents: 'none',
+            }} />
+            {/* Scrolling list — shifts up by one row height (34px) per ticked page */}
+            <div style={{
+              transform: `translateY(${-Math.max(0, ticked - 1) * 34}px)`,
+              transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)',
+              padding: '6px 0',
+            }}>
+            {pages.map((page, i) => {
+              const done = ticked >= i
+              return (
+                <div
+                  key={page}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '7px 16px', height: 34,
+                    opacity: phase === 'loading' ? (done ? 1 : 0.35) : 0,
+                    transition: 'opacity 0.3s ease',
+                  }}
+                >
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: done ? toMeta.color : 'rgba(255,255,255,0.1)',
+                    border: done ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                    transition: 'background 0.25s ease',
+                  }}>
+                    {done && (
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
+                        style={{ animation: 'st-check 0.3s cubic-bezier(0.34,1.56,0.64,1) both' }}>
+                        <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <p style={{
+                    fontSize: 13, fontWeight: done ? 600 : 400, flex: 1,
+                    color: done ? '#fff' : 'rgba(255,255,255,0.3)',
+                    transition: 'color 0.25s ease',
+                  }}>{page}</p>
+                  {done && (
+                    <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: toMeta.color, opacity: 0.7 }}>Ready</p>
+                  )}
+                </div>
+              )
+            })}
+            </div>
           </div>
-        </div>
 
-        {/* Dots */}
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 22, marginTop: 22 }}>
-          {(['admin', 'trader', 'store'] as Portal[]).map(p => {
-            const isTo   = p === to
-            const isFrom = p === from
-            return (
-              <div key={p} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <div style={{
-                  width:  isTo ? 13 : 7,
-                  height: isTo ? 13 : 7,
-                  borderRadius: '50%',
-                  background: isTo ? toMeta.color : isFrom ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.1)',
-                  boxShadow: isTo ? `0 0 12px ${toMeta.color}` : 'none',
-                  transition: 'all 0.5s ease',
-                  animation: isTo ? 'st-pulse 1.8s ease-in-out infinite' : 'none',
-                }} />
-                <p style={{
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
-                  color: isTo ? toMeta.color : 'rgba(255,255,255,0.16)',
-                  transition: 'color 0.5s ease',
-                }}>
-                  {p}
-                </p>
+          {/* Progress bar with from/to labels */}
+          <div style={{ width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
+              <div>
+                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>From</p>
+                <p style={{ fontSize: 11, fontWeight: 800, color: fromMeta.color }}>{fromMeta.label}</p>
               </div>
-            )
-          })}
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>To</p>
+                <p style={{ fontSize: 11, fontWeight: 800, color: toMeta.color }}>{toMeta.label}</p>
+              </div>
+            </div>
+            <div style={{ width: '100%', height: 3, borderRadius: 99, overflow: 'hidden', background: 'rgba(255,255,255,0.07)' }}>
+              <div style={{
+                height: '100%', borderRadius: 99,
+                width: `${progress * 100}%`,
+                background: `linear-gradient(90deg, ${fromMeta.color}, ${toMeta.color})`,
+                boxShadow: `0 0 12px ${toMeta.color}aa`,
+                transition: 'none',
+              }} />
+            </div>
+          </div>
+
         </div>
       </div>
     </>,

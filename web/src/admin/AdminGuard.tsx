@@ -1,25 +1,41 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
-import { authApi } from '../lib/api'
+import { authApi, BASE_URL } from '../lib/api'
 
 type State = 'loading' | 'allowed' | 'denied'
+
+export const ASSIGNED_PAGES_KEY = 'majo_assigned_pages'
 
 export default function AdminGuard() {
   const [state, setState] = useState<State>('loading')
 
   useEffect(() => {
-    // No token at all — deny immediately without a network call
     if (!localStorage.getItem('access_token')) {
       setState('denied')
       return
     }
 
     authApi.profile()
-      .then(({ data }) => {
-        setState(data.is_staff ? 'allowed' : 'denied')
+      .then(async ({ data }) => {
+        if (!data.is_staff) { setState('denied'); return }
+
+        // Fetch assigned_pages for this staff user
+        try {
+          const token = localStorage.getItem('access_token')
+          const res = await fetch(`${BASE_URL}/api/auth/admin/users/`, {
+            headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
+          })
+          const users: { id: number; email: string; assigned_pages: string[] }[] = await res.json()
+          const me = users.find(u => u.email === data.email)
+          const pages = me?.assigned_pages ?? []
+          localStorage.setItem(ASSIGNED_PAGES_KEY, JSON.stringify(pages))
+        } catch {
+          localStorage.setItem(ASSIGNED_PAGES_KEY, JSON.stringify([]))
+        }
+
+        setState('allowed')
       })
       .catch(() => {
-        // 401 / network error — clear stale tokens and deny
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
         setState('denied')

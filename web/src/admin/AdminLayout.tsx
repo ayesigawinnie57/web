@@ -4,24 +4,35 @@ import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard,
 import { LOGO, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
+import { ASSIGNED_PAGES_KEY } from './AdminGuard'
 
-const NAV = [
-  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/admin/products', label: 'Products', icon: Package },
-  { to: '/admin/flashsales', label: 'Flash Sales', icon: Zap },
-  { to: '/admin/categories', label: 'Categories', icon: Grid2X2 },
-  { to: '/admin/orders', label: 'Orders', icon: ShoppingBag },
-  { to: '/admin/users', label: 'Users', icon: Users },
-  { to: '/admin/payments', label: 'Payments', icon: CreditCard },
-  { to: '/admin/traders', label: 'Traders', icon: Store },
-  { to: '/admin/inventory', label: 'Inventory', icon: Boxes },
-  { to: '/admin/accounting', label: 'Accounting', icon: DollarSign },
-  { to: '/admin/data', label: 'Data', icon: Database },
-  { to: '/admin/settings', label: 'Settings', icon: Settings },
+const ALL_NAV = [
+  { to: '/admin',             label: 'Dashboard',  pageKey: null,           icon: LayoutDashboard, end: true },
+  { to: '/admin/products',    label: 'Products',   pageKey: 'Products',     icon: Package },
+  { to: '/admin/flashsales',  label: 'Flash Sales',pageKey: 'Flash Sales',  icon: Zap },
+  { to: '/admin/categories',  label: 'Categories', pageKey: 'Categories',   icon: Grid2X2 },
+  { to: '/admin/orders',      label: 'Orders',     pageKey: 'Orders',       icon: ShoppingBag },
+  { to: '/admin/users',       label: 'Users',      pageKey: 'Users',        icon: Users },
+  { to: '/admin/payments',    label: 'Payments',   pageKey: 'Payments',     icon: CreditCard },
+  { to: '/admin/traders',     label: 'Traders',    pageKey: 'Traders',      icon: Store },
+  { to: '/admin/inventory',   label: 'Inventory',  pageKey: 'Inventory',    icon: Boxes },
+  { to: '/admin/accounting',  label: 'Accounting', pageKey: 'Accounting',   icon: DollarSign },
+  { to: '/admin/data',        label: 'Data',       pageKey: 'Data Management', icon: Database },
+  { to: '/admin/settings',    label: 'Settings',   pageKey: 'Settings',     icon: Settings },
 ]
+
+function getNav() {
+  try {
+    const pages: string[] = JSON.parse(localStorage.getItem(ASSIGNED_PAGES_KEY) ?? '[]')
+    if (!pages.length) return ALL_NAV
+    // Always include Dashboard; restrict the rest to assigned pages
+    return ALL_NAV.filter(n => n.pageKey === null || pages.includes(n.pageKey))
+  } catch { return ALL_NAV }
+}
 
 export default function AdminLayout() {
   const navigate = useNavigate()
+  const NAV = getNav()
   const { unreadCount } = useNotifications()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [search, setSearch] = useState('')
