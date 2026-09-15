@@ -1,3 +1,11 @@
 <!doctype html><html><head><meta charset="UTF-8">
 <script>sessionStorage.redirect=location.href</script>
+<script>
+  window.addEventListener('vite:preloadError',function(){
+    if(!sessionStorage.getItem('reloaded')){
+      sessionStorage.setItem('reloaded','1')
+      window.location.href=window.location.href.split('?')[0]+'?v='+Date.now()
+    }else{sessionStorage.removeItem('reloaded')}
+  })
+</script>
 <meta http-equiv="refresh" content="0;URL=/"></head></html>
