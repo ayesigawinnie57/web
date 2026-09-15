@@ -96,7 +96,8 @@ export default function App() {
   useEffect(() => {
     fetch(`${BASE_URL}/api/settings/platform/`)
       .then(r => r.json()).then(d => setUiActive(!!d.ui_active)).catch(() => setUiActive(true))
-    sessionApi.profile().then(p => setIsAdmin(p.is_staff))
+    if (localStorage.getItem('access_token'))
+      sessionApi.profile().then(p => setIsAdmin(p.is_staff))
   }, [])
 
   if (uiActive === false && !isAdmin) return <SiteOffline />

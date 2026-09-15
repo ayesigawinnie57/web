@@ -73,13 +73,16 @@ api.interceptors.response.use(
           // refresh failed — fall through to logout
         }
       }
+      // Only redirect if the user had a token (was authenticated). Guests get no redirect.
+      const hadToken = !!localStorage.getItem('access_token')
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
-      // redirect all non-admin pages to login, preserving current path
-      if (!window.location.pathname.startsWith('/admin')) {
-        window.location.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`)
-      } else {
-        window.location.replace('/login')
+      if (hadToken) {
+        const { pathname } = window.location
+        const onAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password')
+        if (!onAuthPage) {
+          window.location.replace(pathname.startsWith('/admin') ? '/login' : `/login?next=${encodeURIComponent(pathname + window.location.search)}`)
+        }
       }
     }
     return Promise.reject(err)
