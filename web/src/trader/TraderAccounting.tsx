@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts'
-import { tradersApi, type ApiTraderDashboard, type ApiTraderExpense, type ApiTraderSale } from '../lib/api'
+import { tradersApi, type ApiTraderExpense, type ApiTraderSale } from '../lib/api'
 
 const fmt = (n: number | string) => `UGX ${Number(n).toLocaleString()}`
 const fmtShort = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n)
@@ -34,7 +34,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function TraderAccounting() {
   const { traderUuid } = useParams<{ traderUuid: string }>()
-  const [dashboard, setDashboard] = useState<ApiTraderDashboard | null>(null)
   const [sales, setSales] = useState<ApiTraderSale[]>([])
   const [expenses, setExpenses] = useState<ApiTraderExpense[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,7 +46,6 @@ export default function TraderAccounting() {
   useEffect(() => {
     setLoading(true)
     Promise.all([
-      tradersApi.dashboard(traderUuid!).then(r => setDashboard(r.data)),
       tradersApi.sales(traderUuid!).then(r => setSales(r.data)),
       tradersApi.expenses(traderUuid!).then(r => setExpenses(r.data)),
     ]).finally(() => setLoading(false))
@@ -96,7 +94,6 @@ export default function TraderAccounting() {
       setExpenses(prev => [created.data, ...prev])
       setModal(false)
       setForm({ description: '', amount: '', date: new Date().toISOString().slice(0, 10), note: '' })
-      setDashboard(prev => prev ? { ...prev, total_expenses: Number(prev.total_expenses) + Number(created.data.amount) } : prev)
     } catch { setError('Failed to save expense.') }
     finally { setSaving(false) }
   }
