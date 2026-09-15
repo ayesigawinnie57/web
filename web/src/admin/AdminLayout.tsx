@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store } from 'lucide-react'
-import { LOGO } from '../lib/api'
+import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store, ArrowLeftRight } from 'lucide-react'
+import { LOGO, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 
 const NAV = [
@@ -25,10 +25,23 @@ export default function AdminLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [search, setSearch] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
+  const [traderUuid, setTraderUuid] = useState<string | null>(null)
+
+  useEffect(() => {
+    sessionApi.trader().then(t => {
+      if (t?.status === 'approved') setTraderUuid(t.uuid)
+    })
+  }, [])
+
+  const switchToTrader = (close?: () => void) => {
+    close?.()
+    navigate(`/trader/${traderUuid}`)
+  }
 
   const logout = () => {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
+    sessionApi.clear()
     navigate('/login')
   }
 
@@ -110,6 +123,12 @@ export default function AdminLayout() {
               ))}
             </nav>
             <div className="border-t border-white/10 p-4 space-y-1">
+              {traderUuid && (
+                <button onClick={() => switchToTrader(() => setDrawerOpen(false))}
+                  className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-[13px] font-semibold text-[#22C55E] hover:bg-white/5 transition-colors">
+                  <ArrowLeftRight size={14} /> Switch to Trader
+                </button>
+              )}
               <button onClick={() => { navigate('/'); setDrawerOpen(false) }}
                 className="w-full flex items-center px-4 py-3 rounded-lg text-[13px] font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors">
                 Back to Store
@@ -136,6 +155,11 @@ export default function AdminLayout() {
             ))}
           </nav>
           <div className="border-t border-white/10">
+            {traderUuid && (
+              <button onClick={() => switchToTrader()} className="w-full flex items-center gap-2 px-5 py-3.5 text-[13px] font-semibold text-[#22C55E] hover:opacity-80 transition-colors">
+                <ArrowLeftRight size={14} /> Switch to Trader
+              </button>
+            )}
             <button onClick={() => navigate('/')} className="w-full flex items-center px-5 py-3.5 text-[13px] font-semibold text-white/40 hover:text-white transition-colors">
               Back to Store
             </button>

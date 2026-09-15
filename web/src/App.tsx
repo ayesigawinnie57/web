@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { NotificationProvider } from './lib/NotificationContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { BASE_URL } from './lib/api'
+import { BASE_URL, sessionApi } from './lib/api'
 
 const LandingPage            = lazy(() => import('./landing'))
 const ProductPage            = lazy(() => import('./pages/ProductPage'))
@@ -69,11 +69,12 @@ function SiteOffline() {
 
 export default function App() {
   const [uiActive, setUiActive] = useState<boolean | null>(null)
-  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('majo_user') ?? 'null')?.isAdmin === true } catch { return false } })()
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     fetch(`${BASE_URL}/api/settings/platform/`)
       .then(r => r.json()).then(d => setUiActive(!!d.ui_active)).catch(() => setUiActive(true))
+    sessionApi.profile().then(p => setIsAdmin(p.is_staff))
   }, [])
 
   if (uiActive === null) return null

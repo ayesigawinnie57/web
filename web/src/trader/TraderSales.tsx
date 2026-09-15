@@ -1,15 +1,49 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { ShoppingBag, Plus } from 'lucide-react'
+import {
+  ResponsiveContainer, LineChart, Line, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+} from 'recharts'
 import { tradersApi, type ApiTraderSale, type ApiTraderProduct } from '../lib/api'
 
 const fmt = (n: string | number) => `UGX ${Number(n).toLocaleString()}`
+const fmtShort = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n)
 
 function timeAgo(iso: string) {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
   return new Date(iso).toLocaleDateString('en-UG', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function toDateKey(iso: string) {
+  return iso.slice(0, 10)
+}
+
+function last30Days() {
+  const days: string[] = []
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i)
+    days.push(d.toISOString().slice(0, 10))
+  }
+  return days
+}
+
+function last7Days() {
+  return last30Days().slice(-7)
+}
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="bg-[#071A2B] text-white text-[11px] font-semibold px-3 py-2 rounded-lg shadow-xl">
+      <p className="text-white/50 mb-1">{label}</p>
+      {payload.map((p: any) => (
+        <p key={p.name} style={{ color: p.color }}>{p.name}: {p.name === 'Revenue' ? fmt(p.value) : p.value}</p>
+      ))}
+    </div>
+  )
 }
 
 export default function TraderSales() {
@@ -21,6 +55,7 @@ export default function TraderSales() {
   const [form, setForm] = useState({ product: '', product_name: '', quantity: '1', unit_price: '', customer_name: '', note: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [range, setRange] = useState<'7' | '30'>('30')
 
   useEffect(() => {
     Promise.all([
@@ -30,6 +65,44 @@ export default function TraderSales() {
   }, [traderUuid])
 
   const totalRevenue = sales.reduce((s, x) => s + Number(x.total), 0)
+
+  // Build daily chart data
+  const chartData = useMemo(() => {
+    const days = range === '7' ? last7Days() : last30Days()
+    const byDay: Record<string, { revenue: number; sales: number }> = {}
+    for (const d of days) byDay[d] = { revenue: 0, sales: 0 }
+    for (const s of sales) {
+      const k = toDateKey(s.created_at)
+      if (byDay[k]) { byDay[k].revenue += Number(s.total); byDay[k].sales += 1 }
+    }
+    return days.map(d => ({
+      date: new Date(d).toLocaleDateString('en-UG', { day: 'numeric', month: 'short' }),
+      Revenue: byDay[d].revenue,
+      Sales: byDay[d].sales,
+    }))
+  }, [sales, range])
+
+  // This period vs previous period comparison
+  const comparison = useMemo(() => {
+    const days = range === '7' ? 7 : 30
+    const now = Date.now()
+    const periodMs = days * 86400 * 1000
+    const thisPeriod = sales.filter(s => now - new Date(s.created_at).getTime() < periodMs)
+    const prevPeriod = sales.filter(s => {
+      const age = now - new Date(s.created_at).getTime()
+      return age >= periodMs && age < periodMs * 2
+    })
+    return {
+      thisRevenue: thisPeriod.reduce((s, x) => s + Number(x.total), 0),
+      prevRevenue: prevPeriod.reduce((s, x) => s + Number(x.total), 0),
+      thisSales: thisPeriod.length,
+      prevSales: prevPeriod.length,
+    }
+  }, [sales, range])
+
+  const revChange = comparison.prevRevenue
+    ? Math.round(((comparison.thisRevenue - comparison.prevRevenue) / comparison.prevRevenue) * 100)
+    : null
 
   const handleProductChange = (productId: string) => {
     const p = products.find(x => String(x.id) === productId)
@@ -59,6 +132,7 @@ export default function TraderSales() {
 
   return (
     <div className="p-6 md:p-8">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <ShoppingBag size={20} color="#071A2B" />
@@ -69,13 +143,68 @@ export default function TraderSales() {
         </button>
       </div>
 
-      {/* Summary */}
-      <div className="bg-[#071A2B] rounded-xl p-5 text-white mb-6">
-        <p className="text-[11px] text-white/40 font-bold uppercase tracking-widest mb-1">Total Revenue</p>
-        <p className="text-[28px] font-extrabold text-[#22C55E]">{fmt(totalRevenue)}</p>
-        <p className="text-[12px] text-white/40 mt-1">{sales.length} sale{sales.length !== 1 ? 's' : ''} recorded</p>
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        {[
+          { label: 'Total Revenue', value: fmt(totalRevenue), color: 'text-[#22C55E]' },
+          { label: 'Total Sales', value: String(sales.length), color: 'text-[#071A2B]' },
+          { label: `This ${range}d Revenue`, value: fmt(comparison.thisRevenue), color: 'text-[#6366f1]' },
+          {
+            label: 'vs Previous Period',
+            value: revChange === null ? 'N/A' : `${revChange > 0 ? '+' : ''}${revChange}%`,
+            color: revChange === null ? 'text-[#94A3B8]' : revChange >= 0 ? 'text-[#22C55E]' : 'text-red-500',
+          },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex flex-col gap-1 min-w-0">
+            <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wide leading-tight">{label}</p>
+            <p className={`font-extrabold break-words leading-tight ${color} text-[clamp(13px,2.5vw,18px)]`}>{value}</p>
+          </div>
+        ))}
       </div>
 
+      {/* Range toggle */}
+      <div className="flex items-center gap-2 mb-4">
+        {(['7', '30'] as const).map(r => (
+          <button
+            key={r}
+            onClick={() => setRange(r)}
+            className={`px-4 py-1.5 text-[12px] font-bold rounded-lg transition-colors ${range === r ? 'bg-[#071A2B] text-white' : 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E2E8F0]'}`}
+          >
+            Last {r} days
+          </button>
+        ))}
+      </div>
+
+      {/* Revenue bar chart */}
+      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 mb-4">
+        <p className="text-[12px] font-bold text-[#071A2B] mb-3">Daily Revenue</p>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94A3B8' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+            <YAxis tickFormatter={fmtShort} tick={{ fontSize: 10, fill: '#94A3B8' }} tickLine={false} axisLine={false} width={40} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="Revenue" fill="#22C55E" radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Sales count + comparison line chart */}
+      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 mb-6">
+        <p className="text-[12px] font-bold text-[#071A2B] mb-3">Daily Sales Count</p>
+        <ResponsiveContainer width="100%" height={180}>
+          <LineChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94A3B8' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+            <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Line type="monotone" dataKey="Sales" stroke="#6366f1" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Sales table */}
       {loading ? (
         <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" /></div>
       ) : sales.length === 0 ? (
@@ -106,6 +235,7 @@ export default function TraderSales() {
         </div>
       )}
 
+      {/* Record Sale Modal */}
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { tradersApi } from '../lib/api'
-import { Camera, Eye, EyeOff, AlertTriangle, Trash2, LogOut, Save, Store } from 'lucide-react'
+import { Camera, Eye, EyeOff, AlertTriangle, Trash2, LogOut, Store, X } from 'lucide-react'
 
 type Profile = {
   business_name: string
@@ -17,6 +17,53 @@ type Profile = {
   email: string
 }
 
+type ModalProps = {
+  title: string
+  description: string
+  warning?: string
+  confirmLabel: string
+  confirmClass: string
+  onConfirm: () => void
+  onCancel: () => void
+  loading?: boolean
+  children?: React.ReactNode
+}
+
+function AlertModal({ title, description, warning, confirmLabel, confirmClass, onConfirm, onCancel, loading, children }: ModalProps) {
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={20} className="text-orange-500 shrink-0" />
+            <h2 className="text-[16px] font-extrabold text-[#071A2B]">{title}</h2>
+          </div>
+          <button onClick={onCancel} className="text-[#94A3B8] hover:text-[#071A2B] transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <p className="text-[13px] text-[#64748B]">{description}</p>
+        {warning && (
+          <div className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+            <AlertTriangle size={14} className="text-orange-500 shrink-0 mt-0.5" />
+            <p className="text-[12px] text-orange-700 font-semibold">{warning}</p>
+          </div>
+        )}
+        {children}
+        <div className="flex justify-end gap-2 pt-1">
+          <button onClick={onCancel} className="px-4 py-2.5 bg-[#F1F5F9] text-[#64748B] text-[13px] font-bold rounded-none hover:bg-[#E2E8F0] transition-colors">
+            Cancel
+          </button>
+          <button onClick={onConfirm} disabled={loading} className={`px-4 py-2.5 text-[13px] font-bold rounded-none transition-colors disabled:opacity-50 ${confirmClass}`}>
+            {loading ? 'Please wait…' : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function TraderAccount() {
   const { traderUuid } = useParams<{ traderUuid: string }>()
   const navigate = useNavigate()
@@ -28,8 +75,8 @@ export default function TraderAccount() {
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
-  const [closeConfirm, setCloseConfirm] = useState(false)
-  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [editingField, setEditingField] = useState<string | null>(null)
+  const [modal, setModal] = useState<'close' | 'reopen' | 'hide' | 'show' | 'delete' | null>(null)
   const [deleteInput, setDeleteInput] = useState('')
   const [deleting, setDeleting] = useState(false)
 
@@ -81,15 +128,16 @@ export default function TraderAccount() {
     fd.append('is_visible', String(!profile.is_visible))
     const { data } = await tradersApi.updateAccount(traderUuid, fd)
     setProfile(data as unknown as Profile)
+    setModal(null)
   }
 
-  const closeShop = async () => {
+  const toggleClose = async () => {
     if (!traderUuid || !profile) return
     const fd = new FormData()
     fd.append('is_closed', String(!profile.is_closed))
     const { data } = await tradersApi.updateAccount(traderUuid, fd)
     setProfile(data as unknown as Profile)
-    setCloseConfirm(false)
+    setModal(null)
   }
 
   const deleteShop = async () => {
@@ -114,7 +162,7 @@ export default function TraderAccount() {
 
       {/* Header */}
       <div>
-        <h1 className="text-[20px] font-extrabold text-[#071A2B]">My Account</h1>
+        <h1 className="text-[20px] font-extrabold text-[#071A2B]">Settings</h1>
         <p className="text-[13px] text-[#64748B] mt-0.5">{profile.full_name} · {profile.email}</p>
       </div>
 
@@ -153,34 +201,60 @@ export default function TraderAccount() {
             ['website', 'Website'],
           ] as [keyof typeof form, string][]).map(([key, label]) => (
             <div key={key}>
-              <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-wide mb-1">{label}</label>
-              <input
-                value={form[key]}
-                onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-[13px] text-[#071A2B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">{label}</label>
+                <button
+                  type="button"
+                  onClick={() => setEditingField(editingField === key ? null : key)}
+                  className="text-[11px] font-bold text-[#22C55E] hover:text-[#16A34A] transition-colors"
+                >
+                  {editingField === key ? 'Done' : 'Edit'}
+                </button>
+              </div>
+              {editingField === key
+                ? <input
+                    autoFocus
+                    value={form[key]}
+                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                    className="w-full border border-[#E2E8F0] rounded-none px-3 py-2.5 text-[13px] text-[#071A2B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40"
+                  />
+                : <p className="px-3 py-2.5 text-[13px] text-[#071A2B] bg-[#F8FAFC] border border-[#E2E8F0]">{form[key] || <span className="text-[#94A3B8]">Not set</span>}</p>
+              }
             </div>
           ))}
           <div className="sm:col-span-2">
-            <label className="block text-[11px] font-bold text-[#64748B] uppercase tracking-wide mb-1">Bio / Description</label>
-            <textarea
-              rows={3}
-              value={form.bio}
-              onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
-              className="w-full border border-[#E2E8F0] rounded-xl px-3 py-2.5 text-[13px] text-[#071A2B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40 resize-none"
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">Bio / Description</label>
+              <button
+                type="button"
+                onClick={() => setEditingField(editingField === 'bio' ? null : 'bio')}
+                className="text-[11px] font-bold text-[#22C55E] hover:text-[#16A34A] transition-colors"
+              >
+                {editingField === 'bio' ? 'Done' : 'Edit'}
+              </button>
+            </div>
+            {editingField === 'bio'
+              ? <textarea
+                  autoFocus
+                  rows={3}
+                  value={form.bio}
+                  onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+                  className="w-full border border-[#E2E8F0] rounded-none px-3 py-2.5 text-[13px] text-[#071A2B] focus:outline-none focus:ring-2 focus:ring-[#22C55E]/40 resize-none"
+                />
+              : <p className="px-3 py-2.5 text-[13px] text-[#071A2B] bg-[#F8FAFC] border border-[#E2E8F0] min-h-[72px]">{form.bio || <span className="text-[#94A3B8]">Not set</span>}</p>
+            }
           </div>
         </div>
 
         <div className="flex items-center gap-3">
+          {saveMsg && <span className={`text-[12px] font-semibold ${saveMsg === 'Saved!' ? 'text-[#22C55E]' : 'text-red-500'}`}>{saveMsg}</span>}
           <button
             onClick={save}
             disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#22C55E] text-white text-[13px] font-bold rounded-xl hover:bg-[#16A34A] transition-colors disabled:opacity-60"
+            className="ml-auto flex items-center gap-2 px-5 py-2.5 bg-[#22C55E] text-white text-[13px] font-bold rounded-none hover:bg-[#16A34A] transition-colors disabled:opacity-60"
           >
-            <Save size={14} /> {saving ? 'Saving…' : 'Save Changes'}
+            {saving ? 'Saving…' : 'Save Changes'}
           </button>
-          {saveMsg && <span className={`text-[12px] font-semibold ${saveMsg === 'Saved!' ? 'text-[#22C55E]' : 'text-red-500'}`}>{saveMsg}</span>}
         </div>
       </section>
 
@@ -194,13 +268,13 @@ export default function TraderAccount() {
             </h2>
             <p className="text-[12px] text-[#64748B] mt-1">
               {profile.is_visible
-                ? 'Your products are visible in the store.'
+                ? 'Your products are currently visible in the store.'
                 : 'Your products are hidden from the store.'}
             </p>
           </div>
           <button
-            onClick={toggleVisibility}
-            className={`shrink-0 px-4 py-2 rounded-xl text-[12px] font-bold transition-colors ${
+            onClick={() => setModal(profile.is_visible ? 'hide' : 'show')}
+            className={`shrink-0 px-4 py-2 rounded-none text-[12px] font-bold transition-colors ${
               profile.is_visible
                 ? 'bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FEF08A]'
                 : 'bg-[#DCFCE7] text-[#166534] hover:bg-[#BBF7D0]'
@@ -222,22 +296,16 @@ export default function TraderAccount() {
                 : 'Temporarily close your shop. You can reopen it anytime.'}
             </p>
           </div>
-          {!closeConfirm
-            ? <button
-                onClick={() => setCloseConfirm(true)}
-                className={`shrink-0 px-4 py-2 rounded-xl text-[12px] font-bold transition-colors ${
-                  profile.is_closed
-                    ? 'bg-[#DCFCE7] text-[#166534] hover:bg-[#BBF7D0]'
-                    : 'bg-[#FEF3C7] text-[#92400E] hover:bg-[#FDE68A]'
-                }`}
-              >
-                {profile.is_closed ? 'Reopen Shop' : 'Close Shop'}
-              </button>
-            : <div className="flex gap-2 shrink-0">
-                <button onClick={closeShop} className="px-4 py-2 bg-orange-500 text-white text-[12px] font-bold rounded-xl hover:bg-orange-600">Confirm</button>
-                <button onClick={() => setCloseConfirm(false)} className="px-4 py-2 bg-[#F1F5F9] text-[#64748B] text-[12px] font-bold rounded-xl">Cancel</button>
-              </div>
-          }
+          <button
+            onClick={() => setModal(profile.is_closed ? 'reopen' : 'close')}
+            className={`shrink-0 px-4 py-2 rounded-none text-[12px] font-bold transition-colors ${
+              profile.is_closed
+                ? 'bg-[#DCFCE7] text-[#166534] hover:bg-[#BBF7D0]'
+                : 'bg-[#FEF3C7] text-[#92400E] hover:bg-[#FDE68A]'
+            }`}
+          >
+            {profile.is_closed ? 'Reopen Shop' : 'Close Shop'}
+          </button>
         </div>
       </section>
 
@@ -247,34 +315,86 @@ export default function TraderAccount() {
         <p className="text-[12px] text-[#64748B]">
           This will permanently delete your shop, all products, sales, and data. This action <strong>cannot be undone</strong>.
         </p>
-        {!deleteConfirm
-          ? <button
-              onClick={() => setDeleteConfirm(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 text-[13px] font-bold rounded-xl hover:bg-red-100 transition-colors"
-            >
-              <Trash2 size={14} /> Delete My Shop
-            </button>
-          : <div className="space-y-3">
-              <p className="text-[12px] font-semibold text-[#071A2B]">Type <span className="font-mono bg-[#F1F5F9] px-1.5 py-0.5 rounded">DELETE</span> to confirm:</p>
-              <input
-                value={deleteInput}
-                onChange={e => setDeleteInput(e.target.value)}
-                placeholder="DELETE"
-                className="w-full border border-red-200 rounded-xl px-3 py-2.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-red-300"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={deleteShop}
-                  disabled={deleteInput !== 'DELETE' || deleting}
-                  className="px-5 py-2.5 bg-red-600 text-white text-[13px] font-bold rounded-xl hover:bg-red-700 disabled:opacity-40 transition-colors"
-                >
-                  {deleting ? 'Deleting…' : 'Permanently Delete'}
-                </button>
-                <button onClick={() => { setDeleteConfirm(false); setDeleteInput('') }} className="px-4 py-2.5 bg-[#F1F5F9] text-[#64748B] text-[13px] font-bold rounded-xl">Cancel</button>
-              </div>
-            </div>
-        }
+        <div className="flex justify-end">
+          <button
+            onClick={() => setModal('delete')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-[13px] font-bold rounded-none hover:bg-red-700 transition-colors"
+          >
+            <Trash2 size={14} /> Delete My Shop
+          </button>
+        </div>
       </section>
+
+      {/* — Modals — */}
+
+      {modal === 'hide' && (
+        <AlertModal
+          title="Hide All Products?"
+          description="All your products will be hidden from the store immediately. Customers won't be able to find or buy them."
+          warning="This affects all your active listings. You can show them again at any time."
+          confirmLabel="Yes, Hide Products"
+          confirmClass="bg-yellow-500 text-white hover:bg-yellow-600"
+          onConfirm={toggleVisibility}
+          onCancel={() => setModal(null)}
+        />
+      )}
+
+      {modal === 'show' && (
+        <AlertModal
+          title="Show All Products?"
+          description="All your products will become visible in the store again."
+          confirmLabel="Yes, Show Products"
+          confirmClass="bg-[#22C55E] text-white hover:bg-[#16A34A]"
+          onConfirm={toggleVisibility}
+          onCancel={() => setModal(null)}
+        />
+      )}
+
+      {modal === 'close' && (
+        <AlertModal
+          title="Close Your Shop?"
+          description="Your shop will be temporarily closed. Customers won't be able to place new orders."
+          warning="All your products will be hidden while the shop is closed. You can reopen anytime."
+          confirmLabel="Yes, Close Shop"
+          confirmClass="bg-orange-500 text-white hover:bg-orange-600"
+          onConfirm={toggleClose}
+          onCancel={() => setModal(null)}
+        />
+      )}
+
+      {modal === 'reopen' && (
+        <AlertModal
+          title="Reopen Your Shop?"
+          description="Your shop will be reopened and your products will be visible to customers again."
+          confirmLabel="Yes, Reopen Shop"
+          confirmClass="bg-[#22C55E] text-white hover:bg-[#16A34A]"
+          onConfirm={toggleClose}
+          onCancel={() => setModal(null)}
+        />
+      )}
+
+      {modal === 'delete' && (
+        <AlertModal
+          title="Delete Shop Permanently?"
+          description="This will permanently delete your shop, all products, sales history, and data. This cannot be undone."
+          warning="Once deleted, your shop and all associated data will be gone forever. There is no recovery."
+          confirmLabel="Permanently Delete"
+          confirmClass="bg-red-600 text-white hover:bg-red-700 disabled:opacity-40"
+          onConfirm={deleteShop}
+          onCancel={() => { setModal(null); setDeleteInput('') }}
+          loading={deleting}
+        >
+          <div className="space-y-1.5">
+            <p className="text-[12px] font-semibold text-[#071A2B]">Type <span className="font-mono bg-[#F1F5F9] px-1.5 py-0.5 rounded">DELETE</span> to confirm:</p>
+            <input
+              value={deleteInput}
+              onChange={e => setDeleteInput(e.target.value)}
+              placeholder="DELETE"
+              className="w-full border border-red-200 rounded-none px-3 py-2.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-red-300"
+            />
+          </div>
+        </AlertModal>
+      )}
 
     </div>
   )

@@ -732,6 +732,24 @@ export type ApiNotification = {
   created_at: string
 }
 
+// ── Session cache: single fetch per page load ────────────────────────────────
+let _profilePromise: Promise<{ is_staff: boolean }> | null = null
+let _traderPromise: Promise<{ uuid: string; status: string } | null> | null = null
+
+export const sessionApi = {
+  profile: (): Promise<{ is_staff: boolean }> => {
+    if (!_profilePromise)
+      _profilePromise = authApi.profile().then(r => r.data).catch(() => ({ is_staff: false }))
+    return _profilePromise
+  },
+  trader: (): Promise<{ uuid: string; status: string } | null> => {
+    if (!_traderPromise)
+      _traderPromise = tradersApi.me().then(r => r.data).catch(() => null)
+    return _traderPromise
+  },
+  clear: () => { _profilePromise = null; _traderPromise = null },
+}
+
 export const notificationsApi = {
   list: () => api.get<ApiNotification[]>('/api/auth/notifications/'),
   markRead: (id: number) => api.patch(`/api/auth/notifications/${id}/`, {}),

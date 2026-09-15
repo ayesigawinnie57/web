@@ -178,9 +178,9 @@ export default function TraderInventory() {
           { label: 'Low Stock', value: lowStock, color: 'text-orange-500' },
           { label: 'Inventory Value', value: fmt(totalValue), color: 'text-[#22C55E]' },
         ].map(({ label, value, color }) => (
-          <div key={label} className="bg-white border border-[#E2E8F0] rounded-xl p-4">
-            <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wide mb-1">{label}</p>
-            <p className={`text-[18px] font-extrabold ${color}`}>{value}</p>
+          <div key={label} className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex flex-col gap-1 min-w-0">
+            <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wide leading-tight">{label}</p>
+            <p className={`font-extrabold ${color} break-words leading-tight text-[clamp(14px,3vw,20px)]`}>{value}</p>
           </div>
         ))}
       </div>
