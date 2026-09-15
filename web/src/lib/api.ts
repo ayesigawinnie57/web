@@ -579,16 +579,16 @@ export const accountingApi = {
 
 export const dataApi = {
   exportUrl: (type: 'products' | 'orders' | 'users', format: 'csv' | 'json') =>
-    `${BASE_URL}/api/data/export/${type}/?format=${format}`,
+    `${BASE_URL}/api/orders/data/export/${type}/?format=${format}`,
   import: (type: 'products' | 'categories', file: File) => {
     const form = new FormData()
     form.append('file', file)
     return api.post<{ created: number; skipped?: number; errors: string[] }>(
-      `/api/data/import/${type}/`, form, { headers: { 'Content-Type': 'multipart/form-data' } }
+      `/api/orders/data/import/${type}/`, form, { headers: { 'Content-Type': 'multipart/form-data' } }
     )
   },
-  clearOrders: (password: string) => api.post<{ deleted: number }>('/api/data/danger/clear-orders/', { password }),
-  resetInventory: (password: string) => api.post<{ products_reset: number; movements_deleted: number }>('/api/data/danger/reset-inventory/', { password }),
+  clearOrders: (password: string) => api.post<{ deleted: number }>('/api/orders/data/danger/clear-orders/', { password }),
+  resetInventory: (password: string) => api.post<{ products_reset: number; movements_deleted: number }>('/api/orders/data/danger/reset-inventory/', { password }),
 }
 
 export type ApiTraderApplication = {
