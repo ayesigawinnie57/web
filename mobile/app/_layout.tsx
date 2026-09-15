@@ -8,6 +8,7 @@ import { WishlistProvider } from './lib/WishlistContext'
 import { CartProvider } from './lib/CartContext'
 import { NotificationProvider, pushNotification } from './lib/NotificationContext'
 import { FilterProvider } from './lib/FilterContext'
+import { AuthProvider, useAuth } from './lib/AuthContext'
 import { ordersApi } from './lib/products'
 import { tokenStore } from './lib/auth'
 
@@ -98,24 +99,34 @@ function OrderStatusPoller() {
   return null
 }
 
+function AppShell() {
+  const { ready } = useAuth()
+  if (!ready) return <View style={styles.container} />
+  return (
+    <View style={styles.container}>
+      <OrderStatusPoller />
+      <Navbar />
+      <View style={styles.content}>
+        <Stack screenOptions={{ headerShown: false }} />
+      </View>
+      <BottomNav />
+    </View>
+  )
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <NotificationProvider>
-        <WishlistProvider>
-          <CartProvider>
-            <FilterProvider>
-            <View style={styles.container}>
-              <OrderStatusPoller />
-              <Navbar />
-              <View style={styles.content}>
-                <Stack screenOptions={{ headerShown: false }} />
-              </View>
-              <BottomNav />
-            </View>
-            </FilterProvider>
-          </CartProvider>
-        </WishlistProvider>
+        <AuthProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <FilterProvider>
+                <AppShell />
+              </FilterProvider>
+            </CartProvider>
+          </WishlistProvider>
+        </AuthProvider>
       </NotificationProvider>
     </SafeAreaProvider>
   )

@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Image, Modal, Pressable, Alert, ActivityIndicator, ScrollView } from 'react-native'
 import { useRouter, usePathname } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { X, Search, UserRound, ShoppingCart, Heart, Home, Grid2X2, Bell, Settings, Menu, Users, Package, ShoppingBag, LayoutDashboard } from 'lucide-react-native'
 import { C, LOGO } from '../theme'
-import { authApi, tokenStore, type AuthUser } from '../lib/auth'
+import { tokenStore } from '../lib/auth'
+import { useAuth } from '../lib/AuthContext'
 import { useWishlist } from '../lib/WishlistContext'
 import { useCart } from '../lib/CartContext'
 import { useNotifications } from '../lib/NotificationContext'
@@ -14,7 +15,7 @@ import type { Product } from '../components/ProductCard'
 export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const { user, logout } = useAuth()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Product[]>([])
   const [catResults, setCatResults] = useState<import('../lib/products').ApiCategory[]>([])
@@ -28,19 +29,6 @@ export default function Navbar() {
   const pathname = usePathname()
   const isAdmin = pathname.startsWith('/admin')
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
-
-  useEffect(() => {
-    tokenStore.getAccess().then(async (token) => {
-      if (token) {
-        try {
-          const { data } = await authApi.profile(token)
-          setUser(data)
-        } catch {
-          setUser(null)
-        }
-      }
-    })
-  }, [])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -82,8 +70,7 @@ export default function Navbar() {
         text: 'Log out',
         style: 'destructive',
         onPress: async () => {
-          await tokenStore.clear()
-          setUser(null)
+          await logout()
           setAccountOpen(false)
         },
       },
@@ -97,8 +84,7 @@ export default function Navbar() {
         text: 'Delete Account',
         style: 'destructive',
         onPress: async () => {
-          await tokenStore.clear()
-          setUser(null)
+          await logout()
           setAccountOpen(false)
         },
       },
@@ -382,17 +368,8 @@ export function BottomNav() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { unreadCount } = useNotifications()
-  const [isStaff, setIsStaff] = useState(false)
-
-  useEffect(() => {
-    tokenStore.getAccess().then(async (token) => {
-      if (!token) return
-      try {
-        const { data } = await authApi.profile(token)
-        setIsStaff(data.is_staff || data.is_superuser)
-      } catch { }
-    })
-  }, [])
+  const { user } = useAuth()
+  const isStaff = user?.is_staff || user?.is_superuser || false
 
   const items = [
     { label: 'Home',          icon: Home,     onPress: () => router.push('/') },
