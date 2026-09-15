@@ -68,9 +68,6 @@ function ChargesAccordion({ settings, setSettings }: {
 
   const handleSave = async (key: string) => {
     setSettings(s => ({ ...s, [key]: draft }))
-    // submit just this field
-    const fakeEvent = { preventDefault: () => {} } as React.FormEvent
-    // we need to save only this key — call API directly
     try {
       await fetch(`${BASE_URL}/api/settings/platform/`, {
         method: 'PATCH',
@@ -162,7 +159,6 @@ function PlatformTab({ showToast }: { showToast: (m: string, t?: Toast['type']) 
   })
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState<string | null>(null)
-  const [savingCharges, setSavingCharges] = useState(false)
   const [warnDeactivate, setWarnDeactivate] = useState(false)
 
   useEffect(() => {
@@ -190,20 +186,6 @@ function PlatformTab({ showToast }: { showToast: (m: string, t?: Toast['type']) 
       showToast('Setting updated.')
     } catch { showToast('Failed to update setting.', 'error') }
     finally { setToggling(null) }
-  }
-
-  const saveCharges = async (e: React.FormEvent) => {
-    e.preventDefault(); setSavingCharges(true)
-    const payload: Record<string, string> = {}
-    CHARGE_FIELDS.forEach(({ key }) => { payload[key] = String(settings[key] ?? '') })
-    try {
-      const res = await fetch(`${BASE_URL}/api/settings/platform/`, {
-        method: 'PATCH', headers: authHeaders(), body: JSON.stringify(payload),
-      })
-      if (!res.ok) throw new Error()
-      showToast('Charges saved.')
-    } catch { showToast('Failed to save charges.', 'error') }
-    finally { setSavingCharges(false) }
   }
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-7 h-7 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" /></div>
