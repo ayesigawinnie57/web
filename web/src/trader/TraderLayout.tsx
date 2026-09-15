@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingBag, DollarSign, LogOut, Store, ChevronLeft, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, DollarSign, LogOut, Store, ChevronLeft, Menu, X, UserCircle, Settings, Zap, Boxes } from 'lucide-react'
 import { LOGO } from '../lib/api'
 
 const NAV = [
@@ -8,6 +8,17 @@ const NAV = [
   { to: 'products', label: 'Products', icon: Package },
   { to: 'sales', label: 'Sales', icon: ShoppingBag },
   { to: 'accounting', label: 'Accounting', icon: DollarSign },
+]
+
+const TRADER_EXTRA = [
+  { to: 'flashsales', label: 'Flash Sales', icon: Zap },
+  { to: 'inventory', label: 'Inventory', icon: Boxes },
+]
+
+const STORE_LINKS = [
+  { to: '/account', label: 'My Account', icon: UserCircle },
+  { to: '/orders', label: 'Orders', icon: ShoppingBag },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export default function TraderLayout() {
@@ -49,7 +60,6 @@ export default function TraderLayout() {
           <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest hidden sm:block">Trader Portal</span>
         </div>
         <div className="flex-1" />
-        {/* Menu icon — mobile only */}
         <button
           onClick={() => setDrawerOpen(true)}
           className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors shrink-0 md:hidden"
@@ -68,11 +78,26 @@ export default function TraderLayout() {
               <button onClick={() => setDrawerOpen(false)}><X className="w-5 h-5 text-white/60" /></button>
             </div>
             <nav className="flex-1 py-2 overflow-y-auto">
-              {NAV.map(({ to, label, icon: Icon, end }) => (
-                <NavLink key={label} to={href(to)} end={end} onClick={() => setDrawerOpen(false)} className={drawerLinkClass}>
+              {/* Extra trader pages */}
+              {TRADER_EXTRA.map(({ to, label, icon: Icon }) => (
+                <NavLink key={label} to={href(to)} onClick={() => setDrawerOpen(false)} className={drawerLinkClass}>
                   <Icon size={16} />
                   {label}
                 </NavLink>
+              ))}
+
+              {/* Store links */}
+              <div className="mx-5 my-2 border-t border-white/10" />
+              <p className="px-5 pt-1 pb-1 text-[10px] font-bold text-white/30 uppercase tracking-widest">Store</p>
+              {STORE_LINKS.map(({ to, label, icon: Icon }) => (
+                <button
+                  key={label}
+                  onClick={() => { navigate(to); setDrawerOpen(false) }}
+                  className="w-full flex items-center gap-3 px-5 py-3.5 text-[13px] font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <Icon size={16} />
+                  {label}
+                </button>
               ))}
             </nav>
             <div className="border-t border-white/10 p-4 space-y-1">
