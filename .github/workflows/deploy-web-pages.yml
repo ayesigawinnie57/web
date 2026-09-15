@@ -36,11 +36,28 @@ jobs:
         run: |
           npm run build
           node prerender.mjs
+          # 404 redirect page — also includes preload-error handler
           cat > dist/404.html << 'EOF'
           <!doctype html><html><head><meta charset="UTF-8">
           <script>sessionStorage.redirect=location.href</script>
+          <script>
+            window.addEventListener('vite:preloadError',function(){
+              if(!sessionStorage.getItem('reloaded')){
+                sessionStorage.setItem('reloaded','1')
+                window.location.href=window.location.href.split('?')[0]+'?v='+Date.now()
+              }else{sessionStorage.removeItem('reloaded')}
+            })
+          </script>
           <meta http-equiv="refresh" content="0;URL=/"></head></html>
           EOF
+          # Service worker to clear stale caches on every deploy
+          BUILD_HASH=$(find dist/assets -name '*.js' | head -1 | xargs basename)
+          cat > dist/sw-clear.js << SWEOF
+          self.addEventListener('install', () => self.skipWaiting());
+          self.addEventListener('activate', e => {
+            e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))));
+          });
+          SWEOF
           echo 'www.majogadgets.com' > dist/CNAME
 
       - name: Deploy to gh-pages
