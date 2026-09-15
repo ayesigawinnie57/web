@@ -18,7 +18,7 @@ const TRADER_EXTRA = [
 
 const STORE_LINKS = [
   { to: 'account', label: 'My Account', icon: UserCircle, internal: true },
-  { to: '/orders', label: 'My Orders', icon: ShoppingBag, internal: false },
+  { to: '/orders', label: 'My Purchases', icon: ShoppingBag, internal: false },
   { to: '/settings', label: 'Settings', icon: Settings, internal: false },
 ]
 
