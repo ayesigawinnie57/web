@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
-import { Store, Menu, X, Settings, ArrowLeftRight } from 'lucide-react'
+import { Store, Menu, X, Settings, ArrowLeftRight, LayoutDashboard, Package, ShoppingBag, TrendingUp, DollarSign } from 'lucide-react'
 import { LOGO, sessionApi } from '../lib/api'
+import { useSwitchPortal } from '../lib/SwitchContext'
 
-const NAV: { to: string; label: string; end?: boolean }[] = [
-  { to: '',           label: 'Dashboard',  end: true },
-  { to: 'products',   label: 'Products' },
-  { to: 'orders',     label: 'Orders' },
-  { to: 'sales',      label: 'Sales' },
-  { to: 'accounting', label: 'Accounting' },
+import type { LucideIcon } from 'lucide-react'
+
+const NAV: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
+  { to: '',           label: 'Dashboard',  icon: LayoutDashboard, end: true },
+  { to: 'products',   label: 'Products',   icon: Package },
+  { to: 'orders',     label: 'Orders',     icon: ShoppingBag },
+  { to: 'sales',      label: 'Sales',      icon: TrendingUp },
+  { to: 'accounting', label: 'Accounting', icon: DollarSign },
 ]
 
 const TRADER_EXTRA: { to: string; label: string }[] = [
@@ -25,6 +28,7 @@ export default function TraderLayout() {
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const { startSwitch } = useSwitchPortal()
 
   useEffect(() => {
     sessionApi.profile().then(p => setIsAdmin(p.is_staff))
@@ -105,14 +109,14 @@ export default function TraderLayout() {
             <div className="border-t border-white/10 p-4 space-y-1">
               {isAdmin && (
                 <button
-                  onClick={() => { navigate('/admin'); setDrawerOpen(false) }}
+                  onClick={() => { setDrawerOpen(false); startSwitch('trader', 'admin', '/admin') }}
                   className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-[13px] font-semibold text-[#F97316] hover:bg-white/5 transition-colors"
                 >
                   <ArrowLeftRight size={14} /> Switch to Admin
                 </button>
               )}
               <button
-                onClick={() => { navigate('/'); setDrawerOpen(false) }}
+                onClick={() => { setDrawerOpen(false); startSwitch('trader', 'store', '/') }}
                 className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-[13px] font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors"
               >
                 Back to Store
@@ -160,14 +164,14 @@ export default function TraderLayout() {
           <div className="border-t border-white/10 p-3 space-y-1">
             {isAdmin && (
               <button
-                onClick={() => navigate('/admin')}
+                onClick={() => startSwitch('trader', 'admin', '/admin')}
                 className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold text-[#F97316] hover:opacity-80 transition-colors"
               >
                 <ArrowLeftRight size={13} /> Switch to Admin
               </button>
             )}
             <button
-              onClick={() => navigate('/')}
+              onClick={() => startSwitch('trader', 'store', '/')}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold text-white/40 hover:text-white transition-colors"
             >
               Back to Store
@@ -190,8 +194,9 @@ export default function TraderLayout() {
 
       {/* Mobile bottom tab bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E2E8F0] flex md:hidden">
-        {NAV.map(({ to, label, end }) => (
+        {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={label} to={href(to)} end={end} className={tabClass}>
+            <Icon size={18} />
             <span>{label}</span>
           </NavLink>
         ))}

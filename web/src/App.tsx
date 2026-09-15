@@ -1,7 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { NotificationProvider } from './lib/NotificationContext'
+import { SwitchProvider, useSwitchPortal } from './lib/SwitchContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { BASE_URL, sessionApi } from './lib/api'
+import SwitchTransition from './components/SwitchTransition'
 
 const LandingPage            = lazy(() => import('./landing'))
 const ProductPage            = lazy(() => import('./pages/ProductPage'))
@@ -57,6 +59,26 @@ const TraderInventory  = lazy(() => import('./trader/TraderInventory'))
 const TraderSales      = lazy(() => import('./trader/TraderSales'))
 const TraderAccounting = lazy(() => import('./trader/TraderAccounting'))
 
+// Renders the transition overlay and drives navigation from above the route tree
+function SwitchOverlay() {
+  const { current, endSwitch } = useSwitchPortal()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (current) navigate(current.toPath)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.toPath])
+
+  if (!current) return null
+  return (
+    <SwitchTransition
+      from={current.from}
+      to={current.to}
+      onDone={endSwitch}
+    />
+  )
+}
+
 function SiteOffline() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center px-6 text-center">
@@ -80,9 +102,11 @@ export default function App() {
   if (uiActive === null) return null
   if (!uiActive && !isAdmin) return <SiteOffline />
   return (
+    <SwitchProvider>
     <NotificationProvider>
     <BrowserRouter>
       <Suspense fallback={null}>
+        <SwitchOverlay />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/shop" element={<ShopPage />} />
@@ -144,5 +168,6 @@ export default function App() {
       </Suspense>
     </BrowserRouter>
     </NotificationProvider>
+    </SwitchProvider>
   )
 }

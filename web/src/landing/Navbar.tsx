@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings, ShoppingBag, Store } from 'lucide-react'
-import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, tradersApi } from '../lib/api'
+import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, tradersApi, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
+import { useSwitchPortal } from '../lib/SwitchContext'
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
 
@@ -13,6 +14,13 @@ function getCachedUser(): UserInfo | null {
 export default function Navbar() {
   const [user, setUser] = useState<UserInfo | null>(getCachedUser)
   const { unreadCount, refresh: refreshNotifications } = useNotifications()
+  const { startSwitch } = useSwitchPortal()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    if (!hasAccessToken()) return
+    sessionApi.profile().then(p => setIsAdmin(p.is_staff))
+  }, [])
   const [searchOpen, setSearchOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -179,16 +187,24 @@ export default function Navbar() {
               <Link to="/deals" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Deals</Link>
             </div>
             {/* Admin icon */}
-            {user?.isAdmin && (
-              <Link to="/admin" title="Admin Panel" className="w-[34px] h-[34px] rounded-full bg-[#1E3A8A] flex items-center justify-center">
+            {isAdmin && (
+              <button
+                onClick={() => startSwitch('store', 'admin', '/admin')}
+                title="Admin Panel"
+                className="w-[34px] h-[34px] rounded-full bg-[#1E3A8A] flex items-center justify-center"
+              >
                 <ShieldCheck className="w-[18px] h-[18px] text-white" />
-              </Link>
+              </button>
             )}
             {/* Trader icon — desktop only */}
             {traderUuid && (
-              <Link to={`/trader/${traderUuid}`} title="Trader Portal" className="hidden lg:flex w-[34px] h-[34px] rounded-full bg-[#22C55E] items-center justify-center">
+              <button
+                onClick={() => startSwitch('store', 'trader', `/trader/${traderUuid}`)}
+                title="Trader Portal"
+                className="hidden lg:flex w-[34px] h-[34px] rounded-full bg-[#22C55E] items-center justify-center"
+              >
                 <Store className="w-[18px] h-[18px] text-white" />
-              </Link>
+              </button>
             )}
             {/* Account */}
             <button
@@ -385,10 +401,13 @@ export default function Navbar() {
           <span className="text-[10px] font-semibold">Notifications</span>
         </Link>
         {traderUuid && (
-          <Link to={`/trader/${traderUuid}`} className="flex flex-col items-center gap-1 text-[#22C55E]">
+          <button
+            onClick={() => startSwitch('store', 'trader', `/trader/${traderUuid}`)}
+            className="flex flex-col items-center gap-1 text-[#22C55E]"
+          >
             <Store size={20} />
             <span className="text-[10px] font-semibold">Trader</span>
-          </Link>
+          </button>
         )}
         <button onClick={() => setAccountOpen(true)} className="flex flex-col items-center gap-1 text-[#64748B]">
           <Settings size={20} />

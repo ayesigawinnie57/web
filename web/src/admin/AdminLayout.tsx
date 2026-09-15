@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store, ArrowLeftRight } from 'lucide-react'
 import { LOGO, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
+import { useSwitchPortal } from '../lib/SwitchContext'
 
 const NAV = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -26,6 +27,7 @@ export default function AdminLayout() {
   const [search, setSearch] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
   const [traderUuid, setTraderUuid] = useState<string | null>(null)
+  const { startSwitch } = useSwitchPortal()
 
   useEffect(() => {
     sessionApi.trader().then(t => {
@@ -35,7 +37,12 @@ export default function AdminLayout() {
 
   const switchToTrader = (close?: () => void) => {
     close?.()
-    navigate(`/trader/${traderUuid}`)
+    if (traderUuid) startSwitch('admin', 'trader', `/trader/${traderUuid}`)
+  }
+
+  const goToStore = (close?: () => void) => {
+    close?.()
+    startSwitch('admin', 'store', '/')
   }
 
   const logout = () => {
@@ -129,7 +136,7 @@ export default function AdminLayout() {
                   <ArrowLeftRight size={14} /> Switch to Trader
                 </button>
               )}
-              <button onClick={() => { navigate('/'); setDrawerOpen(false) }}
+              <button onClick={() => goToStore(() => setDrawerOpen(false))}
                 className="w-full flex items-center px-4 py-3 rounded-lg text-[13px] font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors">
                 Back to Store
               </button>
@@ -160,7 +167,7 @@ export default function AdminLayout() {
                 <ArrowLeftRight size={14} /> Switch to Trader
               </button>
             )}
-            <button onClick={() => navigate('/')} className="w-full flex items-center px-5 py-3.5 text-[13px] font-semibold text-white/40 hover:text-white transition-colors">
+            <button onClick={() => goToStore()} className="w-full flex items-center px-5 py-3.5 text-[13px] font-semibold text-white/40 hover:text-white transition-colors">
               Back to Store
             </button>
             <button onClick={logout} className="w-full flex items-center px-5 py-3.5 text-[13px] font-semibold text-white/40 hover:text-white transition-colors">
