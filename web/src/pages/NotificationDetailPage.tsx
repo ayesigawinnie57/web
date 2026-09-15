@@ -105,8 +105,8 @@ export default function NotificationDetailPage() {
             </Link>
           )}
           {isProductRating && ratingTarget && (
-            <Link to={`/product-review/${ratingTarget}`} className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-green-500 text-white text-[14px] font-extrabold">
-              <Star size={16} fill="#fff" color="#fff" /> Review This Product
+            <Link to={`/rate-product/${ratingTarget}`} className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-amber-400 text-white text-[14px] font-extrabold">
+              <Star size={16} fill="#fff" color="#fff" /> Rate This Product
             </Link>
           )}
 

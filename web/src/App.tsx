@@ -21,6 +21,7 @@ const NotificationDetailPage = lazy(() => import('./pages/NotificationDetailPage
 const ForgotPasswordPage     = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage      = lazy(() => import('./pages/ResetPasswordPage'))
 const RateOrderPage          = lazy(() => import('./pages/RateOrderPage'))
+const RateProductPage        = lazy(() => import('./pages/RateProductPage'))
 const ReturnPage       = lazy(() => import('./pages/ReturnPage'))
 const BecomeTraderPage = lazy(() => import('./pages/BecomeTraderPage'))
 
@@ -96,6 +97,7 @@ export default function App() {
           <Route path="/notifications/:slug" element={<NotificationDetailPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/rate/:code" element={<RateOrderPage />} />
+          <Route path="/rate-product/:slug" element={<RateProductPage />} />
           <Route path="/returns" element={<ReturnPage />} />
           <Route path="/become-a-trader" element={<BecomeTraderPage />} />
           <Route element={<TraderGuard />}>

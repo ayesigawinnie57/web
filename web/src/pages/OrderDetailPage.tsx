@@ -227,7 +227,7 @@ export default function OrderDetailPage() {
               </p>
               <div className="space-y-4">
                 {order.items.map(item => (
-                  <div key={item.id} className="flex items-center gap-3">
+                  <div key={item.id} className="flex items-start gap-3">
                     <div className="w-14 h-14 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] shrink-0 overflow-hidden">
                       {item.product?.image && <img src={item.product.image} alt="" className="w-full h-full object-contain" />}
                     </div>

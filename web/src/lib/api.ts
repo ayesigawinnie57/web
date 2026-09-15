@@ -244,6 +244,8 @@ export const productsApi = {
   flashSales: () => cachedRequest('products:flash-sales', () => api.get<ApiFlashSale[]>('/api/products/flash-sales/?active=1')),
   reviews: (slug: string) => api.get<ApiReview[]>(`/api/products/${slug}/reviews/`),
   ratingSummary: (slug: string) => api.get<{ average: number; total: number; breakdown: Record<string, number>; with_photos: number }>(`/api/products/${slug}/reviews/summary/`),
+  checkEligibility: (slug: string) => api.get<{ eligible: boolean; reason?: string; order_id?: number; order_item_id?: number; order_code?: string; existing_review_id?: number | null }>(`/api/products/${slug}/reviews/eligibility/`),
+  submitReview: (slug: string, data: FormData) => api.post(`/api/products/${slug}/reviews/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   shareUrl: (slug: string) => `${BASE_URL}/api/products/share/products/${slug}/`,
 }
 
