@@ -99,8 +99,7 @@ export default function App() {
     sessionApi.profile().then(p => setIsAdmin(p.is_staff))
   }, [])
 
-  if (uiActive === null) return null
-  if (!uiActive && !isAdmin) return <SiteOffline />
+  if (uiActive === false && !isAdmin) return <SiteOffline />
   return (
     <SwitchProvider>
     <NotificationProvider>

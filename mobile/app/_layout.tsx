@@ -8,7 +8,7 @@ import { WishlistProvider } from './lib/WishlistContext'
 import { CartProvider } from './lib/CartContext'
 import { NotificationProvider, pushNotification } from './lib/NotificationContext'
 import { FilterProvider } from './lib/FilterContext'
-import { AuthProvider, useAuth } from './lib/AuthContext'
+import { AuthProvider } from './lib/AuthContext'
 import { ordersApi } from './lib/products'
 import { tokenStore } from './lib/auth'
 
@@ -100,8 +100,6 @@ function OrderStatusPoller() {
 }
 
 function AppShell() {
-  const { ready } = useAuth()
-  if (!ready) return <View style={styles.container} />
   return (
     <View style={styles.container}>
       <OrderStatusPoller />
