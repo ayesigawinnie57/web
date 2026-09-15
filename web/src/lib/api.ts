@@ -660,6 +660,39 @@ export type ApiTraderExpense = {
   created_at: string
 }
 
+export type ApiTraderOrderItem = {
+  id: number
+  order_item_id: number
+  order_code: string
+  order_id: number
+  order_status: string
+  order_created_at: string
+  delivery_address: string
+  product_name: string
+  product_image: string | null
+  quantity: number
+  price: string
+  status: 'pending' | 'preparing' | 'ready'
+  note: string
+  updated_at: string
+}
+
+export type ApiTraderInventoryItem = {
+  id: number
+  product: number
+  product_uuid: string
+  product_name: string
+  product_image: string | null
+  product_price: string
+  product_stock: number
+  quantity: number
+  cost_price: string
+  location: string
+  note: string
+  updated_at: string
+  created_at: string
+}
+
 export const tradersApi = {
   apply: (data: object) => api.post<ApiTraderApplication>('/api/traders/apply/', data),
   me: () => api.get<{ id: number; uuid: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; email: string; full_name: string } | null>('/api/traders/me/').catch(() => ({ data: null })),
@@ -678,6 +711,16 @@ export const tradersApi = {
   createSale: (uuid: string, data: object) => api.post<ApiTraderSale>(`/api/traders/${uuid}/sales/`, data),
   expenses: (uuid: string) => api.get<ApiTraderExpense[]>(`/api/traders/${uuid}/expenses/`),
   createExpense: (uuid: string, data: object) => api.post<ApiTraderExpense>(`/api/traders/${uuid}/expenses/`, data),
+  orders: (uuid: string, status?: string) => api.get<ApiTraderOrderItem[]>(`/api/traders/${uuid}/orders/${status ? `?status=${status}` : ''}`),
+  updateOrderItem: (uuid: string, id: number, data: { status: string; note?: string }) => api.patch<ApiTraderOrderItem>(`/api/traders/${uuid}/orders/${id}/`, data),
+  account: (uuid: string) => api.get<ApiTraderApplication & { logo_url: string | null; bio: string; is_visible: boolean; is_closed: boolean }>(`/api/traders/${uuid}/account/`),
+  updateAccount: (uuid: string, data: FormData) => api.patch<ApiTraderApplication & { logo_url: string | null; bio: string; is_visible: boolean; is_closed: boolean }>(`/api/traders/${uuid}/account/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteShop: (uuid: string) => api.delete(`/api/traders/${uuid}/account/`, { data: { confirm: 'DELETE' } }),
+  inventory: (uuid: string) => api.get<ApiTraderInventoryItem[]>(`/api/traders/${uuid}/inventory/`),
+  addInventoryItem: (uuid: string, data: object) => api.post<ApiTraderInventoryItem>(`/api/traders/${uuid}/inventory/`, data),
+  updateInventoryItem: (uuid: string, id: number, data: object) => api.patch<ApiTraderInventoryItem>(`/api/traders/${uuid}/inventory/${id}/`, data),
+  deleteInventoryItem: (uuid: string, id: number) => api.delete(`/api/traders/${uuid}/inventory/${id}/`),
+  addStockMovement: (uuid: string, id: number, data: { type: string; quantity: number; note?: string }) => api.post<ApiTraderInventoryItem>(`/api/traders/${uuid}/inventory/${id}/movements/`, data),
 }
 
 export type ApiNotification = {

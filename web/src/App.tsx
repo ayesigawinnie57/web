@@ -50,6 +50,10 @@ const TraderGuard      = lazy(() => import('./trader/TraderGuard'))
 const TraderLayout     = lazy(() => import('./trader/TraderLayout'))
 const TraderDashboard  = lazy(() => import('./trader/TraderDashboard'))
 const TraderProducts   = lazy(() => import('./trader/TraderProducts'))
+const TraderOrders     = lazy(() => import('./trader/TraderOrders'))
+const TraderAccount    = lazy(() => import('./trader/TraderAccount'))
+const TraderFlashSales = lazy(() => import('./trader/TraderFlashSales'))
+const TraderInventory  = lazy(() => import('./trader/TraderInventory'))
 const TraderSales      = lazy(() => import('./trader/TraderSales'))
 const TraderAccounting = lazy(() => import('./trader/TraderAccounting'))
 
@@ -104,6 +108,10 @@ export default function App() {
             <Route path="/trader/:traderUuid" element={<TraderLayout />}>
               <Route index element={<TraderDashboard />} />
               <Route path="products" element={<TraderProducts />} />
+              <Route path="orders" element={<TraderOrders />} />
+              <Route path="account" element={<TraderAccount />} />
+              <Route path="flashsales" element={<TraderFlashSales />} />
+              <Route path="inventory" element={<TraderInventory />} />
               <Route path="sales" element={<TraderSales />} />
               <Route path="accounting" element={<TraderAccounting />} />
             </Route>

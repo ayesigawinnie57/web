@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingBag, DollarSign, LogOut, Store, ChevronLeft, Menu, X, UserCircle, Settings, Zap, Boxes } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, DollarSign, LogOut, Store, ChevronLeft, Menu, X, UserCircle, Settings, Zap, Boxes, ClipboardList } from 'lucide-react'
 import { LOGO } from '../lib/api'
 
 const NAV = [
-  { to: '', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: 'products', label: 'Products', icon: Package },
-  { to: 'sales', label: 'Sales', icon: ShoppingBag },
+  { to: '',        label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: 'products', label: 'Products',  icon: Package },
+  { to: 'orders',   label: 'Orders',    icon: ClipboardList },
+  { to: 'sales',    label: 'Sales',     icon: ShoppingBag },
   { to: 'accounting', label: 'Accounting', icon: DollarSign },
 ]
 
@@ -16,9 +17,9 @@ const TRADER_EXTRA = [
 ]
 
 const STORE_LINKS = [
-  { to: '/account', label: 'My Account', icon: UserCircle },
-  { to: '/orders', label: 'Orders', icon: ShoppingBag },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: 'account', label: 'My Account', icon: UserCircle, internal: true },
+  { to: '/orders', label: 'My Orders', icon: ShoppingBag, internal: false },
+  { to: '/settings', label: 'Settings', icon: Settings, internal: false },
 ]
 
 export default function TraderLayout() {
@@ -89,15 +90,14 @@ export default function TraderLayout() {
               {/* Store links */}
               <div className="mx-5 my-2 border-t border-white/10" />
               <p className="px-5 pt-1 pb-1 text-[10px] font-bold text-white/30 uppercase tracking-widest">Store</p>
-              {STORE_LINKS.map(({ to, label, icon: Icon }) => (
-                <button
-                  key={label}
-                  onClick={() => { navigate(to); setDrawerOpen(false) }}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 text-[13px] font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  <Icon size={16} />
-                  {label}
-                </button>
+              {STORE_LINKS.map(({ to, label, icon: Icon, internal }) => (
+                internal
+                  ? <NavLink key={label} to={href(to)} onClick={() => setDrawerOpen(false)} className={drawerLinkClass}><Icon size={16} />{label}</NavLink>
+                  : <button
+                      key={label}
+                      onClick={() => { navigate(to); setDrawerOpen(false) }}
+                      className="w-full flex items-center gap-3 px-5 py-3.5 text-[13px] font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                    ><Icon size={16} />{label}</button>
               ))}
             </nav>
             <div className="border-t border-white/10 p-4 space-y-1">
@@ -129,6 +129,24 @@ export default function TraderLayout() {
                 <Icon size={16} />
                 {label}
               </NavLink>
+            ))}
+            <div className="mx-5 my-2 border-t border-white/10" />
+            {TRADER_EXTRA.map(({ to, label, icon: Icon }) => (
+              <NavLink key={label} to={href(to)} className={sideNavClass}>
+                <Icon size={16} />
+                {label}
+              </NavLink>
+            ))}
+            <div className="mx-5 my-2 border-t border-white/10" />
+            <p className="px-5 pt-1 pb-1 text-[10px] font-bold text-white/30 uppercase tracking-widest">Store</p>
+            {STORE_LINKS.map(({ to, label, icon: Icon, internal }) => (
+              internal
+                ? <NavLink key={label} to={href(to)} className={sideNavClass}><Icon size={16} />{label}</NavLink>
+                : <button
+                    key={label}
+                    onClick={() => navigate(to)}
+                    className="w-full flex items-center gap-3 px-5 py-3 text-[13px] font-semibold text-white/55 hover:text-white hover:bg-white/5 transition-colors"
+                  ><Icon size={16} />{label}</button>
             ))}
           </nav>
           <div className="border-t border-white/10 p-3 space-y-1">
