@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings, ShoppingBag, Store } from 'lucide-react'
-import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, tradersApi, sessionApi } from '../lib/api'
+import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
 
