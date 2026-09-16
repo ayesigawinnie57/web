@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Package, Truck, MapPin, XCircle, Clock, Loader2, CheckCheck, ClipboardList, PackageCheck, RotateCcw, CreditCard } from 'lucide-react'
+import { Package, Truck, MapPin, XCircle, Clock, Loader2, RotateCcw, CreditCard } from 'lucide-react'
 import { ordersApi, hasAccessToken, type ApiOrderDetail, type ReturnRequest } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
@@ -8,15 +8,16 @@ import Footer from '../landing/Footer'
 
 const money = (v: string | number) => Number(v).toLocaleString()
 
-type Status = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+type Status = 'pending' | 'processing' | 'shipped' | 'ready_for_pickup' | 'delivered' | 'cancelled'
 
-const STEPS: { key: Status; label: string; icon: any }[] = [
-  { key: 'pending',    label: 'Placed',     icon: ClipboardList },
-  { key: 'processing', label: 'Confirmed',  icon: PackageCheck },
-  { key: 'shipped',    label: 'Shipped',    icon: Truck },
-  { key: 'delivered',  label: 'Delivered',  icon: CheckCheck },
+const STEPS: { key: Status; label: string; img: string }[] = [
+  { key: 'pending',          label: 'Placed',           img: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549511/Order_placed.png' },
+  { key: 'processing',       label: 'Confirmed',        img: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549477/order_confirmed.png' },
+  { key: 'shipped',          label: 'Shipped',          img: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549510/Shipped_order.png' },
+  { key: 'ready_for_pickup', label: 'Ready for Pickup', img: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549694/ready_for_pickup.png' },
+  { key: 'delivered',        label: 'Delivered',        img: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789549452/Delivered.png' },
 ]
-const STEP_ORDER: Status[] = ['pending', 'processing', 'shipped', 'delivered']
+const STEP_ORDER: Status[] = ['pending', 'processing', 'shipped', 'ready_for_pickup', 'delivered']
 
 function HorizontalProgress({ status }: { status: Status }) {
   if (status === 'cancelled') {
@@ -35,26 +36,17 @@ function HorizontalProgress({ status }: { status: Status }) {
 
   return (
     <div className="w-full">
-      {/* connector line + circles row */}
       <div className="flex items-center w-full mb-2">
         {STEPS.map((step, idx) => {
           const done = idx <= currentIdx
-          const active = idx === currentIdx
-          const Icon = step.icon
           return (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
-              {/* circle */}
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
-                done
-                  ? 'bg-[#16A34A] border-[#16A34A] shadow-md'
-                  : 'bg-white border-[#E2E8F0]'
-              } ${active ? 'ring-4 ring-green-100' : ''}`}>
-                {done
-                  ? <Icon size={15} className="text-white" />
-                  : <Icon size={15} className="text-[#94A3B8] opacity-50" />
-                }
-              </div>
-              {/* connector */}
+              <img
+                src={step.img}
+                alt={step.label}
+                className="w-9 h-9 shrink-0 transition-all"
+                style={{ opacity: done ? 1 : 0.3 }}
+              />
               {idx < STEPS.length - 1 && (
                 <div className="flex-1 h-1 mx-1 rounded-full overflow-hidden bg-[#E2E8F0]">
                   <div className={`h-full rounded-full transition-all duration-500 ${idx < currentIdx ? 'bg-[#16A34A] w-full' : 'w-0'}`} />
@@ -64,14 +56,13 @@ function HorizontalProgress({ status }: { status: Status }) {
           )
         })}
       </div>
-      {/* labels row */}
       <div className="flex w-full">
         {STEPS.map((step, idx) => {
           const done = idx <= currentIdx
           const active = idx === currentIdx
           return (
             <div key={step.key} className="flex-1 last:flex-none text-center" style={{ minWidth: 0 }}>
-              <p className={`text-[11px] font-bold truncate ${
+              <p className={`text-[10px] font-bold truncate ${
                 active ? 'text-[#15803D]' : done ? 'text-[#334155]' : 'text-[#94A3B8]'
               }`}>{step.label}</p>
             </div>

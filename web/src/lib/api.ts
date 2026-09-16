@@ -359,7 +359,7 @@ export const cartApi = {
 export type ApiOrderDetail = {
   id: number
   code: string
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  status: 'pending' | 'processing' | 'shipped' | 'ready_for_pickup' | 'delivered' | 'cancelled'
   subtotal: string
   delivery_fee: string
   total: string
@@ -399,7 +399,7 @@ export const ordersApi = {
 export type ApiAdminOrder = {
   id: number
   code: string
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  status: 'pending' | 'processing' | 'shipped' | 'ready_for_pickup' | 'delivered' | 'cancelled'
   subtotal: string
   delivery_fee: string
   total: string
@@ -486,6 +486,7 @@ export const adminOrdersApi = {
   get: (code: string) => api.get<ApiAdminOrder>(`/api/orders/admin/${code}/`),
   confirm: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/confirm/`),
   ship: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/ship/`),
+  readyForPickup: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/ready-for-pickup/`),
   deliver: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/deliver/`),
   cancel: (code: string, reason: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/cancel/`, { reason }),
 }
