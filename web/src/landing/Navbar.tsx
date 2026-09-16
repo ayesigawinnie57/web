@@ -86,8 +86,7 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!hasAccessToken()) return
-    tradersApi.me().then(r => {
-      const d = r.data
+    sessionApi.trader().then(d => {
       if (d && d.status === 'approved') {
         localStorage.setItem('majo_trader_uuid', d.uuid)
         setTraderUuid(d.uuid)
@@ -95,9 +94,6 @@ export default function Navbar() {
         localStorage.removeItem('majo_trader_uuid')
         setTraderUuid(null)
       }
-    }).catch(() => {
-      localStorage.removeItem('majo_trader_uuid')
-      setTraderUuid(null)
     })
   }, [])
 
