@@ -112,21 +112,19 @@ export default function Hero() {
         <div className="absolute -bottom-10 right-16 w-36 h-36 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
 
         {/* left: text */}
-        <div className="absolute inset-0 flex flex-col justify-between pt-5 pb-5 md:pt-7 md:pb-7 pl-4 md:pl-8 pr-[50%] md:pr-[46%] z-10">
-          <span className="inline-flex items-center gap-1 bg-white/20 text-white text-[9px] md:text-[11px] font-bold uppercase px-2 py-0.5 rounded-full mb-1.5 w-fit">
+        <div className="absolute inset-0 flex flex-col justify-between pt-3 pb-4 md:pt-7 md:pb-7 pl-4 md:pl-8 pr-[52%] md:pr-[46%] z-10">
+          <span className="inline-flex items-center gap-1 bg-white/25 text-white text-[9px] md:text-[12px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full w-fit">
             <Icon size={9} strokeWidth={2.5} />
             {label}
           </span>
-          <div>
-            <p className="text-white text-[18px] md:text-[26px] font-extrabold leading-tight line-clamp-2">{title}</p>
-            <p className="hidden md:block text-white/75 text-[13px] mt-1 line-clamp-2">{subtitle}</p>
-          </div>
+          <p className="text-white text-[22px] md:text-[42px] font-black leading-[1.15]">{title}</p>
+          <p className="text-white/80 text-[13px] md:text-[15px] font-normal leading-snug">{subtitle}</p>
           <Link
             to={`/shop?category=${slug}`}
-            className="self-start bg-white text-[11px] md:text-[13px] font-extrabold px-4 py-2 rounded-lg shadow"
+            className="self-start bg-white text-[10px] md:text-[14px] font-bold px-3 py-1.5 md:px-5 md:py-2.5 rounded-full shadow-md flex items-center gap-1"
             style={{ color }}
           >
-            Discover →
+            Shop {label} <span>→</span>
           </Link>
         </div>
 
