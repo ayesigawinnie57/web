@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { NotificationProvider } from './lib/NotificationContext'
 import { SwitchProvider, useSwitchPortal } from './lib/SwitchContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
@@ -62,6 +62,11 @@ const TraderInventory  = lazy(() => import('./trader/TraderInventory'))
 const TraderSales      = lazy(() => import('./trader/TraderSales'))
 const TraderAccounting = lazy(() => import('./trader/TraderAccounting'))
 
+function ProductRedirect() {
+  const { slug } = useParams()
+  return <Navigate to={`/shop/${slug}`} replace />
+}
+
 // Renders the transition overlay and drives navigation from above the route tree
 function SwitchOverlay() {
   const { current, endSwitch } = useSwitchPortal()
@@ -116,6 +121,7 @@ export default function App() {
           <Route path="/categories" element={<CategoryPage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/shop/:slug" element={<ProductPage />} />
+          <Route path="/products/:slug" element={<ProductRedirect />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/login" element={<LoginPage />} />
