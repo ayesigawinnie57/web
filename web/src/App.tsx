@@ -26,6 +26,7 @@ const RateOrderPage          = lazy(() => import('./pages/RateOrderPage'))
 const RateProductPage        = lazy(() => import('./pages/RateProductPage'))
 const ReturnPage       = lazy(() => import('./pages/ReturnPage'))
 const BecomeTraderPage = lazy(() => import('./pages/BecomeTraderPage'))
+const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'))
 
 const AdminGuard      = lazy(() => import('./admin/AdminGuard'))
 const AdminLayout     = lazy(() => import('./admin/AdminLayout'))
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="/rate-product/:slug" element={<RateProductPage />} />
           <Route path="/returns" element={<ReturnPage />} />
           <Route path="/become-a-trader" element={<BecomeTraderPage />} />
+          <Route path="/payment-callback" element={<PaymentCallbackPage />} />
           <Route element={<TraderGuard />}>
             <Route path="/trader/:traderUuid" element={<TraderLayout />}>
               <Route index element={<TraderDashboard />} />
