@@ -18,10 +18,7 @@ export default function PaymentCallbackPage() {
     let attempts = 0
     const check = async () => {
       try {
-        const { data } = await ordersApi.get(orderCode)
-        // Check if a payment record exists via order status progression
-        // We rely on the order still being accessible — payment status is on the backend
-        // Just redirect to order detail which shows the real status
+        await ordersApi.get(orderCode)
         setState('success')
       } catch {
         attempts++
