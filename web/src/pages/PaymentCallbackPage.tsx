@@ -12,6 +12,11 @@ export default function PaymentCallbackPage() {
   const [state, setState] = useState<State>('loading')
 
   useEffect(() => {
+    // If loaded inside Pesapal's iframe, break out to top-level
+    if (window.self !== window.top) {
+      window.top!.location.href = window.location.href
+      return
+    }
     if (!orderCode) { setState('failed'); return }
 
     // Poll up to 8 times (every 2s = 16s max) waiting for IPN to update status

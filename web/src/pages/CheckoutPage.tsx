@@ -28,6 +28,7 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false)
   const [paying, setPaying] = useState(false)
   const [payError, setPayError] = useState('')
+  const [payUrl, setPayUrl] = useState('')
   const [error, setError] = useState('')
   const [order, setOrder] = useState<ApiOrder | null>(null)
   const { refresh: refreshNotifications } = useNotifications()
@@ -83,12 +84,24 @@ export default function CheckoutPage() {
     setPayError('')
     try {
       const { data } = await ordersApi.pay(code)
-      window.location.href = data.redirect_url
+      setPayUrl(data.redirect_url)
     } catch (e: any) {
       setPayError(e?.response?.data?.detail ?? 'Payment initiation failed. Please try again.')
       setPaying(false)
     }
   }
+
+  if (payUrl) return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+      <div className="relative w-full h-full max-w-2xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl mx-4">
+        <button
+          onClick={() => setPayUrl('')}
+          className="absolute top-3 right-3 z-10 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-[#071A2B] font-bold text-lg shadow"
+        >✕</button>
+        <iframe src={payUrl} className="w-full h-full border-0" allow="payment" />
+      </div>
+    </div>
+  )
 
   const placeOrder = async (e: React.FormEvent) => {
     e.preventDefault()
