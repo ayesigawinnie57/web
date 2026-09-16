@@ -28,6 +28,8 @@ const ReturnPage       = lazy(() => import('./pages/ReturnPage'))
 const BecomeTraderPage = lazy(() => import('./pages/BecomeTraderPage'))
 const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'))
 
+const AdminPickupPage  = lazy(() => import('./admin/orders/pickup'))
+
 const AdminGuard      = lazy(() => import('./admin/AdminGuard'))
 const AdminLayout     = lazy(() => import('./admin/AdminLayout'))
 const AdminDashboard  = lazy(() => import('./admin/AdminDashboard'))
@@ -154,6 +156,7 @@ export default function App() {
               <Route path="categories/:id" element={<EditCategory />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="orders/:code" element={<AdminOrderDetail />} />
+              <Route path="pickup" element={<AdminPickupPage />} />
               <Route path="flashsales" element={<AdminFlashSales />} />
               <Route path="flashsales/add" element={<AddFlashSale />} />
               <Route path="users" element={<AdminUsers />} />

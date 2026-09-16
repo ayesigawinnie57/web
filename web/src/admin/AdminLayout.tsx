@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store, ArrowLeftRight } from 'lucide-react'
+import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store, ArrowLeftRight, PackageCheck } from 'lucide-react'
 import { LOGO, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
@@ -12,6 +12,7 @@ const ALL_NAV = [
   { to: '/admin/flashsales',  label: 'Flash Sales',pageKey: 'Flash Sales',  icon: Zap },
   { to: '/admin/categories',  label: 'Categories', pageKey: 'Categories',   icon: Grid2X2 },
   { to: '/admin/orders',      label: 'Orders',     pageKey: 'Orders',       icon: ShoppingBag },
+  { to: '/admin/pickup',      label: 'Pickup Desk',pageKey: 'Orders',       icon: PackageCheck },
   { to: '/admin/users',       label: 'Users',      pageKey: 'Users',        icon: Users },
   { to: '/admin/payments',    label: 'Payments',   pageKey: 'Payments',     icon: CreditCard },
   { to: '/admin/traders',     label: 'Traders',    pageKey: 'Traders',      icon: Store },
