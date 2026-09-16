@@ -78,9 +78,9 @@ export default function SwitchTransition({ from, to, onDone }: Props) {
     <>
       <style>{`
         @keyframes st-ring {
-          0%   { transform: scale(0.5); opacity: 0.18; }
-          70%  { opacity: 0.06; }
-          100% { transform: scale(1.9); opacity: 0; }
+          0%   { transform: scale(0);   opacity: 0.7; }
+          30%  { opacity: 0.45; }
+          100% { transform: scale(1);   opacity: 0; }
         }
         @keyframes st-pulse {
           0%, 100% { opacity: 1; }
@@ -113,16 +113,16 @@ export default function SwitchTransition({ from, to, onDone }: Props) {
         pointerEvents: phase === 'exit' ? 'none' : 'all',
       }}>
 
-        {/* Rings */}
+        {/* Rings — expand from center like ripples */}
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-          {[0, 1, 2, 3, 4].map(i => (
+          {[0, 1, 2, 3, 4, 6].map(i => (
             <div key={i} style={{
               position: 'absolute',
-              width: 200 + i * 170, height: 200 + i * 170,
+              width: '140vmax', height: '140vmax',
               borderRadius: '50%',
-              border: `1px solid ${toMeta.color}`,
-              animation: `st-ring ${3.2 + i * 0.7}s ease-out infinite`,
-              animationDelay: `${i * 0.55}s`,
+              border: `1.5px solid ${toMeta.color}`,
+              animation: `st-ring 2.4s cubic-bezier(0.2, 0.6, 0.4, 1) infinite`,
+              animationDelay: `${i * 0.4}s`,
             }} />
           ))}
         </div>
