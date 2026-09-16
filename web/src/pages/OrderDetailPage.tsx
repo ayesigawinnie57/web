@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Package, Truck, MapPin, XCircle, Clock, Loader2, CheckCheck, ClipboardList, PackageCheck, RotateCcw } from 'lucide-react'
+import { Package, Truck, MapPin, XCircle, Clock, Loader2, CheckCheck, ClipboardList, PackageCheck, RotateCcw, CreditCard } from 'lucide-react'
 import { ordersApi, hasAccessToken, type ApiOrderDetail, type ReturnRequest } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
@@ -90,6 +90,8 @@ export default function OrderDetailPage() {
   const [error, setError] = useState('')
   const [cancelling, setCancelling] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState('')
   const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(null)
   const [showReturnForm, setShowReturnForm] = useState(false)
   const [returnReason, setReturnReason] = useState('')
@@ -141,6 +143,19 @@ export default function OrderDetailPage() {
       setError('Failed to cancel order.')
     } finally {
       setCancelling(false)
+    }
+  }
+
+  const handlePay = async () => {
+    if (!order) return
+    setPaying(true)
+    setPayError('')
+    try {
+      const { data } = await ordersApi.pay(order.code)
+      window.location.href = data.redirect_url
+    } catch (e: any) {
+      setPayError(e?.response?.data?.detail ?? 'Payment initiation failed. Please try again.')
+      setPaying(false)
     }
   }
 
@@ -256,6 +271,19 @@ export default function OrderDetailPage() {
                   <span className="text-[#1E3A8A]">UGX {money(order.total)}</span>
                 </div>
               </div>
+              {(order.status === 'pending' || order.status === 'processing') && (
+                <div className="mt-4">
+                  {payError && <p className="text-[12px] text-red-500 font-semibold mb-2">{payError}</p>}
+                  <button
+                    onClick={handlePay}
+                    disabled={paying}
+                    className="w-full h-11 bg-[#1E3A8A] text-white rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 disabled:opacity-60 hover:opacity-90"
+                  >
+                    <CreditCard size={15} />
+                    {paying ? 'Redirecting...' : 'Pay Now'}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 space-y-4">

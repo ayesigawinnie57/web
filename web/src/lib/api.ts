@@ -388,6 +388,7 @@ export const ordersApi = {
   list: () => api.get<ApiOrderDetail[]>('/api/orders/'),
   get: (code: string) => api.get<ApiOrderDetail>(`/api/orders/${code}/`),
   cancel: (code: string) => api.post<ApiOrderDetail>(`/api/orders/${code}/cancel/`),
+  pay: (code: string) => api.post<{ redirect_url: string; order_tracking_id: string }>(`/api/orders/${code}/pay/`),
   rate: (code: string, payload: { overall: number; areas: string[]; area_ratings: Record<string, number>; comment: string }) =>
     api.post(`/api/orders/${code}/rate/`, payload),
   submitReturn: (code: string, reason: string) => api.post<ReturnRequest>(`/api/orders/${code}/return/`, { reason }),

@@ -26,6 +26,8 @@ export default function CheckoutPage() {
   const [editingDelivery, setEditingDelivery] = useState(false)
   const [loading, setLoading] = useState(true)
   const [placing, setPlacing] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState('')
   const [error, setError] = useState('')
   const [order, setOrder] = useState<ApiOrder | null>(null)
   const { refresh: refreshNotifications } = useNotifications()
@@ -75,6 +77,18 @@ export default function CheckoutPage() {
   const districtFee = Number(selectedDistrict?.price ?? 0)
 
   const handleRegionChange = (value: string) => { set('region', value); set('district', '') }
+
+  const handlePay = async (code: string) => {
+    setPaying(true)
+    setPayError('')
+    try {
+      const { data } = await ordersApi.pay(code)
+      window.location.href = data.redirect_url
+    } catch (e: any) {
+      setPayError(e?.response?.data?.detail ?? 'Payment initiation failed. Please try again.')
+      setPaying(false)
+    }
+  }
 
   const placeOrder = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,8 +145,16 @@ export default function CheckoutPage() {
         <div className="flex items-center justify-center gap-2 mt-7 text-[13px] text-green-700">
           <Truck size={17} /> Expected delivery after 3 days
         </div>
-        <div className="flex gap-3 justify-center mt-8">
-          <Link to={`/orders/${order.code}`} className="bg-[#1E3A8A] text-white px-6 py-3 rounded-xl text-[13px] font-bold">Track Order</Link>
+        {payError && <p className="mt-4 text-[13px] text-red-500 font-semibold">{payError}</p>}
+        <button
+          onClick={() => handlePay(order.code)}
+          disabled={paying}
+          className="w-full mt-6 h-12 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold disabled:opacity-60 hover:opacity-90"
+        >
+          {paying ? 'Redirecting to payment...' : '💳 Pay Now — UGX ' + money(order.total)}
+        </button>
+        <div className="flex gap-3 justify-center mt-3">
+          <Link to={`/orders/${order.code}`} className="border border-[#E2E8F0] text-[#071A2B] px-6 py-3 rounded-xl text-[13px] font-bold">Track Order</Link>
           <Link to="/" className="border border-[#E2E8F0] text-[#071A2B] px-6 py-3 rounded-xl text-[13px] font-bold">Back to home</Link>
         </div>
       </main>
