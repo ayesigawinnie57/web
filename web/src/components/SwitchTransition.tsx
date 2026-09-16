@@ -23,30 +23,26 @@ const META: Record<Portal, { label: string; sub: string; color: string; bgFrom: 
 }
 
 // Total duration and timing
-const TOTAL      = 6000
-const TICK_START = 600   // when first page ticks
-const TICK_END   = 4400  // when last page ticks
-const REVEAL_AT  = 4800
-const EXIT_AT    = 5200
+const TICK_START = 800
+const TICK_END   = 7200
+const EXIT_AT    = 7800
+const DONE_AT    = 9200
 
 interface Props { from: Portal; to: Portal; onDone: () => void }
 
 export default function SwitchTransition({ from, to, onDone }: Props) {
-  const [phase, setPhase]         = useState<'enter' | 'loading' | 'exit'>('enter')
-  const [progress, setProgress]   = useState(0)
-  const [ticked, setTicked]       = useState<number>(-1)   // index of last ticked page
-  const [revealing, setRevealing] = useState(false)
+  const [phase, setPhase]       = useState<'enter' | 'loading' | 'exit'>('enter')
+  const [progress, setProgress] = useState(0)
+  const [ticked, setTicked]     = useState<number>(-1)
 
   const fromMeta = META[from]
   const toMeta   = META[to]
   const pages    = toMeta.pages
-
-  // Progress bar
   useEffect(() => {
     const start = Date.now()
     let raf: number
     const tick = () => {
-      const p = Math.min((Date.now() - start) / TOTAL, 1)
+      const p = Math.min((Date.now() - start) / EXIT_AT, 1)
       setProgress(p)
       if (p < 1) raf = requestAnimationFrame(tick)
     }
@@ -58,18 +54,15 @@ export default function SwitchTransition({ from, to, onDone }: Props) {
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = []
 
-    // Switch to loading phase
-    timers.push(setTimeout(() => setPhase('loading'), 600))
+    timers.push(setTimeout(() => setPhase('loading'), 800))
 
-    // Tick each page evenly between TICK_START and TICK_END
     const interval = (TICK_END - TICK_START) / pages.length
     pages.forEach((_, i) => {
       timers.push(setTimeout(() => setTicked(i), TICK_START + i * interval))
     })
 
-    timers.push(setTimeout(() => setRevealing(true), REVEAL_AT))
-    timers.push(setTimeout(() => setPhase('exit'),   EXIT_AT))
-    timers.push(setTimeout(() => onDone(),           TOTAL))
+    timers.push(setTimeout(() => setPhase('exit'), EXIT_AT))
+    timers.push(setTimeout(() => onDone(),         DONE_AT))
 
     return () => timers.forEach(clearTimeout)
   }, [onDone, pages.length])
@@ -77,28 +70,37 @@ export default function SwitchTransition({ from, to, onDone }: Props) {
   return createPortal(
     <>
       <style>{`
-        @keyframes st-ring {
-          0%   { transform: scale(0);   opacity: 0.7; }
-          30%  { opacity: 0.45; }
-          100% { transform: scale(1);   opacity: 0; }
+        @keyframes st-spin-cw  { to { transform: rotate(360deg); } }
+        @keyframes st-spin-ccw { to { transform: rotate(-360deg); } }
+        @keyframes st-breathe {
+          0%, 100% { transform: scale(1);   opacity: 0.18; }
+          50%      { transform: scale(1.35); opacity: 0.32; }
         }
-        @keyframes st-pulse {
-          0%, 100% { opacity: 1; }
-          50%      { opacity: 0.3; }
+        @keyframes st-float {
+          0%   { transform: translateY(0px)   rotate(var(--r)); }
+          50%  { transform: translateY(-18px) rotate(var(--r)); }
+          100% { transform: translateY(0px)   rotate(var(--r)); }
+        }
+        @keyframes st-shimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position:  200% center; }
         }
         @keyframes st-check {
           0%   { transform: scale(0) rotate(-45deg); opacity: 0; }
           60%  { transform: scale(1.3) rotate(0deg); opacity: 1; }
-          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+          100% { transform: scale(1)   rotate(0deg); opacity: 1; }
+        }
+        @keyframes st-dash {
+          0%   { stroke-dashoffset: 440; }
+          100% { stroke-dashoffset: 0; }
         }
       `}</style>
 
-      {/* Page-reveal layer */}
+      {/* Solid backstop — stays fully opaque the entire time, unmounts with onDone.
+          Prevents any bleed-through of the unrendered page during the overlay fade. */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: 9998,
         background: toMeta.bgTo,
-        opacity: revealing ? 0 : 1,
-        transition: revealing ? 'opacity 1.4s cubic-bezier(0.4,0,0.2,1)' : 'none',
         pointerEvents: 'none',
       }} />
 
@@ -113,26 +115,83 @@ export default function SwitchTransition({ from, to, onDone }: Props) {
         pointerEvents: phase === 'exit' ? 'none' : 'all',
       }}>
 
-        {/* Rings — expand from center like ripples */}
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-          {[0, 1, 2, 3, 4, 6].map(i => (
+        {/* ── Background art ─────────────────────────────────────── */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+
+          {/* Deep breathing glow orb */}
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            width: 520, height: 520, marginLeft: -260, marginTop: -260,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${toMeta.color}22 0%, ${toMeta.color}08 45%, transparent 70%)`,
+            filter: 'blur(48px)',
+            animation: 'st-breathe 4s ease-in-out infinite',
+          }} />
+
+          {/* Rotating arc rings — different speeds & directions */}
+          {([
+            { size: 340, border: `1px solid ${toMeta.color}30`, dur: '18s', dir: 'st-spin-cw',  dash: '60 280' },
+            { size: 480, border: `1px solid ${toMeta.color}20`, dur: '28s', dir: 'st-spin-ccw', dash: '90 400' },
+            { size: 620, border: `1px solid ${toMeta.color}14`, dur: '38s', dir: 'st-spin-cw',  dash: '120 500' },
+            { size: 780, border: `1px solid ${toMeta.color}0d`, dur: '50s', dir: 'st-spin-ccw', dash: '160 640' },
+          ] as const).map(({ size, border, dur, dir }, i) => (
             <div key={i} style={{
               position: 'absolute',
-              width: '140vmax', height: '140vmax',
+              top: '50%', left: '50%',
+              width: size, height: size,
+              marginLeft: -size / 2, marginTop: -size / 2,
               borderRadius: '50%',
-              border: `1.5px solid ${toMeta.color}`,
-              animation: `st-ring 2.4s cubic-bezier(0.2, 0.6, 0.4, 1) infinite`,
-              animationDelay: `${i * 0.4}s`,
+              border,
+              animation: `${dir} ${dur} linear infinite`,
+            }}>
+              {/* Bright arc segment on each ring */}
+              <div style={{
+                position: 'absolute', top: -1, left: '20%',
+                width: '30%', height: 2,
+                background: `linear-gradient(90deg, transparent, ${toMeta.color}90, transparent)`,
+                borderRadius: 99,
+              }} />
+            </div>
+          ))}
+
+          {/* Floating diagonal lines */}
+          {([
+            { w: 120, top: '12%', left: '8%',  r: '-28deg', delay: '0s',    dur: '6s'  },
+            { w: 80,  top: '22%', left: '78%', r: '18deg',  delay: '1.2s',  dur: '7s'  },
+            { w: 160, top: '68%', left: '5%',  r: '-15deg', delay: '0.6s',  dur: '8s'  },
+            { w: 60,  top: '75%', left: '82%', r: '32deg',  delay: '2s',    dur: '5.5s'},
+            { w: 100, top: '45%', left: '88%', r: '-22deg', delay: '0.3s',  dur: '7.5s'},
+            { w: 90,  top: '88%', left: '40%', r: '12deg',  delay: '1.8s',  dur: '6.5s'},
+          ] as const).map(({ w, top, left, r, delay, dur }, i) => (
+            <div key={i} style={{
+              position: 'absolute', top, left,
+              width: w, height: 1,
+              background: `linear-gradient(90deg, transparent, ${toMeta.color}55, transparent)`,
+              borderRadius: 99,
+              // @ts-ignore
+              '--r': r,
+              animation: `st-float ${dur} ease-in-out infinite`,
+              animationDelay: delay,
+              transform: `rotate(${r})`,
+            }} />
+          ))}
+
+          {/* Corner accent dots */}
+          {[
+            { top: '8%',  left: '6%'  },
+            { top: '8%',  left: '92%' },
+            { top: '92%', left: '6%'  },
+            { top: '92%', left: '92%' },
+          ].map((pos, i) => (
+            <div key={i} style={{
+              position: 'absolute', ...pos,
+              width: 4, height: 4, borderRadius: '50%',
+              background: toMeta.color,
+              opacity: 0.35,
+              boxShadow: `0 0 8px ${toMeta.color}`,
             }} />
           ))}
         </div>
-
-        {/* Glow */}
-        <div style={{
-          position: 'absolute', width: 360, height: 360, borderRadius: '50%',
-          background: `radial-gradient(circle, ${toMeta.color}12 0%, transparent 70%)`,
-          filter: 'blur(70px)', pointerEvents: 'none',
-        }} />
 
         {/* Content card */}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 340, padding: '0 24px' }}>
