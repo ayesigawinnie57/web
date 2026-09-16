@@ -19,15 +19,24 @@ export default function PaymentCallbackPage() {
     }
     if (!orderCode) { setState('failed'); return }
 
-    // Poll up to 8 times (every 2s = 16s max) waiting for IPN to update status
+    // Poll up to 10 times (every 2s = 20s max) waiting for IPN to update payment status
     let attempts = 0
     const check = async () => {
       try {
-        await ordersApi.get(orderCode)
-        setState('success')
+        const order = await ordersApi.get(orderCode)
+        const paymentStatus = (order.data as any)?.payment?.status
+        if (paymentStatus === 'completed' || order.data.status === 'processing') {
+          setState('success')
+        } else if (paymentStatus === 'failed' || paymentStatus === 'invalid' || paymentStatus === 'cancelled' || order.data.status === 'cancelled') {
+          setState('failed')
+        } else {
+          attempts++
+          if (attempts < 10) setTimeout(check, 2000)
+          else setState('pending')
+        }
       } catch {
         attempts++
-        if (attempts < 8) setTimeout(check, 2000)
+        if (attempts < 10) setTimeout(check, 2000)
         else setState('failed')
       }
     }
@@ -57,6 +66,19 @@ export default function PaymentCallbackPage() {
               to={`/orders/${orderCode}`}
               className="inline-block bg-[#1E3A8A] text-white px-8 py-3 rounded-xl text-[14px] font-bold hover:opacity-90"
             >
+              View Order
+            </Link>
+          </>
+        )}
+
+        {state === 'pending' && (
+          <>
+            <Loader2 size={52} className="mx-auto text-yellow-500 animate-spin mb-6" />
+            <p className="text-[22px] font-extrabold text-[#071A2B]">Payment Pending</p>
+            <p className="text-[13px] text-[#64748B] mt-2 mb-8">
+              Your payment is still being processed. Check your order status shortly.
+            </p>
+            <Link to={`/orders/${orderCode}`} className="inline-block bg-[#1E3A8A] text-white px-8 py-3 rounded-xl text-[14px] font-bold hover:opacity-90">
               View Order
             </Link>
           </>
