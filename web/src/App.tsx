@@ -71,18 +71,25 @@ function ProductRedirect() {
 function SwitchOverlay() {
   const { current, endSwitch } = useSwitchPortal()
   const navigate = useNavigate()
+  const [snapshot, setSnapshot] = useState<typeof current>(null)
 
   useEffect(() => {
-    if (current) navigate(current.toPath)
+    if (current) {
+      setSnapshot(current)
+      // Delay navigation until the overlay is fully covering the screen
+      setTimeout(() => navigate(current.toPath), 120)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.toPath])
 
-  if (!current) return null
+  if (!snapshot) return null
   return (
     <SwitchTransition
-      from={current.from}
-      to={current.to}
-      onDone={endSwitch}
+      from={snapshot.from}
+      to={snapshot.to}
+      userName={snapshot.userName}
+      accountName={snapshot.accountName}
+      onDone={() => { endSwitch(); setTimeout(() => setSnapshot(null), 250) }}
     />
   )
 }
@@ -113,8 +120,8 @@ export default function App() {
     <SwitchProvider>
     <NotificationProvider>
     <BrowserRouter>
-      <Suspense fallback={null}>
-        <SwitchOverlay />
+      <SwitchOverlay />
+      <Suspense fallback={<div style={{ position: 'fixed', inset: 0, background: '#071A2B' }} />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/shop" element={<ShopPage />} />

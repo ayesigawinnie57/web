@@ -757,7 +757,7 @@ export const sessionApi = {
       _profilePromise = authApi.profile().then(r => r.data).catch(() => ({ is_staff: false }))
     return _profilePromise
   },
-  trader: (): Promise<{ uuid: string; status: string } | null> => {
+  trader: (): Promise<{ uuid: string; status: string; business_name?: string } | null> => {
     if (!_traderPromise)
       _traderPromise = tradersApi.me().then(r => r.data).catch(() => null)
     return _traderPromise

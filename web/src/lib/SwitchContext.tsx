@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { sessionApi } from './api'
 
 export type Portal = 'admin' | 'trader' | 'store'
 
@@ -6,6 +7,8 @@ interface SwitchState {
   from: Portal
   to: Portal
   toPath: string
+  userName: string
+  accountName: string
 }
 
 interface Ctx {
@@ -20,7 +23,23 @@ export function SwitchProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<SwitchState | null>(null)
 
   const startSwitch = useCallback((from: Portal, to: Portal, toPath: string) => {
-    setCurrent({ from, to, toPath })
+    let userName = 'User'
+    try {
+      const u = JSON.parse(localStorage.getItem('majo_user') ?? '{}')
+      if (u?.name) userName = u.name
+    } catch { /* ignore */ }
+
+    if (from === 'admin') {
+      setCurrent({ from, to, toPath, userName, accountName: 'Admin Panel' })
+    } else if (from === 'trader') {
+      setCurrent({ from, to, toPath, userName, accountName: 'Trader Portal' })
+      sessionApi.trader().then(t => {
+        if (t?.business_name)
+          setCurrent(prev => prev ? { ...prev, accountName: t.business_name } : prev)
+      }).catch(() => {})
+    } else {
+      setCurrent({ from, to, toPath, userName, accountName: userName })
+    }
   }, [])
 
   const endSwitch = useCallback(() => setCurrent(null), [])
