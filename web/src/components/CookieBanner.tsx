@@ -155,7 +155,7 @@ export default function CookieBanner() {
         <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', flex: 1, minWidth: 220, margin: 0 }} className="cookie-banner-message">
           We use cookies to improve your experience, remember your cart, and keep you signed in.{' '}
           <Link to="/cookies" style={{ color: '#fff', textDecoration: 'underline', fontWeight: 700 }}>
-            Learn more
+            Read our Cookie Policy
           </Link>
         </p>
 
