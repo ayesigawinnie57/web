@@ -70,28 +70,35 @@ const SLIDES = [
 
 export default function Hero() {
   const [index, setIndex] = useState(0)
-  const [animating, setAnimating] = useState(false)
   const [paused, setPaused] = useState(false)
   const trackRef = useRef<HTMLDivElement>(null)
+  const isAnimatingRef = useRef(false)
 
   useEffect(() => {
     if (paused) return
-    const id = setInterval(() => advance(), 4000)
-    return () => clearInterval(id)
-  }, [animating, paused])
+
+    const id = window.setInterval(() => {
+      if (isAnimatingRef.current || !trackRef.current) return
+      advance()
+    }, 4000)
+
+    return () => window.clearInterval(id)
+  }, [paused])
 
   const advance = (to?: number) => {
-    if (animating || !trackRef.current) return
-    setAnimating(true)
+    if (isAnimatingRef.current || !trackRef.current) return
+
+    isAnimatingRef.current = true
     trackRef.current.style.transition = 'transform 550ms cubic-bezier(0.37,0,0.63,1)'
     trackRef.current.style.transform = 'translateX(-50%)'
-    setTimeout(() => {
+
+    window.setTimeout(() => {
       setIndex(i => to !== undefined ? to : (i + 1) % SLIDES.length)
       if (trackRef.current) {
         trackRef.current.style.transition = 'none'
         trackRef.current.style.transform = 'translateX(0)'
       }
-      setAnimating(false)
+      isAnimatingRef.current = false
     }, 560)
   }
 
