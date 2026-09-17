@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Image, Modal, Pressable, Alert, ActivityIndicator, ScrollView } from 'react-native'
 import { useRouter, usePathname } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { X, Search, UserRound, ShoppingCart, Heart, Home, Grid2X2, Bell, Settings, Menu, Users, Package, ShoppingBag, LayoutDashboard } from 'lucide-react-native'
+import { X, Search, UserRound, ShoppingCart, Heart, Home, Grid2X2, Bell, Menu, Users, Package, ShoppingBag, LayoutDashboard } from 'lucide-react-native'
 import { C, LOGO } from '../theme'
 import { tokenStore } from '../lib/auth'
 import { useAuth } from '../lib/AuthContext'
@@ -12,7 +12,7 @@ import { useNotifications } from '../lib/NotificationContext'
 import { productsApi, toCardProduct, productListCache } from '../lib/products'
 import type { Product } from '../components/ProductCard'
 
-export default function Navbar() {
+export default function Navbar({ onRequestOpenAccount }: { onRequestOpenAccount?: (fn: () => void) => void }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const { user, logout } = useAuth()
@@ -29,6 +29,10 @@ export default function Navbar() {
   const pathname = usePathname()
   const isAdmin = pathname.startsWith('/admin')
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
+
+  useEffect(() => {
+    onRequestOpenAccount?.(() => setAccountOpen(true))
+  }, [onRequestOpenAccount])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -136,13 +140,6 @@ export default function Navbar() {
         )}
 
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.avatarButton}
-            onPress={() => setAccountOpen(true)}
-            accessibilityLabel="Open My Account"
-          >
-            <UserRound size={18} color={C.navy} />
-          </TouchableOpacity>
           {isAdmin ? (
             <TouchableOpacity style={styles.menuBtn} onPress={() => setAdminMenuOpen(true)} accessibilityLabel="Admin menu">
               <Menu size={22} color={C.navy} />
@@ -364,7 +361,7 @@ export default function Navbar() {
   )
 }
 
-export function BottomNav() {
+export function BottomNav({ onAccountOpen }: { onAccountOpen?: () => void }) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { unreadCount } = useNotifications()
@@ -374,10 +371,10 @@ export function BottomNav() {
   const items = [
     { label: 'Home',          icon: Home,     onPress: () => router.push('/') },
     { label: 'Category',      icon: Grid2X2,  onPress: () => router.push('/category' as any) },
-    { label: 'Notifications', icon: Bell,     onPress: () => router.push('/notifications' as any), badge: unreadCount },
+    { label: 'Notifications', icon: Bell,       onPress: () => router.push('/notifications' as any), badge: unreadCount },
     isStaff
-      ? { label: 'Admin',    icon: Settings, onPress: () => router.push('/admin' as any) }
-      : { label: 'Settings', icon: Settings, onPress: () => router.push('/settings' as any) },
+      ? { label: 'Admin',      icon: LayoutDashboard, onPress: () => router.push('/admin' as any) }
+      : { label: 'My Account', icon: UserRound,       onPress: () => onAccountOpen?.() },
   ]
 
   return (

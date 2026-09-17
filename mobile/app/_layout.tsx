@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Stack } from 'expo-router'
 import { View, StyleSheet } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -100,14 +100,16 @@ function OrderStatusPoller() {
 }
 
 function AppShell() {
+  const openAccountRef = useRef<() => void>()
+
   return (
     <View style={styles.container}>
       <OrderStatusPoller />
-      <Navbar />
+      <Navbar onRequestOpenAccount={(fn) => { openAccountRef.current = fn }} />
       <View style={styles.content}>
         <Stack screenOptions={{ headerShown: false }} />
       </View>
-      <BottomNav />
+      <BottomNav onAccountOpen={() => openAccountRef.current?.()} />
     </View>
   )
 }
