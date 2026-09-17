@@ -26,6 +26,9 @@ export default function CheckoutPage() {
   const [editingDelivery, setEditingDelivery] = useState(false)
   const [loading, setLoading] = useState(true)
   const [placing, setPlacing] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState('')
+  const [payUrl, setPayUrl] = useState('')
   const [error, setError] = useState('')
   const [order, setOrder] = useState<ApiOrder | null>(null)
   const { refresh: refreshNotifications } = useNotifications()
@@ -75,6 +78,30 @@ export default function CheckoutPage() {
   const districtFee = Number(selectedDistrict?.price ?? 0)
 
   const handleRegionChange = (value: string) => { set('region', value); set('district', '') }
+
+  const handlePay = async (code: string) => {
+    setPaying(true)
+    setPayError('')
+    try {
+      const { data } = await ordersApi.pay(code)
+      setPayUrl(data.redirect_url)
+    } catch (e: any) {
+      setPayError(e?.response?.data?.detail ?? 'Payment initiation failed. Please try again.')
+      setPaying(false)
+    }
+  }
+
+  if (payUrl) return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+      <div className="relative w-full h-full max-w-2xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl mx-4">
+        <button
+          onClick={() => setPayUrl('')}
+          className="absolute top-3 right-3 z-10 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-[#071A2B] font-bold text-lg shadow"
+        >✕</button>
+        <iframe src={payUrl} className="w-full h-full border-0" allow="payment" />
+      </div>
+    </div>
+  )
 
   const placeOrder = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,8 +158,16 @@ export default function CheckoutPage() {
         <div className="flex items-center justify-center gap-2 mt-7 text-[13px] text-green-700">
           <Truck size={17} /> Expected delivery after 3 days
         </div>
-        <div className="flex gap-3 justify-center mt-8">
-          <Link to={`/orders/${order.code}`} className="bg-[#1E3A8A] text-white px-6 py-3 rounded-xl text-[13px] font-bold">Track Order</Link>
+        {payError && <p className="mt-4 text-[13px] text-red-500 font-semibold">{payError}</p>}
+        <button
+          onClick={() => handlePay(order.code)}
+          disabled={paying}
+          className="w-full mt-6 h-12 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold disabled:opacity-60 hover:opacity-90"
+        >
+          {paying ? 'Redirecting to payment...' : '💳 Pay Now — UGX ' + money(order.total)}
+        </button>
+        <div className="flex gap-3 justify-center mt-3">
+          <Link to={`/orders/${order.code}`} className="border border-[#E2E8F0] text-[#071A2B] px-6 py-3 rounded-xl text-[13px] font-bold">Track Order</Link>
           <Link to="/" className="border border-[#E2E8F0] text-[#071A2B] px-6 py-3 rounded-xl text-[13px] font-bold">Back to home</Link>
         </div>
       </main>
@@ -143,8 +178,8 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <main className="pt-14 lg:pt-16 max-w-5xl mx-auto px-4 py-8">
-        <div className="flex items-end justify-between gap-4 mb-8">
+      <main className="pt-14 lg:pt-16 max-w-5xl mx-auto px-4 py-8 overflow-x-hidden">
+        <div className="flex flex-wrap items-end justify-between gap-2 mb-8">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1E3A8A]">Complete your order</p>
             <h1 className="text-3xl font-extrabold text-[#071A2B] mt-1">Checkout</h1>
@@ -174,7 +209,7 @@ export default function CheckoutPage() {
 
         <form onSubmit={placeOrder} className={`grid lg:grid-cols-[1fr_320px] gap-6 items-start ${!hasAccessToken() ? 'opacity-40 pointer-events-none select-none' : ''}`}>
           {/* Payment sidebar — shown first on mobile */}
-          <aside className="bg-white border border-[#E2E8F0] p-5 lg:hidden">
+          <aside className="bg-white border border-[#E2E8F0] rounded-xl p-5 lg:hidden w-full">
             <div className="flex items-center gap-2">
               <CreditCard size={18} className="text-[#1E3A8A]" />
               <h2 className="text-[17px] font-extrabold text-[#071A2B]">Payment</h2>
@@ -186,7 +221,7 @@ export default function CheckoutPage() {
               <span className="font-bold text-[#071A2B]">{selectedDistrict ? `UGX ${money(districtFee)}` : 'Select district'}</span>
             </div>
             <button type="submit" disabled={placing || !items.length || !hasAccessToken()}
-              className="w-full h-11 mt-4 bg-[#1E3A8A] text-white text-[13px] font-bold disabled:opacity-40">
+              className="w-full h-12 mt-4 bg-[#1E3A8A] text-white text-[14px] font-bold rounded-xl disabled:opacity-40">
               {placing ? 'Placing order...' : 'Place Order'}
             </button>
           </aside>
@@ -298,14 +333,14 @@ export default function CheckoutPage() {
               <div className="bg-white border border-[#E2E8F0] divide-y divide-[#E2E8F0]">
                 {items.map(item => (
                   <div key={item.id} className="flex items-center gap-3 p-4">
-                    <div className="w-14 h-14 bg-[#F8FAFC] shrink-0">
+                    <div className="w-12 h-12 bg-[#F8FAFC] shrink-0 rounded-lg overflow-hidden">
                       {item.product_image && <img src={item.product_image} alt="" className="w-full h-full object-contain" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-bold text-[#071A2B] truncate">{item.product_name}</p>
-                      <p className="text-[12px] text-[#64748B] mt-1">Qty: {item.quantity}</p>
+                      <p className="text-[12px] text-[#64748B] mt-0.5">Qty: {item.quantity}</p>
+                      <p className="text-[12px] font-bold text-[#1E3A8A] mt-0.5">UGX {(Number(item.product_price) * item.quantity).toLocaleString()}</p>
                     </div>
-                    <span className="text-[13px] font-bold text-[#1E3A8A]">UGX {(Number(item.product_price) * item.quantity).toLocaleString()}</span>
                   </div>
                 ))}
               </div>

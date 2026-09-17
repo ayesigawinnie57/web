@@ -73,12 +73,16 @@ api.interceptors.response.use(
           // refresh failed — fall through to logout
         }
       }
+      // Only redirect if the user had a token (was authenticated). Guests get no redirect.
+      const hadToken = !!localStorage.getItem('access_token')
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
-      // redirect to login only if not already on login page
-      if (!window.location.pathname.startsWith('/login')) {
-        const next = window.location.pathname.startsWith('/admin') ? '' : `?next=${encodeURIComponent(window.location.pathname)}`
-        window.location.replace(`/login${next}`)
+      if (hadToken) {
+        const { pathname } = window.location
+        const onAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password')
+        if (!onAuthPage) {
+          window.location.replace(pathname.startsWith('/admin') ? '/login' : `/login?next=${encodeURIComponent(pathname + window.location.search)}`)
+        }
       }
     }
     return Promise.reject(err)
@@ -245,7 +249,7 @@ export const productsApi = {
   ratingSummary: (slug: string) => api.get<{ average: number; total: number; breakdown: Record<string, number>; with_photos: number }>(`/api/products/${slug}/reviews/summary/`),
   checkEligibility: (slug: string) => api.get<{ eligible: boolean; reason?: string; order_id?: number; order_item_id?: number; order_code?: string; existing_review_id?: number | null }>(`/api/products/${slug}/reviews/eligibility/`),
   submitReview: (slug: string, data: FormData) => api.post(`/api/products/${slug}/reviews/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  shareUrl: (slug: string) => `${BASE_URL}/api/products/share/products/${slug}/`,
+  shareUrl: (slug: string) => `https://www.majogadgets.com/shop/${slug}`,
 }
 
 export const authApi = {
@@ -355,7 +359,7 @@ export const cartApi = {
 export type ApiOrderDetail = {
   id: number
   code: string
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  status: 'pending' | 'processing' | 'shipped' | 'ready_for_pickup' | 'delivered' | 'cancelled'
   subtotal: string
   delivery_fee: string
   total: string
@@ -384,6 +388,7 @@ export const ordersApi = {
   list: () => api.get<ApiOrderDetail[]>('/api/orders/'),
   get: (code: string) => api.get<ApiOrderDetail>(`/api/orders/${code}/`),
   cancel: (code: string) => api.post<ApiOrderDetail>(`/api/orders/${code}/cancel/`),
+  pay: (code: string) => api.post<{ redirect_url: string; order_tracking_id: string }>(`/api/orders/${code}/pay/`),
   rate: (code: string, payload: { overall: number; areas: string[]; area_ratings: Record<string, number>; comment: string }) =>
     api.post(`/api/orders/${code}/rate/`, payload),
   submitReturn: (code: string, reason: string) => api.post<ReturnRequest>(`/api/orders/${code}/return/`, { reason }),
@@ -394,7 +399,7 @@ export const ordersApi = {
 export type ApiAdminOrder = {
   id: number
   code: string
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  status: 'pending' | 'processing' | 'shipped' | 'ready_for_pickup' | 'delivered' | 'cancelled'
   subtotal: string
   delivery_fee: string
   total: string
@@ -481,6 +486,7 @@ export const adminOrdersApi = {
   get: (code: string) => api.get<ApiAdminOrder>(`/api/orders/admin/${code}/`),
   confirm: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/confirm/`),
   ship: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/ship/`),
+  readyForPickup: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/ready-for-pickup/`),
   deliver: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/deliver/`),
   cancel: (code: string, reason: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/cancel/`, { reason }),
 }

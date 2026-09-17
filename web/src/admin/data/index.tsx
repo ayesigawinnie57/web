@@ -99,67 +99,106 @@ const EXPORT_ITEMS: { label: string; type: ExportType }[] = [
 function ExportSection() {
   const [format, setFormat] = useState<ExportFormat>('csv')
   const [loading, setLoading] = useState<ExportType | null>(null)
+  const [error, setError] = useState<{ title: string; detail: string } | null>(null)
 
   async function handleExport(type: ExportType) {
     setLoading(type)
+    setError(null)
     try {
       const url = dataApi.exportUrl(type, format)
       const token = localStorage.getItem('access_token')
       const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
-      if (!res.ok) throw new Error('Export failed')
+      if (!res.ok) {
+        let detail = `HTTP ${res.status}`
+        try { const j = await res.json(); detail = j.detail ?? JSON.stringify(j) } catch {}
+        throw new Error(detail)
+      }
       const blob = await res.blob()
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
       a.download = `${type}.${format}`
       a.click()
       URL.revokeObjectURL(a.href)
-    } catch {
-      alert('Export failed. Please try again.')
+    } catch (err: any) {
+      setError({
+        title: `Failed to export ${type}`,
+        detail: err?.message ?? 'An unexpected error occurred. Please try again.',
+      })
     } finally {
       setLoading(null)
     }
   }
 
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-xl p-5">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#6366f118' }}>
-          <Download size={16} color="#6366f1" />
-        </div>
-        <div>
-          <p className="text-[14px] font-extrabold text-[#071A2B]">Export Data</p>
-          <p className="text-[11px] text-[#64748B]">Download a CSV or JSON export of your store data.</p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="flex gap-1">
-            {(['csv', 'json'] as ExportFormat[]).map(f => (
+    <>
+      <div className="bg-white border border-[#E2E8F0] rounded-xl p-5">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#6366f118' }}>
+            <Download size={16} color="#6366f1" />
+          </div>
+          <div>
+            <p className="text-[14px] font-extrabold text-[#071A2B]">Export Data</p>
+            <p className="text-[11px] text-[#64748B]">Download a CSV or JSON export of your store data.</p>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="flex gap-1">
+              {(['csv', 'json'] as ExportFormat[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFormat(f)}
+                  className="px-2.5 py-1 rounded-md text-[11px] font-bold border transition-colors"
+                  style={format === f
+                    ? { backgroundColor: '#6366f1', color: '#fff', borderColor: '#6366f1' }
+                    : { backgroundColor: 'transparent', color: '#6366f1', borderColor: '#6366f140' }}
+                >
+                  {f.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <div className="w-px h-5 bg-[#E2E8F0]" />
+            {EXPORT_ITEMS.map(({ label, type }) => (
               <button
-                key={f}
-                onClick={() => setFormat(f)}
-                className="px-2.5 py-1 rounded-md text-[11px] font-bold border transition-colors"
-                style={format === f
-                  ? { backgroundColor: '#6366f1', color: '#fff', borderColor: '#6366f1' }
-                  : { backgroundColor: 'transparent', color: '#6366f1', borderColor: '#6366f140' }}
+                key={type}
+                onClick={() => handleExport(type)}
+                disabled={loading === type}
+                className="px-3 py-1.5 rounded-lg border text-[12px] font-bold transition-opacity hover:opacity-75 disabled:opacity-50"
+                style={{ borderColor: '#6366f140', backgroundColor: '#6366f10d', color: '#6366f1' }}
               >
-                {f.toUpperCase()}
+                {loading === type ? 'Exporting…' : label}
               </button>
             ))}
           </div>
-          <div className="w-px h-5 bg-[#E2E8F0]" />
-          {EXPORT_ITEMS.map(({ label, type }) => (
-            <button
-              key={type}
-              onClick={() => handleExport(type)}
-              disabled={loading === type}
-              className="px-3 py-1.5 rounded-lg border text-[12px] font-bold transition-opacity hover:opacity-75 disabled:opacity-50"
-              style={{ borderColor: '#6366f140', backgroundColor: '#6366f10d', color: '#6366f1' }}
-            >
-              {loading === type ? 'Exporting…' : label}
-            </button>
-          ))}
         </div>
       </div>
-    </div>
+
+      {error && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setError(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm mx-4 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#ef4444] px-5 py-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <XCircle size={18} color="#fff" />
+              </div>
+              <div>
+                <p className="text-[14px] font-extrabold text-white">{error.title}</p>
+                <p className="text-[11px] text-red-100">Export could not be completed</p>
+              </div>
+            </div>
+            <div className="px-5 py-4">
+              <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl px-4 py-3 mb-4">
+                <p className="text-[12px] font-bold text-[#ef4444] mb-1">Error details</p>
+                <p className="text-[12px] text-[#64748B] font-mono break-all">{error.detail}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="w-full py-2 rounded-lg bg-[#071A2B] text-white text-[13px] font-bold hover:opacity-90"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

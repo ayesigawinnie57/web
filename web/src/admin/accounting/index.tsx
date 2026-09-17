@@ -276,21 +276,33 @@ function PurchasesTab({ suppliers }: { suppliers: ApiSupplier[] }) {
 }
 
 // ── Expenses Tab ──────────────────────────────────────────────────────────────
-function ExpensesTab({ categories }: { categories: ApiExpenseCategory[] }) {
+function ExpensesTab({ categories: initCategories }: { categories: ApiExpenseCategory[] }) {
   const [rows, setRows] = useState<ApiExpense[]>([])
-  const [modal, setModal] = useState(false)
+  const [categories, setCategories] = useState<ApiExpenseCategory[]>(initCategories)
+  const [modal, setModal] = useState<'expense' | 'category' | null>(null)
   const [form, setForm] = useState({ date: '', category: '', description: '', amount: '', payment_method: 'cash', vendor: '', notes: '' })
+  const [catForm, setCatForm] = useState({ name: '', group: 'other' })
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     accountingApi.expenses().then(r => setRows(Array.isArray(r.data) ? r.data : (r.data as any).results ?? []))
   }, [])
 
+  useEffect(() => { setCategories(initCategories) }, [initCategories])
+
   const save = async () => {
     setSaving(true)
     try {
       const r = await accountingApi.createExpense({ ...form, category: Number(form.category), amount: Number(form.amount) })
-      setRows(p => [r.data, ...p]); setModal(false)
+      setRows(p => [r.data, ...p]); setModal(null)
+    } finally { setSaving(false) }
+  }
+
+  const saveCategory = async () => {
+    setSaving(true)
+    try {
+      const r = await accountingApi.createExpenseCategory(catForm)
+      setCategories(p => [...p, r.data]); setCatForm({ name: '', group: 'other' }); setModal(null)
     } finally { setSaving(false) }
   }
 
@@ -298,7 +310,13 @@ function ExpensesTab({ categories }: { categories: ApiExpenseCategory[] }) {
 
   return (
     <div>
-      <SectionHeader title={`Expenses — ${fmt(total)}`} onAdd={() => setModal(true)} />
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[14px] font-extrabold text-[#071A2B]">Expenses — {fmt(total)}</p>
+        <div className="flex gap-2">
+          <button onClick={() => setModal('category')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#E2E8F0] text-[11px] font-bold text-[#64748B] hover:opacity-80">+ Category</button>
+          <button onClick={() => setModal('expense')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#071A2B] text-white text-[11px] font-bold hover:opacity-80"><Plus size={12} /> Add</button>
+        </div>
+      </div>
       <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[12px]">
@@ -323,7 +341,7 @@ function ExpensesTab({ categories }: { categories: ApiExpenseCategory[] }) {
           </table>
         </div>
       </div>
-      {modal && (
+      {modal === 'expense' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
             <p className="text-[15px] font-extrabold text-[#071A2B] mb-4">New Expense</p>
@@ -341,8 +359,25 @@ function ExpensesTab({ categories }: { categories: ApiExpenseCategory[] }) {
               <input placeholder="Vendor" value={form.vendor} onChange={e => setForm(f => ({ ...f, vendor: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
             </div>
             <div className="flex gap-3 mt-4">
-              <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-[12px] font-bold text-[#64748B]">Cancel</button>
+              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-[12px] font-bold text-[#64748B]">Cancel</button>
               <button onClick={save} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-[#071A2B] text-white text-[12px] font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {modal === 'category' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <p className="text-[15px] font-extrabold text-[#071A2B] mb-4">New Expense Category</p>
+            <div className="flex flex-col gap-3">
+              <input placeholder="Category name" value={catForm.name} onChange={e => setCatForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
+              <select value={catForm.group} onChange={e => setCatForm(f => ({ ...f, group: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none">
+                {['operations','technology','marketing','business','other'].map(g => <option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-[12px] font-bold text-[#64748B]">Cancel</button>
+              <button onClick={saveCategory} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-[#071A2B] text-white text-[12px] font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>
@@ -355,7 +390,8 @@ function ExpensesTab({ categories }: { categories: ApiExpenseCategory[] }) {
 function AccountsTab() {
   const [accounts, setAccounts] = useState<ApiAccount[]>([])
   const [transfers, setTransfers] = useState<ApiTransfer[]>([])
-  const [modal, setModal] = useState<'account' | 'transfer' | null>(null)
+  const [modal, setModal] = useState<'account' | 'transfer' | 'edit' | null>(null)
+  const [editing, setEditing] = useState<ApiAccount | null>(null)
   const [form, setForm] = useState({ name: '', type: 'bank', balance: '', currency: 'UGX', notes: '' })
   const [tForm, setTForm] = useState({ from_account: '', to_account: '', amount: '', date: '', notes: '' })
   const [saving, setSaving] = useState(false)
@@ -366,68 +402,110 @@ function AccountsTab() {
   }
   useEffect(() => { load() }, [])
 
+  const openEdit = (a: ApiAccount) => {
+    setEditing(a)
+    setForm({ name: a.name, type: a.type, balance: String(a.balance), currency: a.currency, notes: a.notes ?? '' })
+    setModal('edit')
+  }
+
   const saveAccount = async () => {
     setSaving(true)
-    try { const r = await accountingApi.createAccount({ ...form, balance: Number(form.balance) }); setAccounts(p => [...p, r.data]); setModal(null) }
-    finally { setSaving(false) }
+    try {
+      const r = await accountingApi.createAccount({ ...form, balance: Number(form.balance) })
+      setAccounts(p => [...p, r.data]); setModal(null)
+      setForm({ name: '', type: 'bank', balance: '', currency: 'UGX', notes: '' })
+    } finally { setSaving(false) }
   }
+
+  const updateAccount = async () => {
+    if (!editing) return
+    setSaving(true)
+    try {
+      const r = await accountingApi.updateAccount(editing.id, { ...form, balance: Number(form.balance) })
+      setAccounts(p => p.map(a => a.id === editing.id ? r.data : a))
+      setModal(null); setEditing(null)
+    } finally { setSaving(false) }
+  }
+
   const saveTransfer = async () => {
     setSaving(true)
-    try { await accountingApi.createTransfer({ ...tForm, from_account: Number(tForm.from_account), to_account: Number(tForm.to_account), amount: Number(tForm.amount) }); load(); setModal(null) }
-    finally { setSaving(false) }
+    try {
+      await accountingApi.createTransfer({ ...tForm, from_account: Number(tForm.from_account), to_account: Number(tForm.to_account), amount: Number(tForm.amount) })
+      load(); setModal(null)
+      setTForm({ from_account: '', to_account: '', amount: '', date: '', notes: '' })
+    } finally { setSaving(false) }
   }
 
   const total = accounts.reduce((s, a) => s + Number(a.balance), 0)
 
+  const accountFormFields = (
+    <div className="flex flex-col gap-3">
+      <input placeholder="Account name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
+      <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none">
+        {['bank','mobile_money','cash','gateway','other'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+      </select>
+      <div className="flex gap-2">
+        <input type="number" placeholder="Balance" value={form.balance} onChange={e => setForm(f => ({ ...f, balance: e.target.value }))} className="flex-1 px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
+        <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="w-24 px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none">
+          {['UGX','USD','EUR','GBP','KES'].map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      <input placeholder="Notes (optional)" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-[14px] font-extrabold text-[#071A2B]">Accounts — {fmt(total)}</p>
+        <p className="text-[14px] font-extrabold text-[#071A2B]">Accounts &mdash; {fmt(total)}</p>
         <div className="flex gap-2">
           <button onClick={() => setModal('transfer')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#E2E8F0] text-[11px] font-bold text-[#64748B] hover:opacity-80">Transfer</button>
-          <button onClick={() => setModal('account')} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#071A2B] text-white text-[11px] font-bold hover:opacity-80"><Plus size={12} /> Account</button>
+          <button onClick={() => { setForm({ name: '', type: 'bank', balance: '', currency: 'UGX', notes: '' }); setModal('account') }} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#071A2B] text-white text-[11px] font-bold hover:opacity-80"><Plus size={12} /> Account</button>
         </div>
       </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {accounts.map(a => (
-          <div key={a.id} className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+          <div key={a.id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 group relative">
             <p className="text-[10px] text-[#94A3B8] capitalize mb-1">{a.type.replace('_', ' ')}</p>
             <p className="text-[14px] font-extrabold text-[#071A2B]">{a.name}</p>
             <p className="text-[16px] font-extrabold text-[#22C55E] mt-1">{a.currency} {Number(a.balance).toLocaleString()}</p>
+            {a.notes && <p className="text-[10px] text-[#94A3B8] mt-1 truncate">{a.notes}</p>}
+            <button onClick={() => openEdit(a)}
+              className="absolute top-3 right-3 text-[10px] font-bold text-[#94A3B8] hover:text-[#071A2B] opacity-0 group-hover:opacity-100 transition-opacity px-2 py-0.5 rounded-lg border border-[#E2E8F0] bg-white">
+              Edit
+            </button>
           </div>
         ))}
         {accounts.length === 0 && <div className="col-span-4"><EmptyState text="No accounts yet." /></div>}
       </div>
+
       {transfers.length > 0 && (
         <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden">
           <div className="px-5 py-3 border-b border-[#E2E8F0]"><p className="text-[12px] font-extrabold text-[#071A2B]">Transfers</p></div>
           {transfers.map((t, i) => (
-            <div key={t.id} className={`flex justify-between items-center px-5 py-3 text-[12px] ${i < transfers.length - 1 ? 'border-b border-[#F1F5F9]' : ''}`}>
-              <span className="text-[#64748B]">{t.from_account_name} → {t.to_account_name}</span>
+            <div key={t.id} className={`flex items-center justify-between px-5 py-3 text-[12px] ${i < transfers.length - 1 ? 'border-b border-[#F1F5F9]' : ''}`}>
+              <span className="text-[#64748B]">{t.from_account_name} &rarr; {t.to_account_name}</span>
               <span className="font-bold text-[#071A2B]">{fmt(t.amount)}</span>
               <span className="text-[#94A3B8]">{t.date}</span>
             </div>
           ))}
         </div>
       )}
-      {modal === 'account' && (
+
+      {(modal === 'account' || modal === 'edit') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <p className="text-[15px] font-extrabold text-[#071A2B] mb-4">New Account</p>
-            <div className="flex flex-col gap-3">
-              <input placeholder="Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
-              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none">
-                {['bank','mobile_money','cash','gateway','other'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
-              </select>
-              <input type="number" placeholder="Opening Balance" value={form.balance} onChange={e => setForm(f => ({ ...f, balance: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
-            </div>
+            <p className="text-[15px] font-extrabold text-[#071A2B] mb-4">{modal === 'edit' ? 'Edit Account' : 'New Account'}</p>
+            {accountFormFields}
             <div className="flex gap-3 mt-4">
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-[12px] font-bold text-[#64748B]">Cancel</button>
-              <button onClick={saveAccount} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-[#071A2B] text-white text-[12px] font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
+              <button onClick={() => { setModal(null); setEditing(null) }} className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-[12px] font-bold text-[#64748B]">Cancel</button>
+              <button onClick={modal === 'edit' ? updateAccount : saveAccount} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-[#071A2B] text-white text-[12px] font-bold disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>
       )}
+
       {modal === 'transfer' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
@@ -435,14 +513,15 @@ function AccountsTab() {
             <div className="flex flex-col gap-3">
               <select value={tForm.from_account} onChange={e => setTForm(f => ({ ...f, from_account: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none">
                 <option value="">From...</option>
-                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({a.currency} {Number(a.balance).toLocaleString()})</option>)}
               </select>
               <select value={tForm.to_account} onChange={e => setTForm(f => ({ ...f, to_account: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none">
                 <option value="">To...</option>
-                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({a.currency} {Number(a.balance).toLocaleString()})</option>)}
               </select>
               <input type="number" placeholder="Amount" value={tForm.amount} onChange={e => setTForm(f => ({ ...f, amount: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
               <input type="date" value={tForm.date} onChange={e => setTForm(f => ({ ...f, date: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
+              <input placeholder="Notes (optional)" value={tForm.notes} onChange={e => setTForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-[12px] outline-none" />
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] text-[12px] font-bold text-[#64748B]">Cancel</button>

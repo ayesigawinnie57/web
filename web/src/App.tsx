@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { NotificationProvider } from './lib/NotificationContext'
 import { SwitchProvider, useSwitchPortal } from './lib/SwitchContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
@@ -26,6 +26,9 @@ const RateOrderPage          = lazy(() => import('./pages/RateOrderPage'))
 const RateProductPage        = lazy(() => import('./pages/RateProductPage'))
 const ReturnPage       = lazy(() => import('./pages/ReturnPage'))
 const BecomeTraderPage = lazy(() => import('./pages/BecomeTraderPage'))
+const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'))
+
+const AdminPickupPage  = lazy(() => import('./admin/orders/pickup'))
 
 const AdminGuard      = lazy(() => import('./admin/AdminGuard'))
 const AdminLayout     = lazy(() => import('./admin/AdminLayout'))
@@ -58,6 +61,11 @@ const TraderFlashSales = lazy(() => import('./trader/TraderFlashSales'))
 const TraderInventory  = lazy(() => import('./trader/TraderInventory'))
 const TraderSales      = lazy(() => import('./trader/TraderSales'))
 const TraderAccounting = lazy(() => import('./trader/TraderAccounting'))
+
+function ProductRedirect() {
+  const { slug } = useParams()
+  return <Navigate to={`/shop/${slug}`} replace />
+}
 
 // Renders the transition overlay and drives navigation from above the route tree
 function SwitchOverlay() {
@@ -96,13 +104,11 @@ export default function App() {
   useEffect(() => {
     fetch(`${BASE_URL}/api/settings/platform/`)
       .then(r => r.json()).then(d => setUiActive(!!d.ui_active)).catch(() => setUiActive(true))
-    if (localStorage.getItem('access_token')) {
+    if (localStorage.getItem('access_token'))
       sessionApi.profile().then(p => setIsAdmin(p.is_staff))
-    }
   }, [])
 
-  if (uiActive === null) return null
-  if (!uiActive && !isAdmin) return <SiteOffline />
+  if (uiActive === false && !isAdmin) return <SiteOffline />
   return (
     <SwitchProvider>
     <NotificationProvider>
@@ -115,6 +121,7 @@ export default function App() {
           <Route path="/categories" element={<CategoryPage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/shop/:slug" element={<ProductPage />} />
+          <Route path="/products/:slug" element={<ProductRedirect />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -131,6 +138,7 @@ export default function App() {
           <Route path="/rate-product/:slug" element={<RateProductPage />} />
           <Route path="/returns" element={<ReturnPage />} />
           <Route path="/become-a-trader" element={<BecomeTraderPage />} />
+          <Route path="/payment-callback" element={<PaymentCallbackPage />} />
           <Route element={<TraderGuard />}>
             <Route path="/trader/:traderUuid" element={<TraderLayout />}>
               <Route index element={<TraderDashboard />} />
@@ -154,6 +162,7 @@ export default function App() {
               <Route path="categories/:id" element={<EditCategory />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="orders/:code" element={<AdminOrderDetail />} />
+              <Route path="pickup" element={<AdminPickupPage />} />
               <Route path="flashsales" element={<AdminFlashSales />} />
               <Route path="flashsales/add" element={<AddFlashSale />} />
               <Route path="users" element={<AdminUsers />} />

@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Package, MapPin, FileText, CheckCircle, Clock, Truck, XCircle, ShoppingBag, Phone } from 'lucide-react'
+import { ArrowLeft, Package, MapPin, FileText, CheckCircle, Clock, Truck, XCircle, ShoppingBag, Phone, PackageCheck } from 'lucide-react'
 import { adminOrdersApi, type ApiAdminOrder } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 
-const STATUS_STEPS = ['pending', 'processing', 'shipped', 'delivered'] as const
+const STATUS_STEPS = ['pending', 'processing', 'shipped', 'ready_for_pickup', 'delivered'] as const
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-  pending:    { label: 'Pending',   color: '#92400e', bg: '#fef3c7', icon: Clock       },
-  processing: { label: 'Confirmed', color: '#1e40af', bg: '#dbeafe', icon: Package     },
-  shipped:    { label: 'Shipped',   color: '#6d28d9', bg: '#ede9fe', icon: Truck       },
-  delivered:  { label: 'Delivered', color: '#166534', bg: '#dcfce7', icon: CheckCircle },
-  cancelled:  { label: 'Cancelled', color: '#991b1b', bg: '#fee2e2', icon: XCircle    },
+  pending:          { label: 'Pending',          color: '#92400e', bg: '#fef3c7', icon: Clock        },
+  processing:       { label: 'Confirmed',        color: '#1e40af', bg: '#dbeafe', icon: Package      },
+  shipped:          { label: 'Shipped',          color: '#6d28d9', bg: '#ede9fe', icon: Truck        },
+  ready_for_pickup: { label: 'Ready for Pickup', color: '#b45309', bg: '#fef9c3', icon: PackageCheck },
+  delivered:        { label: 'Delivered',        color: '#166534', bg: '#dcfce7', icon: CheckCircle  },
+  cancelled:        { label: 'Cancelled',        color: '#991b1b', bg: '#fee2e2', icon: XCircle      },
 }
 
 function formatDate(iso: string) {
@@ -259,6 +260,15 @@ export default function AdminOrderDetail() {
                     </button>
                   )}
                   {order.status === 'shipped' && (
+                    <button
+                      onClick={() => act(() => adminOrdersApi.readyForPickup(order.code))}
+                      disabled={acting}
+                      className="flex items-center justify-center gap-1 flex-1 px-2 py-2.5 rounded-xl bg-amber-500 text-white text-[11px] font-bold hover:bg-amber-600 disabled:opacity-50 transition-colors whitespace-nowrap"
+                    >
+                      <PackageCheck size={15} /> {acting ? 'Processing...' : 'Ready for Pickup'}
+                    </button>
+                  )}
+                  {order.status === 'ready_for_pickup' && (
                     <button
                       onClick={() => act(() => adminOrdersApi.deliver(order.code))}
                       disabled={acting}
