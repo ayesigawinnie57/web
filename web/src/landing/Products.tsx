@@ -15,7 +15,7 @@ export default function Products({ products }: { products: Product[] }) {
           </div>
           <Link to="/shop" className="text-[13px] font-semibold text-[#1E3A8A]">See All →</Link>
         </div>
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-1.5">
           {slice.map(p => <ProductCard key={p.id} product={p} />)}
         </div>
       </div>
