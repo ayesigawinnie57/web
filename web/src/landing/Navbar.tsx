@@ -208,6 +208,15 @@ export default function Navbar() {
             >
               <UserRound className="w-[18px] h-[18px] text-[#071A2B]" />
             </button>
+            {/* Notifications — desktop only */}
+            <Link to="/notifications" aria-label="Notifications" title="Notifications" className="hidden lg:flex relative p-0.5">
+              <Bell className="w-[21px] h-[21px] text-[#071A2B]" strokeWidth={2} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
             {/* Wishlist */}
             <Link to="/wishlist" className="relative p-0.5">
               <svg className="w-[21px] h-[21px] text-red-500" fill="none" stroke="#ef4444" strokeWidth={2} viewBox="0 0 24 24">
