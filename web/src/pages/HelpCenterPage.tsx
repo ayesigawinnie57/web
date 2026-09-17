@@ -92,8 +92,8 @@ export default function HelpCenterPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <main className="max-w-6xl mx-auto px-4 py-8 md:py-12">
-        <section className="rounded-[28px] bg-gradient-to-r from-[#071A2B] via-[#0F2B43] to-[#1E3A8A] px-6 py-8 md:px-10 md:py-10 text-white shadow-[0_25px_80px_rgba(15,43,67,0.18)]">
+      <main className="max-w-6xl mx-auto px-4 pt-[150px] pb-8 md:pt-[156px] md:pb-12">
+        <section className="rounded-[28px] bg-[#071A2B] px-6 py-8 md:px-10 md:py-10 text-white shadow-[0_25px_80px_rgba(15,43,67,0.18)]">
           <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#BFDBFE]">
             <CircleHelp size={14} />
             Help Center

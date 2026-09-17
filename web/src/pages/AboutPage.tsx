@@ -1,26 +1,21 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BadgeCheck, ShoppingBag, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
 const values = [
   {
-    icon: ShoppingBag,
     title: 'Curated shopping',
     text: 'We bring together everyday essentials and trending products in one convenient shopping experience.',
   },
   {
-    icon: ShieldCheck,
     title: 'Trust and security',
     text: 'Customer confidence matters to us, which is why secure payments, clear policies, and reliable support are part of our process.',
   },
   {
-    icon: TrendingUp,
     title: 'Growth-focused',
     text: 'We are building a modern marketplace that helps buyers discover value and sellers reach more customers.',
   },
   {
-    icon: Sparkles,
     title: 'Simple experience',
     text: 'From discovery to checkout, we aim to keep shopping easy, fast, and enjoyable for every customer.',
   },
@@ -33,11 +28,8 @@ export default function AboutPage() {
 
       <main className="w-full max-w-none px-4 pt-[150px] pb-8 md:px-8 md:pt-[156px] md:pb-10 lg:px-12">
         <div className="max-w-6xl mx-auto">
-          <section className="rounded-[28px] bg-gradient-to-r from-[#071A2B] via-[#0F2B43] to-[#1E3A8A] px-6 py-8 md:px-10 text-white shadow-[0_25px_80px_rgba(15,43,67,0.18)]">
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#BFDBFE]">
-              <BadgeCheck size={14} />
-              About us
-            </div>
+          <section className="rounded-[28px] bg-[#071A2B] px-6 py-8 md:px-10 text-white shadow-[0_25px_80px_rgba(15,43,67,0.18)]">
+            <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BFDBFE]">About us</div>
             <h1 className="mt-4 text-3xl font-black md:text-5xl tracking-tight">We are Majo Gadgets</h1>
             <p className="mt-3 max-w-3xl text-[14px] md:text-[16px] text-slate-200">
               Majo Gadgets is a modern shopping platform built to make everyday buying easier, faster, and more rewarding for customers across Uganda and beyond.
@@ -54,12 +46,9 @@ export default function AboutPage() {
           </section>
 
           <section className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {values.map(({ icon: Icon, title, text }) => (
+            {values.map(({ title, text }) => (
               <div key={title} className="rounded-[24px] border border-[#E2E8F0] bg-white p-5 shadow-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E0F2FE] text-[#1E3A8A]">
-                  <Icon size={20} />
-                </div>
-                <h2 className="mt-4 text-[18px] font-extrabold text-[#071A2B]">{title}</h2>
+                <h2 className="text-[18px] font-extrabold text-[#071A2B]">{title}</h2>
                 <p className="mt-2 text-[14px] leading-7 text-[#475569]">{text}</p>
               </div>
             ))}
@@ -76,9 +65,8 @@ export default function AboutPage() {
               <Link to="/shop" className="inline-flex items-center justify-center rounded-xl bg-[#071A2B] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#0F2B43]">
                 Explore products
               </Link>
-              <Link to="/contact" className="inline-flex items-center gap-2 justify-center rounded-xl border border-[#0F2B43] bg-white px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-[#F8FAFC]">
+              <Link to="/contact" className="inline-flex items-center justify-center rounded-xl border border-[#0F2B43] bg-white px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-[#F8FAFC]">
                 Contact us
-                <ArrowRight size={14} />
               </Link>
             </div>
           </section>

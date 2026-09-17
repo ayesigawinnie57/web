@@ -7,7 +7,7 @@ const SLIDES = [
     slug: 'phones-tablets',
     label: 'Phones & Tablets',
     icon: Smartphone,
-    color: '#F97316', via: '#FB923C',
+    color: '#F97316',
     title: 'Latest Smartphones & Tablets',
     subtitle: 'Stay connected with cutting-edge devices',
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152115/phone_tablets.png',
@@ -16,7 +16,7 @@ const SLIDES = [
     slug: 'electronics',
     label: 'Electronics',
     icon: Tv,
-    color: '#1E3A8A', via: '#2563EB',
+    color: '#1E3A8A',
     title: 'Smart TVs & Home Electronics',
     subtitle: 'Upgrade your entertainment experience',
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152114/eletronics.png',
@@ -25,7 +25,7 @@ const SLIDES = [
     slug: 'appliances',
     label: 'Appliances',
     icon: WashingMachine,
-    color: '#15803D', via: '#16A34A',
+    color: '#15803D',
     title: 'Home Appliances',
     subtitle: 'Make everyday living easier & smarter',
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152114/appl.png',
@@ -34,7 +34,7 @@ const SLIDES = [
     slug: 'fashion',
     label: 'Fashion',
     icon: Shirt,
-    color: '#7C3AED', via: '#8B5CF6',
+    color: '#7C3AED',
     title: 'Trending Fashion & Style',
     subtitle: 'Dress to impress every single day',
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152177/Fashion.png',
@@ -43,7 +43,7 @@ const SLIDES = [
     slug: 'computing',
     label: 'Computing',
     icon: Monitor,
-    color: '#DC2626', via: '#EF4444',
+    color: '#DC2626',
     title: 'Laptops & Computing',
     subtitle: 'Power through work and play',
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152114/Computing.png',
@@ -52,7 +52,7 @@ const SLIDES = [
     slug: 'health-beauty',
     label: 'Health & Beauty',
     icon: Sparkles,
-    color: '#0369A1', via: '#0EA5E9',
+    color: '#0369A1',
     title: 'Health & Beauty Essentials',
     subtitle: 'Look and feel your absolute best',
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152116/pppp.png',
@@ -61,7 +61,7 @@ const SLIDES = [
     slug: 'baby-products',
     label: 'Baby Products',
     icon: ShoppingBag,
-    color: '#B45309', via: '#D97706',
+    color: '#B45309',
     title: 'Baby Products',
     subtitle: 'Everything your little one needs',
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152162/babies.png',
@@ -108,11 +108,11 @@ export default function Hero() {
   const next = SLIDES[(index + 1) % SLIDES.length]
 
   const renderSlide = (slide: typeof SLIDES[0]) => {
-    const { color, via, label, slug, icon: Icon, title, subtitle, image } = slide
+    const { color, label, slug, icon: Icon, title, subtitle, image } = slide
     return (
       <div
         className="relative w-1/2 shrink-0 h-[260px] md:h-[280px] rounded-2xl overflow-hidden select-none"
-        style={{ background: `linear-gradient(135deg, ${color} 0%, ${via} 60%, ${color}cc 100%)` }}
+        style={{ backgroundColor: color }}
       >
         {/* decorative circles */}
         <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full" style={{ background: 'rgba(255,255,255,0.12)' }} />
