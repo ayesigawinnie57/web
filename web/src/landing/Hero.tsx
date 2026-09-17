@@ -68,6 +68,12 @@ const SLIDES = [
   },
 ]
 
+const optimizedImageUrl = (url: string) =>
+  url.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_1200/')
+
+const responsiveImageUrl = (url: string, width: number) =>
+  url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${width}/`)
+
 export default function Hero() {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -138,8 +144,15 @@ export default function Hero() {
         {/* right: category image */}
         <div className="absolute right-0 top-0 bottom-0 w-[50%] md:w-[46%]">
           <img
-            src={image}
+            src={optimizedImageUrl(image)}
+            srcSet={`${responsiveImageUrl(image, 800)} 800w, ${optimizedImageUrl(image)} 1200w`}
+            sizes="(min-width: 768px) 46vw, 100vw"
             alt={label}
+            loading={image === SLIDES[0].image ? 'eager' : 'lazy'}
+            fetchPriority={image === SLIDES[0].image ? 'high' : 'low'}
+            decoding="async"
+            width={800}
+            height={520}
             className="w-full h-full object-contain object-center scale-110 md:object-bottom md:scale-100"
           />
         </div>
@@ -150,7 +163,19 @@ export default function Hero() {
   }
 
   return (
-    <div className="px-4 py-4">
+    <>
+      {SLIDES.map(slide => (
+        <link
+          key={slide.slug}
+          rel="preload"
+          as="image"
+          href={optimizedImageUrl(slide.image)}
+          imageSrcSet={`${responsiveImageUrl(slide.image, 800)} 800w, ${optimizedImageUrl(slide.image)} 1200w`}
+          imageSizes="(min-width: 768px) 46vw, 100vw"
+          fetchPriority={slide === SLIDES[0] ? 'high' : 'auto'}
+        />
+      ))}
+      <div className="px-4 py-4">
       <div className="max-w-7xl mx-auto flex flex-col items-center">
         <div className="relative w-full" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
         <div className="w-full overflow-hidden rounded-2xl">
@@ -162,6 +187,7 @@ export default function Hero() {
           {/* prev button */}
           <button
             onClick={() => goTo((index - 1 + SLIDES.length) % SLIDES.length)}
+            aria-label="Show previous category"
             className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition"
           >
             <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
@@ -169,6 +195,7 @@ export default function Hero() {
           {/* next button */}
           <button
             onClick={() => goTo((index + 1) % SLIDES.length)}
+            aria-label="Show next category"
             className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition"
           >
             <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
@@ -181,12 +208,15 @@ export default function Hero() {
             <button
               key={s.slug}
               onClick={() => goTo(i)}
+              aria-label={`Show ${s.label}`}
+              aria-current={i === index ? 'true' : undefined}
               className="h-1.5 rounded-full transition-all duration-300"
               style={{ width: i === index ? 20 : 6, backgroundColor: i === index ? s.color : '#CBD5E1' }}
             />
           ))}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

@@ -10,6 +10,11 @@ export const cloudinaryUrl = (publicId: string | null | undefined) =>
     ? `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/upload/${publicId}`
     : publicId ?? null
 
+export const cloudinaryImageUrl = (url: string | null | undefined, width: number) => {
+  if (!url) return null
+  return url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${width}/`)
+}
+
 const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'ngrok-skip-browser-warning': 'true' },

@@ -166,6 +166,7 @@ export default function Navbar() {
           ) : (
             <button
               onClick={() => setSearchOpen(true)}
+              aria-label="Search products"
               className="flex-1 lg:flex-none lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:w-[280px] flex items-center bg-[#F8FAFC] border-[1.5px] border-[#E2E8F0] rounded-full px-3 h-10 gap-2 text-left transition-[width] duration-200"
             >
               <svg className="w-3.5 h-3.5 text-[#64748B] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,6 +205,7 @@ export default function Navbar() {
             {/* Account — desktop only */}
             <button
               onClick={() => setAccountOpen(true)}
+              aria-label="Open account"
               className="hidden lg:flex w-[34px] h-[34px] rounded-full bg-[#F8FAFC] border border-[#E2E8F0] items-center justify-center"
             >
               <UserRound className="w-[18px] h-[18px] text-[#071A2B]" />
@@ -264,7 +266,7 @@ export default function Navbar() {
                           className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#F8FAFC] ${i < catResults.length - 1 ? 'border-b border-[#E2E8F0]' : ''}`}
                         >
                           <div className="w-9 h-9 rounded-[10px] bg-[#EFF6FF] flex items-center justify-center overflow-hidden shrink-0">
-                            {cat.image ? <img src={cat.image} className="w-full h-full object-cover" /> : <svg className="w-4 h-4 text-[#071A2B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>}
+                            {cat.image ? <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" /> : <svg className="w-4 h-4 text-[#071A2B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>}
                           </div>
                           <span className="flex-1 text-sm font-semibold text-[#071A2B] text-left">{cat.name}</span>
                           <span className="text-xl text-[#94A3B8]">›</span>

@@ -5,8 +5,8 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { BASE_URL, sessionApi } from './lib/api'
 import CookieBanner from './components/CookieBanner'
 import SwitchTransition from './components/SwitchTransition'
+import LandingPage from './landing'
 
-const LandingPage            = lazy(() => import('./landing'))
 const ProductPage            = lazy(() => import('./pages/ProductPage'))
 const CartPage               = lazy(() => import('./pages/CartPage'))
 const CheckoutPage           = lazy(() => import('./pages/CheckoutPage'))

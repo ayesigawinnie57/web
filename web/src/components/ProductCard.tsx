@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { Product } from '../lib/api'
 import { trackProductClick } from '../lib/behaviour'
+import { cloudinaryImageUrl } from '../lib/api'
 
 export default function ProductCard({ product }: { product: Product }) {
   const discount = product.originalPrice
@@ -15,7 +16,16 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       <div className="relative bg-[#F8FAFC] aspect-square overflow-hidden">
         {product.image
-          ? <img src={product.image} alt={product.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+          ? <img
+              src={cloudinaryImageUrl(product.image, 400) ?? product.image}
+              srcSet={`${cloudinaryImageUrl(product.image, 320) ?? product.image} 320w, ${cloudinaryImageUrl(product.image, 400) ?? product.image} 400w, ${cloudinaryImageUrl(product.image, 640) ?? product.image} 640w`}
+              sizes="(min-width: 1024px) 16vw, (min-width: 768px) 25vw, 50vw"
+              alt={product.name}
+              loading="lazy"
+              width={400}
+              height={400}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            />
           : <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
         }
         {/* hover overlay */}
