@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, ShoppingCart, ShieldCheck, Home, Tag, Settings, ShoppingBag, Store } from 'lucide-react'
+import { Bell, ShoppingCart, ShieldCheck, Home, UserRound, ShoppingBag, Store } from 'lucide-react'
 import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
@@ -134,7 +134,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#E2E8F0]">
-        <div className="relative flex items-center px-4 h-14 lg:h-16 gap-2.5">
+        <div className="relative flex items-center px-4 h-16 lg:h-20 gap-2.5">
           {/* Logo */}
           <Link to="/" onClick={closeSearch} className="shrink-0">
             <img src={LOGO} alt="Majo Gadgets" className="h-11 w-auto" />
@@ -178,9 +178,8 @@ export default function Navbar() {
           {/* Primary navigation and actions */}
           <div className="ml-auto flex items-center gap-3.5 shrink-0">
             <div className="hidden lg:flex items-center gap-5 mr-2">
-              <Link to="/shop" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Shop</Link>
-              <Link to="/categories" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Category</Link>
-              <Link to="/deals" onClick={closeSearch} className="text-[13px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Deals</Link>
+              <Link to="/shop" onClick={closeSearch} className="text-[15px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Shop</Link>
+              <Link to="/deals" onClick={closeSearch} className="text-[15px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Deals</Link>
             </div>
             {/* Admin icon */}
             {isAdmin && (
@@ -202,24 +201,13 @@ export default function Navbar() {
                 <Store className="w-[18px] h-[18px] text-white" />
               </button>
             )}
-            {/* Account */}
+            {/* Account — desktop only */}
             <button
               onClick={() => setAccountOpen(true)}
-              className="w-[34px] h-[34px] rounded-full bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center"
+              className="hidden lg:flex w-[34px] h-[34px] rounded-full bg-[#F8FAFC] border border-[#E2E8F0] items-center justify-center"
             >
-              <svg className="w-[18px] h-[18px] text-[#071A2B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" />
-              </svg>
+              <UserRound className="w-[18px] h-[18px] text-[#071A2B]" />
             </button>
-            {/* Notifications */}
-            <Link to="/notifications" aria-label="Notifications" title="Notifications" className="relative p-0.5">
-              <Bell className="w-[22px] h-[22px] text-[#071A2B]" strokeWidth={2} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </Link>
             {/* Wishlist */}
             <Link to="/wishlist" className="relative p-0.5">
               <svg className="w-[21px] h-[21px] text-red-500" fill="none" stroke="#ef4444" strokeWidth={2} viewBox="0 0 24 24">
@@ -381,10 +369,6 @@ export default function Navbar() {
           <Home size={20} />
           <span className="text-[10px] font-semibold">Home</span>
         </Link>
-        <Link to="/categories" className="flex flex-col items-center gap-1 text-[#64748B]">
-          <Tag size={20} />
-          <span className="text-[10px] font-semibold">Categories</span>
-        </Link>
         <Link to="/notifications" className="flex flex-col items-center gap-1 text-[#64748B] relative">
           <span className="relative">
             <Bell size={20} />
@@ -406,8 +390,8 @@ export default function Navbar() {
           </button>
         )}
         <button onClick={() => setAccountOpen(true)} className="flex flex-col items-center gap-1 text-[#64748B]">
-          <Settings size={20} />
-          <span className="text-[10px] font-semibold">Settings</span>
+          <UserRound size={20} />
+          <span className="text-[10px] font-semibold">My Account</span>
         </button>
       </nav>
     </>

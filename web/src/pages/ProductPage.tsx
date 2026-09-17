@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cartApi, hasAccessToken, productsApi, wishlistApi, notifyWishlistUpdated, toProduct, type Product, type ApiReview } from '../lib/api'
+import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -51,18 +52,21 @@ export default function ProductPage() {
     productsApi.bySlug(slug).then(({ data }) => {
       const p = toProduct(data)
       setProduct(p)
-      cartApi.list().then(items => {
-        setInCart(items.some(i => i.product_id === p.id))
-      }).catch(() => undefined)
 
-      // Track browsed categories for Recommended section
+      // Track behaviour
       if (p.category) {
+        trackProductView(p.id, p.category)
+        trackCategoryVisit(p.category)
         try {
           const prev: string[] = JSON.parse(localStorage.getItem('majo_browsed_cats') ?? '[]')
           const updated = [p.category, ...prev.filter(c => c !== p.category)].slice(0, 6)
           localStorage.setItem('majo_browsed_cats', JSON.stringify(updated))
         } catch { /* ignore */ }
       }
+
+      cartApi.list().then(items => {
+        setInCart(items.some(i => i.product_id === p.id))
+      }).catch(() => undefined)
 
       productsApi.byCategory(p.category).then(({ data: d }) => {
         const raw = Array.isArray(d) ? d : (d as any).results ?? []

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Product } from '../lib/api'
+import { trackProductClick } from '../lib/behaviour'
 
 export default function ProductCard({ product }: { product: Product }) {
   const discount = product.originalPrice
@@ -9,6 +10,7 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <Link
       to={`/shop/${product.slug}`}
+      onClick={() => trackProductClick(product.id, product.category)}
       className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden hover:shadow-md transition-shadow group"
     >
       <div className="relative bg-[#F8FAFC] aspect-square overflow-hidden">
