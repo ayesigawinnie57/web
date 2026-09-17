@@ -772,6 +772,17 @@ export const notificationsApi = {
   delete: (id: number) => api.delete(`/api/auth/notifications/${id}/`),
 }
 
+export const behaviourApi = {
+  track: (event: 'view' | 'click' | 'category', category_slug: string, product_id?: number) =>
+    hasAccessToken()
+      ? api.post('/api/auth/behaviour/', { event, category_slug, product_id }).catch(() => {})
+      : Promise.resolve(),
+  recommended: (page = 1, page_size = 12, exclude: number[] = []) =>
+    api.get<{ results: ApiProduct[]; count: number; next: number | null }>(
+      `/api/auth/recommended/?page=${page}&page_size=${page_size}${exclude.length ? `&exclude=${exclude.join(',')}` : ''}`
+    ),
+}
+
 export const isAdmin = () => {
   try {
     const token = localStorage.getItem('access_token')

@@ -3,6 +3,7 @@ import Navbar from './Navbar'
 import Hero from './Hero'
 import Products from './Products'
 import FlashDeals from './FlashDeals'
+import ShopByCategory from './ShopByCategory'
 import Recommended from './Recommended'
 import Footer from './Footer'
 import { productsApi, toProduct, type Product } from '../lib/api'
@@ -25,6 +26,7 @@ export default function LandingPage() {
         <Hero />
         {loading ? <ProductsSkeleton /> : <Products products={products} />}
         <FlashDeals products={[]} />
+        <ShopByCategory />
         {!loading && <Recommended products={products} featuredIds={new Set(products.slice(0, 12).map(p => p.id))} />}
       </div>
       <Footer />
