@@ -22,7 +22,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <div className="pt-[106px] lg:pt-[106px] pb-16 lg:pb-0">
+      <div className="pt-[150px] lg:pt-[156px] pb-16 lg:pb-0">
         <Hero />
         {loading ? <ProductsSkeleton /> : <Products products={products} />}
         <FlashDeals products={[]} />

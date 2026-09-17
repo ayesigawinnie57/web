@@ -689,6 +689,7 @@ export type ApiTraderOrderItem = {
   price: string
   status: 'pending' | 'preparing' | 'ready'
   note: string
+  status_changed_by_name: string | null
   updated_at: string
 }
 

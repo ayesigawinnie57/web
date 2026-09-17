@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { NotificationProvider } from './lib/NotificationContext'
 import { SwitchProvider, useSwitchPortal } from './lib/SwitchContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { BASE_URL, sessionApi } from './lib/api'
+import CookieBanner from './components/CookieBanner'
 import SwitchTransition from './components/SwitchTransition'
 
 const LandingPage            = lazy(() => import('./landing'))
@@ -24,9 +25,17 @@ const ForgotPasswordPage     = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage      = lazy(() => import('./pages/ResetPasswordPage'))
 const RateOrderPage          = lazy(() => import('./pages/RateOrderPage'))
 const RateProductPage        = lazy(() => import('./pages/RateProductPage'))
-const ReturnPage       = lazy(() => import('./pages/ReturnPage'))
-const BecomeTraderPage = lazy(() => import('./pages/BecomeTraderPage'))
-const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'))
+const ReturnPage             = lazy(() => import('./pages/ReturnPage'))
+const RequestReturnPage      = lazy(() => import('./pages/RequestReturnPage'))
+const HelpCenterPage         = lazy(() => import('./pages/HelpCenterPage'))
+const AboutPage              = lazy(() => import('./pages/AboutPage'))
+const ContactUsPage          = lazy(() => import('./pages/ContactUsPage'))
+const PaymentPage            = lazy(() => import('./pages/PaymentPage'))
+const PrivacyPolicyPage      = lazy(() => import('./pages/PrivacyPolicyPage'))
+const TermsPage              = lazy(() => import('./pages/TermsPage'))
+const CookiesPage            = lazy(() => import('./pages/CookiesPage'))
+const BecomeTraderPage       = lazy(() => import('./pages/BecomeTraderPage'))
+const PaymentCallbackPage    = lazy(() => import('./pages/PaymentCallbackPage'))
 
 const AdminPickupPage  = lazy(() => import('./admin/orders/pickup'))
 
@@ -104,6 +113,16 @@ function SiteOffline() {
   )
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [pathname])
+
+  return null
+}
+
 export default function App() {
   const [uiActive, setUiActive] = useState<boolean | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -120,7 +139,9 @@ export default function App() {
     <SwitchProvider>
     <NotificationProvider>
     <BrowserRouter>
+      <ScrollToTop />
       <SwitchOverlay />
+      <CookieBanner />
       <Suspense fallback={<div style={{ position: 'fixed', inset: 0, background: '#071A2B' }} />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -144,6 +165,14 @@ export default function App() {
           <Route path="/rate/:code" element={<RateOrderPage />} />
           <Route path="/rate-product/:slug" element={<RateProductPage />} />
           <Route path="/returns" element={<ReturnPage />} />
+          <Route path="/returns/request/:code" element={<RequestReturnPage />} />
+          <Route path="/help-center" element={<HelpCenterPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactUsPage />} />
+          <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/become-a-trader" element={<BecomeTraderPage />} />
           <Route path="/payment-callback" element={<PaymentCallbackPage />} />
           <Route element={<TraderGuard />}>

@@ -169,6 +169,10 @@ export default function TraderOrders() {
 
                 <p className="text-[10px] text-[#94A3B8]">
                   Ordered {new Date(item.order_created_at).toLocaleDateString('en-UG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {item.status !== 'pending' && (
+                    <> &middot; Status updated {new Date(item.updated_at).toLocaleDateString('en-UG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {item.status_changed_by_name && <> by <span className="font-semibold text-[#64748B]">{item.status_changed_by_name}</span></>}</>
+                  )}
                 </p>
               </div>
             )

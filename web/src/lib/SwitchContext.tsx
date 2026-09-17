@@ -34,8 +34,7 @@ export function SwitchProvider({ children }: { children: ReactNode }) {
     } else if (from === 'trader') {
       setCurrent({ from, to, toPath, userName, accountName: 'Trader Portal' })
       sessionApi.trader().then(t => {
-        if (t?.business_name)
-          setCurrent(prev => prev ? { ...prev, accountName: t.business_name } : prev)
+        setCurrent(prev => prev ? { ...prev, accountName: t?.business_name ?? prev.accountName } : prev)
       }).catch(() => {})
     } else {
       setCurrent({ from, to, toPath, userName, accountName: userName })

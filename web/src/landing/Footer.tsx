@@ -18,6 +18,17 @@ export default function Footer() {
     window.open(storeUrl, '_blank', 'noopener,noreferrer')
   }
 
+  const footerLinks = [
+    { label: 'About Us', to: '/about' },
+    { label: 'Help Center', to: '/help-center' },
+    { label: 'Payment', to: '/payment' },
+    { label: 'Returns', to: '/returns' },
+    { label: 'Contact Us', to: '/contact' },
+    { label: 'Privacy Policy', to: '/privacy-policy' },
+    { label: 'Cookie Policy', to: '/cookies' },
+    { label: 'Terms of Service', to: '/terms' },
+  ]
+
   return (
     <footer className="bg-[#071A2B] px-5 pt-10 pb-24 lg:pb-12">
       <div className="max-w-7xl mx-auto">
@@ -27,8 +38,8 @@ export default function Footer() {
               Your one-stop destination for everything you need.
             </p>
             <div className="flex flex-wrap justify-center md:justify-start gap-x-5 gap-y-2">
-              {['About Us', 'Help Center', 'Returns', 'Contact Us', 'Privacy Policy', 'Terms of Service'].map(item => (
-                <Link key={item} to="/" className="text-[13px] text-[#94A3B8] hover:text-white transition">{item}</Link>
+              {footerLinks.map(({ label, to }) => (
+                <Link key={label} to={to} className="text-[13px] text-[#94A3B8] hover:text-white transition">{label}</Link>
               ))}
             </div>
           </div>

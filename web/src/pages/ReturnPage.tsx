@@ -18,8 +18,6 @@ export default function ReturnPage() {
   const [orders, setOrders] = useState<ApiOrderDetail[]>([])
   const [returns, setReturns] = useState<ReturnRequest[]>([])
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState<string | null>(null)
-  const [reason, setReason] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -32,33 +30,40 @@ export default function ReturnPage() {
       })
       .catch(() => setError('Failed to load orders.'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [navigate])
 
   const getReturn = (code: string) => returns.find(r => r.order_code === code)
-
-  const handleSubmit = async (code: string) => {
-    const r = reason[code]?.trim()
-    if (!r) return
-    setSubmitting(code)
-    try {
-      const res = await ordersApi.submitReturn(code, r)
-      setReturns(prev => [...prev, res.data])
-      setReason(prev => ({ ...prev, [code]: '' }))
-    } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'Failed to submit return request.')
-    } finally {
-      setSubmitting(null)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <main className="pt-14 lg:pt-16 max-w-3xl mx-auto px-4 py-8">
-        <div className="mb-6">
+      <main className="w-full max-w-6xl mx-auto px-4 py-8 pt-14 lg:px-8 lg:pt-16">
+        <div className="mb-6 rounded-[28px] border border-[#E2E8F0] bg-white p-5 shadow-sm md:p-7">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1E3A8A]">My Account</p>
-          <h1 className="text-2xl font-extrabold text-[#071A2B] mt-1">Returns</h1>
-          <p className="text-[13px] text-[#64748B] mt-1">Request a return for delivered orders.</p>
+          <h1 className="text-2xl font-extrabold text-[#071A2B] mt-1 md:text-3xl">Returns & refunds</h1>
+          <p className="text-[13px] text-[#64748B] mt-2 md:text-[14px]">You can request a return for eligible orders that meet our return conditions below.</p>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {[
+              'The item was delivered and is in acceptable condition.',
+              'The return request is made within the return window for the product.',
+              'The item is unused, unopened, or has a valid issue such as damage or wrong item.',
+            ].map((item) => (
+              <div key={item} className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-3 text-[12px] leading-6 text-[#334155] md:text-[13px]">
+                {item}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[12px] font-semibold text-[#475569]">Who is eligible?</p>
+              <p className="text-[12px] text-[#64748B]">Only delivered orders may be returned. Ineligible items cannot be processed.</p>
+            </div>
+            <a href="#current-return-requests" className="inline-flex items-center justify-center rounded-xl border border-[#1E3A8A] bg-[#EFF6FF] px-4 py-2.5 text-[12px] font-bold text-[#1E3A8A]">
+              View current return requests
+            </a>
+          </div>
         </div>
 
         {error && <p className="text-[13px] text-red-500 mb-4">{error}</p>}
@@ -75,7 +80,7 @@ export default function ReturnPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div id="current-return-requests" className="space-y-4">
           {orders.map(order => {
             const ret = getReturn(order.code)
             return (
@@ -107,22 +112,14 @@ export default function ReturnPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="mt-3 space-y-2">
-                    <textarea
-                      rows={2}
-                      placeholder="Reason for return (e.g. wrong item, damaged)..."
-                      value={reason[order.code] ?? ''}
-                      onChange={e => setReason(prev => ({ ...prev, [order.code]: e.target.value }))}
-                      className="w-full px-3 py-2.5 border border-[#E2E8F0] rounded-xl text-[13px] text-[#071A2B] outline-none focus:border-[#1E3A8A] resize-none"
-                    />
-                    <button
-                      onClick={() => handleSubmit(order.code)}
-                      disabled={submitting === order.code || !reason[order.code]?.trim()}
-                      className="flex items-center gap-2 bg-[#1E3A8A] text-white px-4 py-2 rounded-xl text-[13px] font-bold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-[12px] text-[#64748B]">Eligible for return.</p>
+                    <Link
+                      to={`/returns/request/${order.code}`}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#1E3A8A] px-4 py-2 text-[12px] font-bold text-white"
                     >
-                      <RotateCcw size={13} />
-                      {submitting === order.code ? 'Submitting...' : 'Request Return'}
-                    </button>
+                      Request return
+                    </Link>
                   </div>
                 )}
               </div>
