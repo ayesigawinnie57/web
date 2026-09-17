@@ -37,6 +37,9 @@ export default function Footer() {
             <p className="text-[13px] text-[#94A3B8] max-w-[260px] mx-auto md:mx-0 mb-5">
               Your one-stop destination for everything you need.
             </p>
+            <a href="mailto:gadgetsmajo@gmail.com" className="text-[13px] text-[#94A3B8] hover:text-white transition block mb-5">
+              gadgetsmajo@gmail.com
+            </a>
             <div className="flex flex-wrap justify-center md:justify-start gap-x-5 gap-y-2">
               {footerLinks.map(({ label, to }) => (
                 <Link key={label} to={to} className="text-[13px] text-[#94A3B8] hover:text-white transition">{label}</Link>

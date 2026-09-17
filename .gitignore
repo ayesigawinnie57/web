@@ -8,6 +8,7 @@ backend/
 **/.env
 **/.env.*
 !**/.env.example
+Backup-codes-ayesigawinnie57.txt
 
 # Dependencies and build output
 **/node_modules/
