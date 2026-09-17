@@ -105,8 +105,118 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
         <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: toMeta.bgTo, pointerEvents: 'none' }} />
       )}
 
+      <style>{`
+        @media (max-width: 900px) {
+          .switch-overlay-shell {
+            flex-direction: column !important;
+            padding: 0 18px 12px !important;
+            gap: 10px !important;
+            overflow: hidden !important;
+          }
+          .switch-overlay-topbar {
+            padding: 18px 18px 14px !important;
+          }
+          .switch-overlay-topbar img {
+            height: 30px !important;
+          }
+          .switch-overlay-list {
+            flex: 0 0 auto !important;
+            min-width: 0 !important;
+            width: 100% !important;
+            padding-top: 10px !important;
+          }
+          .switch-overlay-list > div:first-of-type {
+            max-height: 150px !important;
+          }
+          .switch-overlay-divider {
+            display: none !important;
+          }
+          .switch-overlay-copy {
+            flex: 0 0 auto !important;
+            width: 100% !important;
+            padding-top: 0 !important;
+            gap: 8px !important;
+          }
+          .switch-overlay-copy h2 {
+            font-size: 30px !important;
+          }
+          .switch-overlay-copy p {
+            font-size: 13px !important;
+          }
+          .switch-overlay-identity {
+            padding: 10px 14px !important;
+            gap: 8px !important;
+          }
+          .switch-overlay-identity-name {
+            font-size: 15px !important;
+          }
+          .switch-overlay-identity-meta {
+            font-size: 11px !important;
+          }
+          .switch-overlay-row {
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+          }
+          .switch-overlay-row > div {
+            flex: 1 1 100% !important;
+            min-width: 0 !important;
+          }
+          .switch-overlay-row > svg {
+            display: none !important;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .switch-overlay-shell {
+            padding: 0 12px 8px !important;
+            gap: 6px !important;
+          }
+          .switch-overlay-topbar {
+            padding: 12px 12px 8px !important;
+          }
+          .switch-overlay-topbar > div {
+            gap: 6px !important;
+          }
+          .switch-overlay-topbar span {
+            font-size: 9px !important;
+            letter-spacing: 0.05em !important;
+          }
+          .switch-overlay-list {
+            padding-top: 6px !important;
+          }
+          .switch-overlay-list .switch-page-item {
+            height: 30px !important;
+            padding: 4px 8px !important;
+            margin-bottom: 2px !important;
+            gap: 8px !important;
+          }
+          .switch-overlay-list .switch-page-item p {
+            font-size: 10px !important;
+          }
+          .switch-overlay-copy h2 {
+            font-size: 23px !important;
+          }
+          .switch-overlay-copy > div:first-child {
+            gap: 6px !important;
+          }
+          .switch-overlay-copy > div:first-child span {
+            font-size: 8px !important;
+          }
+          .switch-overlay-identity {
+            align-items: flex-start !important;
+            flex-direction: column !important;
+          }
+          .switch-overlay-identity > div:last-child {
+            align-self: flex-end !important;
+          }
+          .switch-overlay-identity-name {
+            font-size: 13px !important;
+          }
+        }
+      `}</style>
+
       {/* Full-screen overlay */}
-      <div style={{
+      <div className="switch-overlay" style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
@@ -167,7 +277,7 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
         </div>
 
         {/* ── Top bar ── */}
-        <div style={{
+        <div className="switch-overlay-topbar" style={{
           position: 'relative', zIndex: 1,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '20px 40px',
@@ -194,7 +304,7 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
         </div>
 
         {/* ── Main body: two columns ── */}
-        <div style={{
+        <div className="switch-overlay-shell" style={{
           position: 'relative', zIndex: 1, flex: 1,
           display: 'flex', alignItems: 'stretch',
           padding: '0 40px 40px',
@@ -203,7 +313,7 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
         }}>
 
           {/* LEFT — checklist (was right) */}
-          <div style={{
+          <div className="switch-overlay-list" style={{
             flex: '0 0 280px', display: 'flex', flexDirection: 'column', justifyContent: 'center',
             paddingTop: 40, minWidth: 0,
             animation: 'st-fade-up 0.5s 0.15s ease both',
@@ -231,7 +341,7 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
                 {pages.map((page, i) => {
                   const done = ticked >= i
                   return (
-                    <div key={page} style={{
+                    <div key={page} className="switch-page-item" style={{
                       display: 'flex', alignItems: 'center', gap: 16,
                       padding: '12px 16px', height: 52, borderRadius: 12,
                       marginBottom: 4,
@@ -276,14 +386,14 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
           </div>
 
           {/* Vertical divider */}
-          <div style={{
+          <div className="switch-overlay-divider" style={{
             width: 1, alignSelf: 'stretch', marginTop: 40,
             background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent)',
             flexShrink: 0,
           }} />
 
           {/* RIGHT — identity + switch info (was left) */}
-          <div style={{
+          <div className="switch-overlay-copy" style={{
             flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center',
             gap: 24, paddingTop: 40,
             animation: 'st-fade-up 0.5s ease both',
@@ -305,14 +415,14 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
               <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.35)', marginBottom: 10, fontWeight: 500 }}>
                 Switching to
               </p>
-              <p style={{ fontSize: 64, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 8 }}>
+              <p className="switch-overlay-title" style={{ fontSize: 64, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 8 }}>
                 {toMeta.label}
               </p>
-              <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>{toMeta.sub}</p>
+              <p className="switch-overlay-subtitle" style={{ fontSize: 20, color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>{toMeta.sub}</p>
             </div>
 
             {/* From → To row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="switch-overlay-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
                 padding: '10px 18px', borderRadius: 12,
                 background: 'rgba(255,255,255,0.05)',
@@ -340,7 +450,7 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
             </div>
 
             {/* User identity card */}
-            <div style={{
+            <div className="switch-overlay-identity" style={{
               display: 'flex', alignItems: 'center', gap: 16,
               padding: '20px 24px', borderRadius: 16,
               background: 'rgba(255,255,255,0.04)',
@@ -364,8 +474,8 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
                 </div>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <p className="switch-overlay-identity-name" style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</p>
+                <div className="switch-overlay-identity-meta" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: toMeta.color, boxShadow: `0 0 8px ${toMeta.color}` }} />
                   <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
                     {phase === 'enter' ? 'Verifying session…' : phase === 'loading' ? 'Loading workspace…' : 'Ready to go'}
