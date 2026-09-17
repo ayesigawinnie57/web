@@ -6,6 +6,8 @@
   <url><loc>https://www.majogadgets.com/deals</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://www.majogadgets.com/login</loc><changefreq>never</changefreq><priority>0.4</priority></url>
   <url><loc>https://www.majogadgets.com/register</loc><changefreq>never</changefreq><priority>0.4</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/memory-card-18ca683389d1</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/sensor-77b28f304684</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/hc-sr04-ultrasonic-distance-sensor-module-8d831b44cd57</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/12v-dc-solenoid-valve-im3-54e8eefa5e7b</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/gy-neo6mv2-gps-module-with-ceramic-antenna-4552dff6677a</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
