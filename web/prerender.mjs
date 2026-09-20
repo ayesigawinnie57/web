@@ -19,6 +19,59 @@ async function fetchAllProducts() {
 
 const template = readFileSync(join(DIST, 'index.html'), 'utf8')
 
+const staticPages = [
+  {
+    path: 'shop',
+    title: 'Shop Electronics & Gadgets - Majo Gadgets',
+    description: 'Shop electronics, gadgets, accessories, and everyday essentials from Majo Gadgets. Browse products and order online in Uganda.',
+    robots: 'index, follow',
+  },
+  {
+    path: 'categories',
+    title: 'Product Categories - Majo Gadgets',
+    description: 'Browse Majo Gadgets product categories, including electronics, phones, tablets, computing, appliances, and accessories.',
+    robots: 'index, follow',
+  },
+  {
+    path: 'deals',
+    title: 'Deals & Flash Sales - Majo Gadgets',
+    description: 'Find limited-time deals and flash sales on electronics, gadgets, and accessories at Majo Gadgets while stock lasts.',
+    robots: 'index, follow',
+  },
+  {
+    path: 'login',
+    title: 'Sign In - Majo Gadgets',
+    description: 'Sign in to your Majo Gadgets account.',
+    robots: 'noindex, nofollow',
+  },
+  {
+    path: 'register',
+    title: 'Create Account - Majo Gadgets',
+    description: 'Create a Majo Gadgets account to shop online and track your orders.',
+    robots: 'noindex, nofollow',
+  },
+]
+
+for (const page of staticPages) {
+  const url = `https://www.majogadgets.com/${page.path}`
+  const html = template
+    .replace(/<title>.*?<\/title>/, `<title>${page.title}</title>`)
+    .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${page.description}" />`)
+    .replace(/<meta name="robots"[^>]*>/, `<meta name="robots" content="${page.robots}" />`)
+    .replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${url}" />`)
+    .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${url}" />`)
+    .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${page.title}" />`)
+    .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${page.description}" />`)
+    .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${page.title}" />`)
+    .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${page.description}" />`)
+
+  const dir = join(DIST, page.path)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'index.html'), html)
+}
+
+console.log(`Pre-rendered ${staticPages.length} public pages.`)
+
 const products = await fetchAllProducts()
 console.log(`Pre-rendering ${products.length} product pages...`)
 
@@ -81,8 +134,6 @@ const staticUrls = [
   { loc: 'https://www.majogadgets.com/shop', priority: '0.9', changefreq: 'daily' },
   { loc: 'https://www.majogadgets.com/categories', priority: '0.8', changefreq: 'weekly' },
   { loc: 'https://www.majogadgets.com/deals', priority: '0.8', changefreq: 'daily' },
-  { loc: 'https://www.majogadgets.com/login', priority: '0.4', changefreq: 'never' },
-  { loc: 'https://www.majogadgets.com/register', priority: '0.4', changefreq: 'never' },
 ]
 const productUrls = products.map(p => ({
   loc: `https://www.majogadgets.com/shop/${p.slug}`,

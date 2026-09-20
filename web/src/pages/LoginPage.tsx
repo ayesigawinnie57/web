@@ -4,6 +4,7 @@ import { Eye, EyeOff, ChevronDown } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, BASE_URL } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
+import { Helmet } from 'react-helmet-async'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -80,6 +81,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Sign In - Majo Gadgets</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
         <img src={LOGO} alt="Majo Gadgets" className="h-12 w-auto object-contain mx-auto mb-7" />
         <div className="mb-7"><h1 className="text-2xl font-extrabold text-[#071A2B]">Welcome back</h1><p className="text-[13px] text-[#64748B] mt-1">Sign in to your account</p></div>
