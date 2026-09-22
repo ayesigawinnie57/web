@@ -9,9 +9,14 @@ export type ApiProduct = {
   price: string
   original_price: string | null
   image: string | null
+  short_description?: string
+  long_description?: string
+  delivery_fee?: string
+  images?: { id: number; url: string | null; order: number }[]
   rating: string
   stock: number
   is_active: boolean
+  reviews_count?: number
   created_at: string
   category: { id: number; name: string; slug: string }
 }
@@ -24,6 +29,7 @@ export const toCardProduct = (product: ApiProduct): Product => ({
   name: product.name,
   price: Number(product.price),
   originalPrice: product.original_price ? Number(product.original_price) : undefined,
+  stock: product.stock ?? 0,
   image: product.image ?? undefined,
   rating: Number(product.rating),
   category: product.category?.slug ?? '',
@@ -129,7 +135,9 @@ export const productsApi = {
 export type ApiOrder = {
   id: number
   code: string
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  status: 'pending' | 'processing' | 'shipped' | 'ready_for_pickup' | 'delivered' | 'cancelled'
+  subtotal: string
+  delivery_fee: string
   total: string
   created_at: string
   updated_at: string
@@ -138,6 +146,7 @@ export type ApiOrder = {
   note: string
   cancel_reason: string
   has_service_rating: boolean
+  payment?: { status: 'pending' | 'completed' | 'failed' | 'invalid' | 'cancelled' } | null
   items: { id: number; product: ApiProduct; quantity: number; price: string }[]
 }
 
@@ -145,6 +154,7 @@ export const ordersApi = {
   list: () => api.get<{ results: ApiOrder[] }>('/api/orders/'),
   get: (code: string) => api.get<ApiOrder>(`/api/orders/${code}/`),
   cancel: (code: string) => api.post<ApiOrder>(`/api/orders/${code}/cancel/`),
+  pay: (code: string) => api.post<{ redirect_url: string; order_tracking_id: string }>(`/api/orders/${code}/pay/`),
   rateService: (code: string, payload: {
     overall: number
     areas: string[]
@@ -159,5 +169,6 @@ export const adminOrdersApi = {
   confirm: (code: string) => api.post<ApiOrder>(`/api/orders/admin/${code}/confirm/`),
   cancel: (code: string, reason: string) => api.post<ApiOrder>(`/api/orders/admin/${code}/cancel/`, { reason }),
   ship: (code: string) => api.post<ApiOrder>(`/api/orders/admin/${code}/ship/`),
+  readyForPickup: (code: string) => api.post<ApiOrder>(`/api/orders/admin/${code}/ready-for-pickup/`),
   deliver: (code: string) => api.post<ApiOrder>(`/api/orders/admin/${code}/deliver/`),
 }

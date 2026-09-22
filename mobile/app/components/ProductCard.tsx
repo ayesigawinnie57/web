@@ -11,6 +11,7 @@ export type Product = {
   name: string
   price: number
   originalPrice?: number
+  stock?: number
   emoji?: string
   image?: string
   rating: number

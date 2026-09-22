@@ -164,17 +164,14 @@ export default function Hero() {
 
   return (
     <>
-      {SLIDES.map(slide => (
-        <link
-          key={slide.slug}
-          rel="preload"
-          as="image"
-          href={optimizedImageUrl(slide.image)}
-          imageSrcSet={`${responsiveImageUrl(slide.image, 800)} 800w, ${optimizedImageUrl(slide.image)} 1200w`}
-          imageSizes="(min-width: 768px) 46vw, 100vw"
-          fetchPriority={slide === SLIDES[0] ? 'high' : 'auto'}
-        />
-      ))}
+      <link
+        rel="preload"
+        as="image"
+        href={optimizedImageUrl(SLIDES[0].image)}
+        imageSrcSet={`${responsiveImageUrl(SLIDES[0].image, 800)} 800w, ${optimizedImageUrl(SLIDES[0].image)} 1200w`}
+        imageSizes="(min-width: 768px) 46vw, 100vw"
+        fetchPriority="high"
+      />
       <div className="px-4 py-4">
       <div className="max-w-7xl mx-auto flex flex-col items-center">
         <div className="relative w-full" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>

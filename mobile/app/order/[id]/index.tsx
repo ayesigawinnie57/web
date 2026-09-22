@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Platform, Linking } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ArrowLeft, Package, MapPin, FileText, CheckCircle, Clock, Truck, XCircle, ShoppingBag, Star } from 'lucide-react-native'
+import { ArrowLeft, Package, MapPin, FileText, CheckCircle, Clock, Truck, XCircle, ShoppingBag, Star, CreditCard } from 'lucide-react-native'
 import { ordersApi, productsApi, type ApiOrder } from '../../lib/products'
 import { pushNotification } from '../../lib/NotificationContext'
 import { C } from '../../theme'
+import PaymentModal from '../../components/PaymentModal'
 
-const STATUS_STEPS = ['pending', 'processing', 'shipped', 'delivered'] as const
+const STATUS_STEPS = ['pending', 'processing', 'shipped', 'ready_for_pickup', 'delivered'] as const
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   pending:    { label: 'Pending',    color: '#92400e', bg: '#fef3c7', icon: Clock      },
   processing: { label: 'Confirmed',  color: '#1e40af', bg: '#dbeafe', icon: Package    },
   shipped:    { label: 'Shipped',    color: '#6d28d9', bg: '#ede9fe', icon: Truck      },
+  ready_for_pickup: { label: 'Ready for Pickup', color: '#b45309', bg: '#fef9c3', icon: Package },
   delivered:  { label: 'Delivered',  color: '#166534', bg: '#dcfce7', icon: CheckCircle},
   cancelled:  { label: 'Cancelled',  color: '#991b1b', bg: '#fee2e2', icon: XCircle   },
 }
@@ -34,13 +36,16 @@ export default function OrderDetailScreen() {
   const [order, setOrder] = useState<ApiOrder | null>(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState('')
+  const [paymentUrl, setPaymentUrl] = useState('')
   // slug -> true means already reviewed, false means eligible to review
   const [reviewStatus, setReviewStatus] = useState<Record<string, boolean>>({})
   const notifiedStatus = useRef<string | null>(null)
 
-  useEffect(() => {
-    ordersApi.get(String(code))
-      .then(({ data }) => {
+  const fetchOrder = async () => {
+    try {
+      const { data } = await ordersApi.get(String(code))
         setOrder(data)
         if (notifiedStatus.current === data.status) return
         notifiedStatus.current = data.status
@@ -84,10 +89,42 @@ export default function OrderDetailScreen() {
             }).catch(() => {})
           })
         }
-      })
-      .catch(() => Alert.alert('Error', 'Could not load order details.'))
-      .finally(() => setLoading(false))
+    } catch { Alert.alert('Error', 'Could not load order details.') }
+  }
+
+  useEffect(() => {
+    fetchOrder().finally(() => setLoading(false))
+    const interval = setInterval(fetchOrder, 15000)
+    return () => clearInterval(interval)
   }, [code])
+
+  const handlePay = async () => {
+    if (!order) return
+    setPaying(true)
+    setPayError('')
+    try {
+      const { data } = await ordersApi.pay(order.code)
+      if (!data?.redirect_url) throw new Error('Pesapal did not return a payment link.')
+      const paymentUrl = String(data.redirect_url).trim()
+      if (Platform.OS === 'web') {
+        setPaymentUrl(paymentUrl)
+      } else {
+        const canOpen = await Linking.canOpenURL(paymentUrl)
+        if (!canOpen) throw new Error('This device cannot open the payment page.')
+        await Linking.openURL(paymentUrl)
+      }
+    } catch (error: any) {
+      const response = error?.response?.data
+      setPayError(
+        response?.detail
+        ?? response?.error
+        ?? (error?.response ? `Payment initiation failed (${error.response.status}).` : error?.message)
+        ?? 'Payment initiation failed. Please try again.'
+      )
+    } finally {
+      setPaying(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -147,6 +184,7 @@ export default function OrderDetailScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <PaymentModal url={paymentUrl} onClose={() => setPaymentUrl('')} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -293,6 +331,14 @@ export default function OrderDetailScreen() {
             <Text style={styles.totalLabel}>Total Paid</Text>
             <Text style={styles.totalValue}>UGX {Number(order.total).toLocaleString()}</Text>
           </View>
+          {(order.status === 'pending' || order.status === 'processing') && (
+            <View style={styles.paymentAction}>
+              {payError ? <Text style={styles.payError}>{payError}</Text> : null}
+              <TouchableOpacity style={[styles.payBtn, paying && styles.payBtnDisabled]} disabled={paying} onPress={handlePay}>
+                {paying ? <ActivityIndicator color="#fff" /> : <><CreditCard size={15} color="#fff" /><Text style={styles.payBtnText}>Pay Now</Text></>}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Delivery info */}
@@ -432,6 +478,11 @@ const styles = StyleSheet.create({
   totalRow: { borderBottomWidth: 0 },
   totalLabel: { fontSize: 15, fontWeight: '800', color: C.navy },
   totalValue: { fontSize: 15, fontWeight: '800', color: C.green },
+  paymentAction: { padding: 16, borderTopWidth: 1, borderTopColor: C.border, gap: 8 },
+  payError: { fontSize: 12, color: '#DC2626', fontWeight: '600' },
+  payBtn: { height: 44, borderRadius: 12, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+  payBtnDisabled: { opacity: 0.6 },
+  payBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
 
   etaCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F0FDF4', borderRadius: 16, borderWidth: 1, borderColor: '#BBF7D0', padding: 14 },
   etaIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#DCFCE7', alignItems: 'center', justifyContent: 'center' },

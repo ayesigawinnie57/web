@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Image, Share, useWindowDimensions, FlatList } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Heart, ShoppingCart, Truck, Star, Minus, Plus, ArrowLeft, Share2, CheckCircle, ChevronRight, ChevronDown } from 'lucide-react-native'
+import { Heart, ShoppingCart, Truck, Star, Minus, Plus, Share2, CheckCircle, ChevronRight, ChevronDown } from 'lucide-react-native'
 import { products as fallbackProducts } from '../../data'
 import ProductCard, { type Product } from '../../components/ProductCard'
 import { productsApi, ordersApi, productCache, toCardProduct, type ApiProduct, type ProductReview, type RatingSummary } from '../../lib/products'
@@ -12,6 +12,10 @@ import { useCart } from '../../lib/CartContext'
 import { C } from '../../theme'
 
 const { width: STATIC_WIDTH } = Dimensions.get('window')
+
+function plainText(value: string | undefined) {
+  return (value ?? '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim()
+}
 
 export default function ProductDetail() {
   const { width } = useWindowDimensions()
@@ -82,7 +86,7 @@ export default function ProductDetail() {
     : null
 
   const handleAddToCart = () => {
-    if (product) addToCart(product, quantity)
+    if (product && product.stock > 0) addToCart(product, quantity)
     setAddedToCart(true)
     setTimeout(() => setAddedToCart(false), 2000)
   }
@@ -106,19 +110,22 @@ export default function ProductDetail() {
     ? reviews.filter(r => r.images.length > 0)
     : reviews.filter(r => r.overall_rating === Number(reviewFilter))
 
+  const shortDescription = plainText(apiProduct?.short_description) || `A quality ${product.name.toLowerCase()} from Majo Gadgets, selected for reliable everyday use and great value.`
+  const longDescription = plainText(apiProduct?.long_description) || shortDescription
+  const deliveryFee = Number(apiProduct?.delivery_fee ?? 5000)
+  const savings = product.originalPrice ? product.originalPrice - product.price : 0
+
   return (
     <View style={styles.container}>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.push('/shop' as any)}>
-          <ArrowLeft size={20} color={C.navy} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{product.name}</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scroll, isDesktop && styles.scrollDesktop, { paddingBottom: 80 + insets.bottom }]}>
+        <View style={styles.breadcrumb}>
+          <TouchableOpacity onPress={() => router.push('/' as any)}><Text style={styles.breadcrumbLink}>Home</Text></TouchableOpacity>
+          <Text style={styles.breadcrumbDivider}>›</Text>
+          <TouchableOpacity onPress={() => router.push(`/shop?category=${product.category}` as any)}><Text style={styles.breadcrumbLink}>{product.categoryName || product.category}</Text></TouchableOpacity>
+          <Text style={styles.breadcrumbDivider}>›</Text>
+          <Text style={styles.breadcrumbCurrent} numberOfLines={1}>{product.name}</Text>
+        </View>
         <View style={[styles.card, isDesktop && styles.cardDesktop]}>
 
           {/* Main image + gallery */}
@@ -201,9 +208,7 @@ export default function ProductDetail() {
             <Text style={styles.name}>{product.name}</Text>
 
             {/* Short description */}
-            <Text style={styles.shortDesc} numberOfLines={2}>
-              Premium quality {product.name.toLowerCase()} designed for everyday use. Made with high-grade materials ensuring durability and comfort.
-            </Text>
+            <Text style={styles.shortDesc} numberOfLines={3}>{shortDescription}</Text>
 
             {/* Rating row */}
             <View style={styles.metaRow}>
@@ -216,7 +221,7 @@ export default function ProductDetail() {
               </View>
               <View style={styles.deliveryPill}>
                 <Truck size={11} color={C.green} />
-                <Text style={styles.deliveryText}>Delivery UGX 5,000</Text>
+                <Text style={styles.deliveryText}>Delivery UGX {deliveryFee.toLocaleString()}</Text>
               </View>
             </View>
 
@@ -234,6 +239,12 @@ export default function ProductDetail() {
                   </>
                 )}
               </View>
+              {savings > 0 && <Text style={styles.savings}>You save UGX {(savings * quantity).toLocaleString()} ({discount}%)</Text>}
+              <View style={[styles.stockPill, product.stock === 0 && styles.stockPillEmpty]}>
+                <Text style={[styles.stockText, product.stock === 0 && styles.stockTextEmpty]}>
+                  {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                </Text>
+              </View>
             </View>
 
             {/* Quantity */}
@@ -243,7 +254,7 @@ export default function ProductDetail() {
                   <Minus size={15} color={C.navy} />
                 </TouchableOpacity>
                 <Text style={styles.qtyValue}>{quantity}</Text>
-                <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity(q => q + 1)}>
+                <TouchableOpacity style={styles.qtyBtn} disabled={product.stock === 0} onPress={() => setQuantity(q => Math.min(product.stock || 1, q + 1))}>
                   <Plus size={15} color={C.navy} />
                 </TouchableOpacity>
               </View>
@@ -251,14 +262,14 @@ export default function ProductDetail() {
 
             {/* Buttons */}
             <View style={styles.buttonsRow}>
-              <TouchableOpacity style={[styles.addToCartBtn, addedToCart && styles.addedBtn]} onPress={handleAddToCart}>
+              <TouchableOpacity style={[styles.addToCartBtn, (addedToCart || product.stock === 0) && styles.addedBtn]} disabled={product.stock === 0} onPress={handleAddToCart}>
                 <ShoppingCart size={16} color={addedToCart ? '#059669' : C.navy} />
                 <Text style={[styles.addToCartText, addedToCart && styles.addedText]}>
-                  {addedToCart ? 'Added' : 'Add to Cart'}
+                  {product.stock === 0 ? 'Out of Stock' : addedToCart ? 'Added' : 'Add to Cart'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.buyNowBtn} onPress={() => { addToCart(product, quantity); router.push('/checkout' as any) }}>
-                <Text style={styles.buyNowText}>Buy Now</Text>
+              <TouchableOpacity style={[styles.buyNowBtn, product.stock === 0 && styles.disabledBtn]} disabled={product.stock === 0} onPress={() => { addToCart(product, quantity); router.push('/checkout' as any) }}>
+                <Text style={styles.buyNowText}>{product.stock === 0 ? 'Unavailable' : 'Buy Now'}</Text>
               </TouchableOpacity>
             </View>
 
@@ -286,16 +297,14 @@ export default function ProductDetail() {
           </TouchableOpacity>
           {detailsExpanded && (
             <View style={styles.infoCardBody}>
-              <Text style={styles.detailsText}>
-                Premium quality {product.name.toLowerCase()} designed for everyday use. Made with high-grade materials ensuring durability and comfort. Perfect for all ages and occasions. Available in multiple sizes and colors to suit your personal style and preferences.{`\n\n`}Our products undergo rigorous quality testing to ensure they meet the highest standards. Each item is carefully inspected before shipping to guarantee you receive only the best. We stand behind every product we sell with our 30-day hassle-free return policy.
-              </Text>
+              <Text style={styles.detailsText}>{longDescription}</Text>
               <View style={styles.specsList}>
                 {[
                   ['Brand', 'Majo Gadgets'],
                   ['Category', (product.categoryName || product.category).replace(/-/g, ' ')],
                   ['Condition', 'Brand New'],
                   ['Warranty', '1 Year Manufacturer'],
-                  ['Delivery', '24–48 hours'],
+                  ['Delivery', '24-48 hours'],
                 ].map(([label, value]) => (
                   <View key={label} style={styles.specRow}>
                     <Text style={styles.specLabel}>{label}</Text>
@@ -463,6 +472,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: C.card, borderBottomWidth: 1, borderBottomColor: C.border },
   headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: C.navy, textAlign: 'center', marginHorizontal: 8 },
   headerSpacer: { width: 22 },
+  breadcrumb: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10 },
+  breadcrumbLink: { fontSize: 12, color: C.muted },
+  breadcrumbDivider: { fontSize: 16, color: C.border },
+  breadcrumbCurrent: { flex: 1, fontSize: 12, color: C.navy, fontWeight: '600' },
 
   scroll: { paddingBottom: 100, paddingTop: 12 },
   scrollDesktop: { maxWidth: 1200, alignSelf: 'center', width: '100%', paddingHorizontal: 32, paddingTop: 24 },
@@ -516,6 +529,11 @@ const styles = StyleSheet.create({
   originalPrice: { fontSize: 13, color: C.mutedLight, textDecorationLine: 'line-through' },
   saveBadge: { backgroundColor: '#FEF2F2', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   saveText: { fontSize: 11, fontWeight: '700', color: '#EF4444' },
+  savings: { fontSize: 12, color: '#059669', fontWeight: '600', marginTop: 4 },
+  stockPill: { alignSelf: 'flex-start', backgroundColor: '#F0FDF4', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, marginTop: 8 },
+  stockPillEmpty: { backgroundColor: '#FEF2F2' },
+  stockText: { fontSize: 11, color: '#16A34A', fontWeight: '700' },
+  stockTextEmpty: { color: '#EF4444' },
   quantityBlock: { alignItems: 'center', marginBottom: 16 },
   qtyLabel: { fontSize: 13, fontWeight: '600', color: C.navy },
   quantityRow: { flexDirection: 'row', alignItems: 'center', gap: 0, borderWidth: 1, borderColor: C.border, borderRadius: 10, overflow: 'hidden' },
@@ -523,6 +541,7 @@ const styles = StyleSheet.create({
   qtyValue: { fontSize: 15, fontWeight: '700', color: C.navy, minWidth: 36, textAlign: 'center' },
   buttonsRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
   buyNowBtn: { flex: 1, backgroundColor: C.navy, borderRadius: 12, height: 50, alignItems: 'center', justifyContent: 'center' },
+  disabledBtn: { backgroundColor: C.mutedLight },
   buyNowText: { color: '#fff', fontWeight: '700', fontSize: 15, letterSpacing: 0.3 },
   addToCartBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.card, borderRadius: 12, height: 50, borderWidth: 1.5, borderColor: C.navy },
   addedBtn: { backgroundColor: '#F0FDF4', borderColor: '#059669' },

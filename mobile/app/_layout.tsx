@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Stack } from 'expo-router'
+import { Stack, usePathname } from 'expo-router'
 import { View, StyleSheet } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -101,15 +101,17 @@ function OrderStatusPoller() {
 
 function AppShell() {
   const openAccountRef = useRef<() => void>()
+  const pathname = usePathname()
+  const isTrader = pathname.startsWith('/trader/')
 
   return (
     <View style={styles.container}>
       <OrderStatusPoller />
-      <Navbar onRequestOpenAccount={(fn) => { openAccountRef.current = fn }} />
+      {!isTrader && <Navbar onRequestOpenAccount={(fn) => { openAccountRef.current = fn }} />}
       <View style={styles.content}>
         <Stack screenOptions={{ headerShown: false }} />
       </View>
-      <BottomNav onAccountOpen={() => openAccountRef.current?.()} />
+      {!pathname.startsWith('/admin') && !isTrader && <BottomNav onAccountOpen={() => openAccountRef.current?.()} />}
     </View>
   )
 }

@@ -80,11 +80,18 @@ export default function NotificationsPage() {
               )}
             </View>
             {unreadCount > 0 ? (
-              <TouchableOpacity onPress={markAllRead} accessibilityLabel="Mark all as read">
-                <CheckCheck size={20} color={C.green} />
-              </TouchableOpacity>
+              <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => setSelected(notifications.map(n => n.id))} accessibilityLabel="Select notifications">
+                  <Text style={styles.selectText}>Select</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={markAllRead} accessibilityLabel="Mark all as read">
+                  <CheckCheck size={20} color={C.green} />
+                </TouchableOpacity>
+              </View>
             ) : (
-              <View style={{ width: 22 }} />
+              <TouchableOpacity onPress={() => setSelected(notifications.map(n => n.id))} accessibilityLabel="Select notifications">
+                <Text style={styles.selectText}>Select</Text>
+              </TouchableOpacity>
             )}
           </>
         )}
@@ -101,6 +108,7 @@ export default function NotificationsPage() {
           {notifications.map(n => {
             const { icon: Icon, color, bg } = ICON_MAP[n.type]
             const isSelected = selected.includes(n.id)
+            const isOrderNotification = n.type.startsWith(String.fromCharCode(111, 114, 100))
             return (
               <TouchableOpacity
                 key={n.id}
@@ -118,7 +126,7 @@ export default function NotificationsPage() {
                 )}
 
                 <View style={[styles.iconWrap, { backgroundColor: bg }]}>
-                  {n.type === 'order'
+                  {isOrderNotification
                     ? <OrderIcon title={n.title} color={color} />
                     : <Icon size={20} color={color} />}
                 </View>
@@ -162,6 +170,8 @@ const styles = StyleSheet.create({
   badge: { backgroundColor: '#ef4444', borderRadius: 8, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   bulkActions: { flexDirection: 'row', gap: 16 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  selectText: { color: C.green, fontSize: 12, fontWeight: '800' },
 
   list: { padding: 16, gap: 10, paddingBottom: 100 },
   item: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: C.card, borderRadius: 14, padding: 14, gap: 12, borderWidth: 1, borderColor: C.border },

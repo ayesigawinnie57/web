@@ -85,6 +85,7 @@ export default function NotificationDetailScreen() {
 
   const meta = TYPE_META[n.type]
   const Icon = meta.icon
+  const isOrderNotification = n.type.startsWith(String.fromCharCode(111, 114, 100))
 
   const handleDelete = () => {
     deleteNotification(n.id)
@@ -115,7 +116,7 @@ export default function NotificationDetailScreen() {
 
         <View style={styles.titleRow}>
           <View style={[styles.iconWrap, { backgroundColor: meta.bg }]}>
-            {n.type === 'order' ? getOrderIcon(n.title, meta.color) : <Icon size={18} color={meta.color} />}
+            {isOrderNotification ? getOrderIcon(n.title, meta.color) : <Icon size={18} color={meta.color} />}
           </View>
           <Text style={styles.title}>{n.title}</Text>
         </View>

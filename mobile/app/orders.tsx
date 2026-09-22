@@ -14,12 +14,13 @@ const TABS: { key: Tab; label: string; icon: any; color: string }[] = [
   { key: 'cancelled', label: 'Cancelled', icon: XCircle,       color: '#ef4444' },
 ]
 
-const PENDING_STATUSES = ['pending', 'processing', 'shipped']
+const PENDING_STATUSES = ['pending', 'processing', 'shipped', 'ready_for_pickup']
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   pending:    { label: 'Pending',    color: '#92400e', bg: '#fef3c7' },
   processing: { label: 'Confirmed',  color: '#1e40af', bg: '#dbeafe' },
   shipped:    { label: 'Shipped',    color: '#6d28d9', bg: '#ede9fe' },
+  ready_for_pickup: { label: 'Ready for Pickup', color: '#b45309', bg: '#fef9c3' },
   delivered:  { label: 'Delivered',  color: '#166534', bg: '#dcfce7' },
   cancelled:  { label: 'Cancelled',  color: '#991b1b', bg: '#fee2e2' },
 }

@@ -1,27 +1,40 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Image, Modal } from 'react-native'
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Image, Modal, Linking, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { ArrowLeft, MapPin, CheckCircle, ShieldCheck, CreditCard, PackageCheck, Truck, ChevronDown, Check } from 'lucide-react-native'
 import { useCart } from './lib/CartContext'
 import { authApi, tokenStore } from './lib/auth'
 import api from './lib/api'
-import { pushNotification } from './lib/NotificationContext'
 import { C } from './theme'
-import type { ApiOrder } from './lib/products'
+import { ordersApi, type ApiOrder } from './lib/products'
+import PaymentModal from './components/PaymentModal'
 
-const REGIONS = ['Central Uganda', 'Eastern Uganda', 'Northern Uganda', 'Western Uganda']
+const REGIONS = [
+  { value: 'Central Region', label: 'Central Uganda' },
+  { value: 'Eastern Region', label: 'Eastern Uganda' },
+  { value: 'Northern Region', label: 'Northern Uganda' },
+  { value: 'Western Region', label: 'Western Uganda' },
+]
 const BOTTOM_NAV_HEIGHT = 60
 
 type Form = { name: string; phone: string; note: string; country: string; region: string; district: string; village: string }
+type District = { id: number; name: string; price: string; region: string }
 
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { items, clearCart } = useCart()
   const [regionOpen, setRegionOpen] = useState(false)
+  const [districtOpen, setDistrictOpen] = useState(false)
   const [form, setForm] = useState<Form>({ name: '', phone: '', note: '', country: 'Uganda', region: '', district: '', village: '' })
+  const [districts, setDistricts] = useState<District[]>([])
   const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
+  const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState('')
+  const [paymentUrl, setPaymentUrl] = useState('')
+  const [orderError, setOrderError] = useState('')
   const [placedOrder, setPlacedOrder] = useState<ApiOrder | null>(null)
 
   function expectedDelivery(iso: string) {
@@ -33,21 +46,17 @@ export default function CheckoutScreen() {
   const set = (key: keyof Form) => (val: string) => setForm(f => ({ ...f, [key]: val }))
 
   useEffect(() => {
-    tokenStore.getAccess().then(async (token) => {
+    Promise.all([
+      tokenStore.getAccess(),
+      api.get('/api/settings/districts/').then(({ data }) => Array.isArray(data) ? data : (data?.results ?? [])).catch(() => []),
+    ]).then(async ([token, districtList]) => {
+      setDistricts(districtList as District[])
       if (!token) return
       try {
         const { data } = await authApi.profile(token)
-        setForm(f => ({
-          ...f,
-          name: data.name || f.name,
-          phone: data.phone?.trim() || f.phone,
-          country: data.country || 'Uganda',
-          region: data.region || f.region,
-          district: data.district || f.district,
-          village: data.village || f.village,
-        }))
+        setForm(f => ({ ...f, name: data.name || f.name, phone: data.phone?.trim() || f.phone, country: 'Uganda', region: (data as any).region || f.region, district: (data as any).district || f.district, village: (data as any).village || f.village }))
       } catch {}
-    })
+    }).finally(() => setPageLoading(false))
   }, [])
 
   const savePhone = async (phone: string) => {
@@ -56,12 +65,61 @@ export default function CheckoutScreen() {
     if (token) { try { await authApi.updateProfile(token, { phone: phone.trim() }) } catch {} }
   }
 
+  const regionDistricts = districts.filter(d => d.region === form.region)
+  const selectedDistrict = regionDistricts.find(d => d.name === form.district)
+  const districtFee = Number(selectedDistrict?.price ?? 0)
+  const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0)
+  const estimatedTotal = subtotal + districtFee
+
+  const handleRegionChange = (region: string) => setForm(f => ({ ...f, region, district: '' }))
+
+  const startPayment = async (code: string) => {
+    setPaying(true)
+    setPayError('')
+    try {
+      const { data } = await ordersApi.pay(code)
+      if (!data?.redirect_url) throw new Error('Pesapal did not return a payment link.')
+      const paymentUrl = String(data.redirect_url).trim()
+      if (Platform.OS === 'web') {
+        setPaymentUrl(paymentUrl)
+      } else {
+        const canOpen = await Linking.canOpenURL(paymentUrl)
+        if (!canOpen) throw new Error('This device cannot open the payment page.')
+        await Linking.openURL(paymentUrl)
+      }
+    } catch (error: any) {
+      const response = error?.response?.data
+      setPayError(
+        response?.detail
+        ?? response?.error
+        ?? (error?.response ? `Payment initiation failed (${error.response.status}).` : error?.message)
+        ?? 'Payment initiation failed. Please try again.'
+      )
+    } finally {
+      setPaying(false)
+    }
+  }
+
   const handlePlaceOrder = async () => {
+    setOrderError('')
+    const token = await tokenStore.getAccess()
+    if (!token) {
+      setOrderError('Please sign in before placing your order.')
+      Alert.alert('Sign in required', 'Please sign in before placing your order.', [{ text: 'Sign in', onPress: () => router.push('/login' as any) }, { text: 'Cancel', style: 'cancel' }])
+      return
+    }
     if (!form.name.trim() || !form.phone.trim()) {
+      setOrderError('Please fill in your name and phone number.')
       Alert.alert('Required', 'Please fill in your name and phone number.')
       return
     }
+    if (!form.region || !form.district) {
+      setOrderError('Please select your region and district.')
+      Alert.alert('Delivery location required', 'Please select your region and district.')
+      return
+    }
     if (items.length === 0) {
+      setOrderError('Add items to your cart before checking out.')
       Alert.alert('Empty Cart', 'Add items to your cart before checking out.')
       return
     }
@@ -71,21 +129,19 @@ export default function CheckoutScreen() {
         delivery_address: [form.region, form.district, form.village].filter(Boolean).join(', ') || 'Uganda',
         phone: form.phone.trim(),
         note: form.note.trim(),
-        guest_name: form.name.trim(),
+        delivery_fee: districtFee,
         // Only send product_id + quantity — price is always resolved server-side
         items: items.map(i => ({ product_id: i.id, quantity: i.quantity })),
       })
       clearCart()
       setPlacedOrder(data)
-      pushNotification({
-        type: 'order',
-        title: `Order Placed — ${data.code}`,
-        body: `Order No: ${data.code}\nItems: ${items.map(i => i.name).join(', ')}\nSubtotal: UGX ${Number(data.subtotal).toLocaleString()}\nDelivery: UGX ${Number(data.delivery_fee).toLocaleString()}\nTotal: UGX ${Number(data.total).toLocaleString()}\n\nEstimated Delivery: ${expectedDelivery(data.created_at)}`,
-        time: 'Just now',
-      })
+      await startPayment(data.code)
     } catch (e: any) {
       const resp = e?.response?.data
-      Alert.alert('Order Failed', resp?.detail ?? resp?.non_field_errors?.[0] ?? 'Failed to place order. Please try again.')
+      const message = resp?.detail ?? resp?.non_field_errors?.[0] ?? Object.values(resp ?? {}).flat?.()[0] ?? 'Failed to place order. Please try again.'
+      setOrderError(String(message))
+      console.error('Order placement failed', resp ?? e?.message ?? e)
+      Alert.alert('Order Failed', String(message))
     } finally {
       setLoading(false)
     }
@@ -95,47 +151,54 @@ export default function CheckoutScreen() {
   if (placedOrder) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.successWrap}>
-          <CheckCircle size={72} color={C.green} />
-          <Text style={styles.successTitle}>Order Placed!</Text>
-          <Text style={styles.successSub}>Your order has been received and is being processed.</Text>
+        <PaymentModal url={paymentUrl} onClose={() => setPaymentUrl('')} />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.successScroll, { paddingBottom: insets.bottom + 24 }]}
+        >
+          <View style={styles.successWrap}>
+            <CreditCard size={72} color={C.green} />
+            <Text style={styles.successTitle}>Complete Payment</Text>
+            <Text style={styles.successSub}>Your order is ready. Complete payment to place and confirm it.</Text>
 
-          <View style={styles.orderCodeBox}>
-            <Text style={styles.orderCodeLabel}>Order No:</Text>
-            <Text style={styles.orderCodeValue}>{placedOrder.code}</Text>
+            <View style={styles.orderCodeBox}>
+              <Text style={styles.orderCodeLabel}>Order No:</Text>
+              <Text style={styles.orderCodeValue} numberOfLines={1} adjustsFontSizeToFit>{placedOrder.code}</Text>
+            </View>
+
+            <View style={styles.summaryBox}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Subtotal</Text>
+                <Text style={styles.summaryValue}>UGX {Number(placedOrder.subtotal).toLocaleString()}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Delivery Fee</Text>
+                <Text style={styles.summaryValue}>UGX {Number(placedOrder.delivery_fee).toLocaleString()}</Text>
+              </View>
+              <View style={[styles.summaryRow, styles.summaryTotal]}>
+                <Text style={styles.summaryTotalLabel}>Total</Text>
+                <Text style={styles.summaryTotalValue}>UGX {Number(placedOrder.total).toLocaleString()}</Text>
+              </View>
+            </View>
+
+            <View style={styles.etaBox}>
+              <Truck size={16} color={C.green} />
+              <View style={styles.etaCopy}>
+                <Text style={styles.etaLabel}>Expected Delivery</Text>
+                <Text style={styles.etaDate}>{expectedDelivery(placedOrder.created_at)}</Text>
+              </View>
+            </View>
+
+            {payError ? <Text style={styles.payError}>{payError}</Text> : null}
+            <TouchableOpacity style={[styles.successBtn, paying && styles.disabledBtn]} disabled={paying} onPress={() => startPayment(placedOrder.code)}>
+              {paying ? <ActivityIndicator color="#fff" /> : <Text style={styles.successBtnText}>Pay Now - UGX {Number(placedOrder.total).toLocaleString()}</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.successLink} onPress={() => router.replace('/' as any)}>
+              <Text style={styles.successLinkText}>Back to Home</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Amounts — 100% from backend */}
-          <View style={styles.summaryBox}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>UGX {Number(placedOrder.subtotal).toLocaleString()}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Delivery Fee</Text>
-              <Text style={styles.summaryValue}>UGX {Number(placedOrder.delivery_fee).toLocaleString()}</Text>
-            </View>
-            <View style={[styles.summaryRow, styles.summaryTotal]}>
-              <Text style={styles.summaryTotalLabel}>Total</Text>
-              <Text style={styles.summaryTotalValue}>UGX {Number(placedOrder.total).toLocaleString()}</Text>
-            </View>
-          </View>
-
-          <View style={styles.etaBox}>
-            <Truck size={16} color={C.green} />
-            <View>
-              <Text style={styles.etaLabel}>Expected Delivery</Text>
-              <Text style={styles.etaDate}>{expectedDelivery(placedOrder.created_at)}</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.successBtn} onPress={() => router.push('/orders' as any)}>
-            <Text style={styles.successBtnText}>Track My Order</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.successLink} onPress={() => router.replace('/' as any)}>
-            <Text style={styles.successLinkText}>Back to Home</Text>
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
     )
   }
@@ -154,7 +217,7 @@ export default function CheckoutScreen() {
         <View style={{ width: 22 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      {pageLoading ? <View style={styles.loadingWrap}><ActivityIndicator size="large" color={C.green} /><Text style={styles.loadingText}>Loading checkout...</Text></View> : <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={styles.progress}>
           <View style={styles.progressStepActive}><Text style={styles.progressNumberActive}>1</Text></View>
           <View style={styles.progressLineActive} />
@@ -183,12 +246,26 @@ export default function CheckoutScreen() {
           </View>
           <View style={[fieldStyles.wrap, fieldStyles.border]}>
             <View style={fieldStyles.labelRow}><Text style={fieldStyles.label}>Region</Text></View>
-            <TouchableOpacity style={[fieldStyles.input, styles.pickerBtn]} onPress={() => setRegionOpen(true)} activeOpacity={0.8}>
-              <Text style={form.region ? styles.pickerValue : styles.pickerPlaceholder}>{form.region || 'Select region'}</Text>
+              <TouchableOpacity style={[fieldStyles.input, styles.pickerBtn]} onPress={() => setRegionOpen(true)} activeOpacity={0.8}>
+              <Text style={form.region ? styles.pickerValue : styles.pickerPlaceholder}>{REGIONS.find(r => r.value === form.region)?.label || 'Select region'}</Text>
               <ChevronDown size={15} color={C.muted} />
             </TouchableOpacity>
           </View>
-          <Field label="District" value={form.district} onChangeText={set('district')} placeholder="e.g. Kampala" />
+          <View style={[fieldStyles.wrap, fieldStyles.border]}>
+            <View style={fieldStyles.labelRow}><Text style={fieldStyles.label}>District</Text></View>
+            <TouchableOpacity
+              style={[fieldStyles.input, styles.pickerBtn]}
+              disabled={!form.region}
+              onPress={() => setDistrictOpen(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={form.district ? styles.pickerValue : styles.pickerPlaceholder}>
+                {form.district || (form.region ? 'Select district' : 'Choose a region first')}
+              </Text>
+              <ChevronDown size={15} color={C.muted} />
+            </TouchableOpacity>
+            {selectedDistrict && <Text style={styles.selectedFee}>Delivery fee: UGX {Number(selectedDistrict.price).toLocaleString()}</Text>}
+          </View>
           <Field label="Village / Street" value={form.village} onChangeText={set('village')} placeholder="e.g. Nakawa" />
           <Field label="Order Note" value={form.note} onChangeText={set('note')} placeholder="Add delivery instructions (optional)" multiline last />
         </View>
@@ -213,6 +290,7 @@ export default function CheckoutScreen() {
             </View>
           ))}
           {items.length === 0 && <Text style={styles.emptyCart}>Your cart is empty.</Text>}
+          {items.length > 0 && <View style={styles.totals}><View style={styles.summaryRow}><Text style={styles.summaryLabel}>Subtotal</Text><Text style={styles.summaryValue}>UGX {subtotal.toLocaleString()}</Text></View><View style={styles.summaryRow}><Text style={styles.summaryLabel}>Delivery</Text><Text style={styles.summaryValue}>{selectedDistrict ? `UGX ${districtFee.toLocaleString()}` : 'Select district'}</Text></View><View style={[styles.summaryRow, styles.summaryTotal]}><Text style={styles.summaryTotalLabel}>Total</Text><Text style={styles.summaryTotalValue}>UGX {estimatedTotal.toLocaleString()}</Text></View></View>}
         </View>
 
         {/* Payment note — no hardcoded amounts shown before order is placed */}
@@ -228,6 +306,7 @@ export default function CheckoutScreen() {
           <View style={styles.sectionIcon}><CreditCard size={17} color={C.green} /></View>
           <View><Text style={styles.sectionTitle}>Payment</Text><Text style={styles.sectionSub}>Pay via MTN, Airtel or card</Text></View>
         </View>
+        {orderError ? <Text style={styles.orderError}>{orderError}</Text> : null}
 
         <View style={styles.orderBtnsRow}>
           <TouchableOpacity onPress={() => router.replace('/shop' as any)}>
@@ -243,18 +322,41 @@ export default function CheckoutScreen() {
         <Text style={styles.secureNote}>Your order is protected by Majo Gadgets secure checkout.</Text>
 
         <View style={{ height: BOTTOM_NAV_HEIGHT + insets.bottom + 16 }} />
-      </ScrollView>
+      </ScrollView>}
 
       <Modal visible={regionOpen} transparent animationType="fade" onRequestClose={() => setRegionOpen(false)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setRegionOpen(false)}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Select Region</Text>
             {REGIONS.map(r => (
-              <TouchableOpacity key={r} style={styles.modalOption} onPress={() => { set('region')(r); setRegionOpen(false) }}>
-                <Text style={[styles.modalOptionText, form.region === r && styles.modalOptionActive]}>{r}</Text>
-                {form.region === r && <Check size={16} color={C.green} />}
+              <TouchableOpacity key={r.value} style={styles.modalOption} onPress={() => { handleRegionChange(r.value); setRegionOpen(false) }}>
+                <Text style={[styles.modalOptionText, form.region === r.value && styles.modalOptionActive]}>{r.label}</Text>
+                {form.region === r.value && <Check size={16} color={C.green} />}
               </TouchableOpacity>
             ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={districtOpen} transparent animationType="fade" onRequestClose={() => setDistrictOpen(false)}>
+        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setDistrictOpen(false)}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Select District</Text>
+            <ScrollView style={styles.districtModalList} showsVerticalScrollIndicator={false}>
+              {regionDistricts.map(district => (
+                <TouchableOpacity
+                  key={district.id}
+                  style={styles.modalOption}
+                  onPress={() => { set('district')(district.name); setDistrictOpen(false) }}
+                >
+                  <View>
+                    <Text style={[styles.modalOptionText, form.district === district.name && styles.modalOptionActive]}>{district.name}</Text>
+                    <Text style={styles.modalFee}>Delivery fee: UGX {Number(district.price).toLocaleString()}</Text>
+                  </View>
+                  {form.district === district.name && <Check size={16} color={C.green} />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -286,6 +388,8 @@ const fieldStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
+  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loadingText: { fontSize: 13, color: C.muted },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, backgroundColor: C.card, borderBottomWidth: 1, borderBottomColor: C.border },
   headerTitleWrap: { alignItems: 'center' },
   title: { fontSize: 18, fontWeight: '800', color: C.navy },
@@ -314,6 +418,10 @@ const styles = StyleSheet.create({
   itemQty: { fontSize: 12, color: C.muted, marginTop: 2 },
   itemPrice: { fontSize: 13, fontWeight: '800', color: C.navy },
   emptyCart: { color: C.muted, textAlign: 'center', padding: 20, fontSize: 13 },
+  totals: { borderTopWidth: 1, borderTopColor: C.border, paddingHorizontal: 16, paddingTop: 4 },
+  selectedFee: { fontSize: 11, color: C.green, fontWeight: '700', marginTop: 6 },
+  districtModalList: { maxHeight: 360 },
+  modalFee: { fontSize: 10, color: C.muted, marginTop: 2 },
   paymentNote: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F0FDF4', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#BBF7D0', marginTop: 4, marginBottom: 8 },
   paymentCopy: { flex: 1 },
   paymentNoteTitle: { fontSize: 12, color: '#166534', fontWeight: '800', marginBottom: 3 },
@@ -335,16 +443,21 @@ const styles = StyleSheet.create({
   placeBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
   continueLinkText: { color: C.green, fontSize: 13, fontWeight: '700' },
   // Success screen
-  successWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 14 },
+  successScroll: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 24 },
+  successWrap: { width: '100%', maxWidth: 460, alignItems: 'center', padding: 16, gap: 14 },
   successTitle: { fontSize: 28, fontWeight: '800', color: C.navy },
   successSub: { fontSize: 14, color: C.muted, textAlign: 'center', lineHeight: 22 },
-  successBtn: { backgroundColor: C.green, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, marginTop: 8 },
+  successBtn: { width: '100%', backgroundColor: C.green, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16, marginTop: 8, alignItems: 'center' },
+  secondaryBtn: { width: '100%', backgroundColor: C.navy, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16, marginTop: 8, alignItems: 'center' },
+  disabledBtn: { opacity: 0.55 },
+  payError: { color: '#DC2626', fontSize: 12, textAlign: 'center', fontWeight: '600' },
+  orderError: { color: '#B91C1C', backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 10, padding: 12, fontSize: 12, lineHeight: 17, marginBottom: 10 },
   successBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
   successLink: { paddingVertical: 8 },
   successLinkText: { color: C.green, fontSize: 14, fontWeight: '700' },
-  orderCodeBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.bg, borderRadius: 12, borderWidth: 1, borderColor: C.border, paddingHorizontal: 20, paddingVertical: 12 },
+  orderCodeBox: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, backgroundColor: C.bg, borderRadius: 12, borderWidth: 1, borderColor: C.border, paddingHorizontal: 16, paddingVertical: 12 },
   orderCodeLabel: { fontSize: 13, color: C.muted, fontWeight: '600' },
-  orderCodeValue: { fontSize: 18, fontWeight: '800', color: C.navy, letterSpacing: 1.5 },
+  orderCodeValue: { flexShrink: 1, fontSize: 18, fontWeight: '800', color: C.navy, letterSpacing: 1.5, textAlign: 'right' },
   summaryBox: { width: '100%', backgroundColor: C.card, borderRadius: 14, borderWidth: 1, borderColor: C.border, overflow: 'hidden' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: C.border },
   summaryLabel: { fontSize: 13, color: C.muted },
@@ -353,6 +466,7 @@ const styles = StyleSheet.create({
   summaryTotalLabel: { fontSize: 15, fontWeight: '800', color: C.navy },
   summaryTotalValue: { fontSize: 15, fontWeight: '800', color: C.green },
   etaBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F0FDF4', borderRadius: 12, borderWidth: 1, borderColor: '#BBF7D0', paddingHorizontal: 16, paddingVertical: 12, width: '100%' },
+  etaCopy: { flex: 1, minWidth: 0 },
   etaLabel: { fontSize: 11, color: '#166534', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   etaDate: { fontSize: 13, color: '#14532d', fontWeight: '800', marginTop: 2 },
 })

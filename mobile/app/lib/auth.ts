@@ -44,7 +44,7 @@ export const authApi = {
       headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
     }),
 
-  updateProfile: (token: string, data: Partial<Pick<AuthUser, 'phone' | 'country' | 'region' | 'district' | 'village'>>) =>
+  updateProfile: (token: string, data: FormData | Partial<Pick<AuthUser, 'name' | 'phone' | 'country' | 'region' | 'district' | 'village'>> | { current_password: string; new_password: string; password_confirm: string }) =>
     axios.patch<AuthUser>(`${BASE_URL}/api/auth/profile/`, data, {
       headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
     }),

@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '800', color: C.navy },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.green, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  gridRow: { justifyContent: 'space-between', marginBottom: 12 },
+  gridRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   grid: { padding: 16 },
   row: { width: '48%', backgroundColor: C.card, borderRadius: 14, borderWidth: 1, borderColor: C.border, padding: 10 },
   emptySlot: { width: '48%' },

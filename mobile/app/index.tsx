@@ -1,9 +1,10 @@
 import { ScrollView, StatusBar } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Hero from './landing/CategoryHero'
 import Products from './landing/Products'
 import FlashDeals from './landing/FlashDeals'
+import Categories from './landing/Categories'
 import Recommended from './landing/Recommended'
-import AdSection from './landing/AdSection'
 
 export default function Index() {
   const insets = useSafeAreaInsets()
@@ -15,12 +16,11 @@ export default function Index() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 88 }}
       >
+        <Hero />
         <Products />
-        <AdSection />
         <FlashDeals />
+        <Categories />
         <Recommended />
-        <AdSection isFinal />
-        <Products title="New Products" subtitle="Fresh arrivals worth discovering" />
       </ScrollView>
     </>
   )

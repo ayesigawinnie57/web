@@ -195,7 +195,7 @@ export const flashSalesApi = {
 export type ApiOrder = {
   id: number
   code: string
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  status: 'pending' | 'processing' | 'shipped' | 'ready_for_pickup' | 'delivered' | 'cancelled'
   subtotal: string
   delivery_fee: string
   total: string
@@ -206,6 +206,7 @@ export type ApiOrder = {
   note: string
   cancel_reason: string
   has_service_rating: boolean
+  payment?: { status: 'pending' | 'completed' | 'failed' | 'invalid' | 'cancelled' } | null
   items: { id: number; product: ApiProduct; quantity: number; price: string }[]
 }
 
@@ -213,6 +214,7 @@ export const ordersApi = {
   list: () => api.get<{ results: ApiOrder[] }>('/api/orders/'),
   get: (code: string) => api.get<ApiOrder>(`/api/orders/${code}/`),
   cancel: (code: string) => api.post<ApiOrder>(`/api/orders/${code}/cancel/`),
+  pay: (code: string) => api.post<{ redirect_url: string; order_tracking_id: string }>(`/api/orders/${code}/pay/`),
   rateService: (code: string, payload: {
     overall: number
     areas: string[]

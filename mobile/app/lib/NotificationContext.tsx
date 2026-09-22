@@ -29,7 +29,7 @@ const createNotificationId = (existing: Notification[] = []) => {
 }
 
 const sanitizeNotifications = (items: unknown): Notification[] => {
-  if (!Array.isArray(items)) return INITIAL
+  if (!Array.isArray(items)) return []
 
   const safe: Notification[] = []
   const seen = new Set<string>()
@@ -67,38 +67,10 @@ const sanitizeNotifications = (items: unknown): Notification[] => {
     })
   })
 
-  return safe.length > 0 ? safe : INITIAL
+  return safe
 }
 
-const INITIAL: Notification[] = [
-  {
-    id: '1',
-    type: 'welcome',
-    title: 'Welcome to Majo Gadgets',
-    body: 'Thanks for signing in. Explore our latest gadgets and enjoy exclusive deals made just for you.',
-    time: '1 hr ago',
-    read: false,
-    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '2',
-    type: 'promo',
-    title: "Today's Special Savings — 30% Off",
-    body: 'Today only: get 30% off on all accessories. Use code MAJO30 at checkout. Offer expires at midnight.',
-    time: '3 hr ago',
-    read: false,
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '3',
-    type: 'system',
-    title: 'App Updated',
-    body: 'Majo Gadgets has been updated with new features and performance improvements. Thank you for keeping the app up to date.',
-    time: '2 days ago',
-    read: true,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-]
+const DEMO_NOTIFICATION_IDS = new Set(['1', '2', '3'])
 
 type AddFn = (n: Omit<Notification, 'id' | 'read'>) => void
 
@@ -124,7 +96,7 @@ type NotificationContextType = {
 const NotificationContext = createContext<NotificationContextType | null>(null)
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(INITIAL)
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [loaded, setLoaded] = useState(false)
 
   // Load persisted notifications on mount
@@ -133,9 +105,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (raw) {
         try {
           const parsed = JSON.parse(raw)
-          setNotifications(sanitizeNotifications(parsed))
+          setNotifications(sanitizeNotifications(parsed).filter(notification => !DEMO_NOTIFICATION_IDS.has(notification.id)))
         } catch {
-          setNotifications(INITIAL)
+          setNotifications([])
         }
       }
       setLoaded(true)

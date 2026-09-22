@@ -89,8 +89,11 @@ export default function Recommended({ products: initialProducts, featuredIds }: 
         slice.forEach(p => seenIdsRef.current.add(p.id))
         setDisplayed(prev => [...prev, ...slice])
       }
-    } catch {
-      // silently fail — don't exhaust on network error
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        exhaustedRef.current = true
+        setExhausted(true)
+      }
     }
 
     loadingRef.current = false
