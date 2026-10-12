@@ -1,23 +1,34 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
-import { sessionApi } from '../lib/api'
+import { authApi } from '../lib/api'
 import { requiresDesktopInstall } from '../lib/pwaInstall'
 import DesktopAdminInstallGate from './DesktopAdminInstallGate'
 
 type AccountState = 'checking' | 'admin' | 'other'
 
-function getInitialState(): AccountState {
-  if (!localStorage.getItem('access_token')) return 'other'
+function tokenIdentifiesAdmin(token: string) {
   try {
-    return JSON.parse(localStorage.getItem('majo_user') ?? 'null')?.isAdmin === true ? 'admin' : 'checking'
+    return JSON.parse(atob(token.split('.')[1])).is_staff === true
   } catch {
-    return 'checking'
+    return false
   }
+}
+
+function getInitialState(): AccountState {
+  const token = localStorage.getItem('access_token')
+  if (!token) return 'other'
+  try {
+    if (JSON.parse(localStorage.getItem('majo_user') ?? 'null')?.isAdmin === true) return 'admin'
+  } catch {
+    return tokenIdentifiesAdmin(token) ? 'admin' : 'checking'
+  }
+  return tokenIdentifiesAdmin(token) ? 'admin' : 'checking'
 }
 
 export default function DesktopAdminEnforcer({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const [accountState, setAccountState] = useState<AccountState>(getInitialState)
+  const [authVersion, setAuthVersion] = useState(0)
   const checkedToken = useRef<string | null>(null)
   const requestId = useRef(0)
 
@@ -34,21 +45,24 @@ export default function DesktopAdminEnforcer({ children }: { children: ReactNode
     checkedToken.current = token
     const currentRequest = ++requestId.current
     setAccountState('checking')
-    sessionApi.profile()
-      .then(profile => {
+    authApi.profile()
+      .then(({ data }) => {
         if (requestId.current === currentRequest && localStorage.getItem('access_token') === token) {
-          setAccountState(profile.is_staff ? 'admin' : 'other')
+          setAccountState(data.is_staff ? 'admin' : 'other')
         }
       })
       .catch(() => {
-        if (requestId.current === currentRequest) setAccountState('other')
+        if (requestId.current === currentRequest) {
+          setAccountState(tokenIdentifiesAdmin(token) ? 'admin' : 'other')
+        }
       })
-  }, [pathname])
+  }, [authVersion, pathname])
 
   useEffect(() => {
     const refreshOnAuthChange = () => {
       checkedToken.current = null
       setAccountState(getInitialState())
+      setAuthVersion(version => version + 1)
     }
     window.addEventListener('majo-auth-changed', refreshOnAuthChange)
     window.addEventListener('storage', refreshOnAuthChange)

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Download, MonitorDown, X } from 'lucide-react'
-import { LOGO } from '../lib/api'
+import { Download, X } from 'lucide-react'
 import { promptToInstall, subscribeToInstallPrompt } from '../lib/pwaInstall'
 
 export default function DesktopAdminInstallGate() {
@@ -23,14 +22,15 @@ export default function DesktopAdminInstallGate() {
 
   return (
     <main className="min-h-screen bg-[#F4F7F8] flex items-center justify-center px-5 py-12">
-      <section className="w-full max-w-lg text-center">
-        <img src={LOGO} alt="Majo Gadgets" className="h-14 w-auto mx-auto object-contain" />
-        <div className="mt-10 mx-auto w-16 h-16 rounded-full bg-[#E7F7EF] flex items-center justify-center">
-          <MonitorDown className="w-8 h-8 text-[#12824C]" />
-        </div>
+      <section className="w-full max-w-2xl text-center">
+        <img
+          src="/Majo%20Gadgets%20App%20Promotional%20Workspace.png"
+          alt="Majo Gadgets app shown on desktop and mobile"
+          className="w-full rounded-lg border border-[#D8E1E5] shadow-sm"
+        />
         <h1 className="mt-6 text-2xl font-extrabold text-[#071A2B]">Install Majo Gadgets to continue</h1>
         <p className="mt-3 text-sm leading-6 text-[#536471]">
-          Admin accounts must use the desktop app. Install it, then launch Majo Gadgets from your desktop or apps menu.
+          To strengthen account security and prevent unauthorized access, all staff members (administrators) must install the official Windows application to access the portal securely.
         </p>
         {installAccepted ? (
           <p role="status" className="mt-6 rounded-lg border border-[#B7E4C7] bg-white px-4 py-3 text-sm font-semibold text-[#12824C]">
@@ -41,7 +41,7 @@ export default function DesktopAdminInstallGate() {
             onClick={installApp}
             className="mt-7 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-[#071A2B] text-white text-sm font-bold hover:bg-[#12344A] transition-colors"
           >
-            {installAvailable ? <Download className="w-4 h-4" /> : <MonitorDown className="w-4 h-4" />}
+            <Download className="w-4 h-4" />
             {installAvailable ? 'Install desktop app' : 'Show install steps'}
           </button>
         )}

@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLoca
 import { NotificationProvider } from './lib/NotificationContext'
 import { SwitchProvider, useSwitchPortal } from './lib/SwitchContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { BASE_URL, sessionApi } from './lib/api'
+import { authApi, BASE_URL } from './lib/api'
 import CookieBanner from './components/CookieBanner'
 import DesktopAdminEnforcer from './components/DesktopAdminEnforcer'
 import SwitchTransition from './components/SwitchTransition'
@@ -135,8 +135,8 @@ export default function App() {
         setIsAdmin(false)
         return
       }
-      sessionApi.profile().then(profile => {
-        if (active) setIsAdmin(profile.is_staff)
+      authApi.profile().then(({ data }) => {
+        if (active) setIsAdmin(data.is_staff)
       })
     }
     fetch(`${BASE_URL}/api/settings/platform/`)
