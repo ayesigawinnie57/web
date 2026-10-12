@@ -189,7 +189,7 @@ export default function Navbar() {
         <div className="relative flex items-center px-4 h-16 lg:h-20 gap-2.5">
           {/* Logo */}
           <Link to="/" onClick={closeSearch} className="shrink-0">
-            <img src={LOGO} alt="Majo Gadgets" className="h-11 w-auto" />
+            <img src={LOGO} alt="Majo Gadgets" className="h-11 w-11 rounded-full object-cover mix-blend-multiply" />
           </Link>
 
           {/* Search pill / active */}
