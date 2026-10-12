@@ -1,4 +1,4 @@
-const CACHE_NAME = 'majo-shell-v1'
+const CACHE_NAME = 'majo-shell-v2'
 const scopeUrl = new URL(self.registration.scope)
 const appUrl = new URL('./', scopeUrl)
 const manifestUrl = new URL('manifest.webmanifest', scopeUrl)
