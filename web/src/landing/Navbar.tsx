@@ -1,11 +1,30 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, ShoppingCart, ShieldCheck, Home, UserRound, ShoppingBag, Store } from 'lucide-react'
+import { Bell, Download, ShoppingCart, ShieldCheck, Home, UserRound, ShoppingBag, Store, X } from 'lucide-react'
 import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
+
+let pendingInstallPrompt: InstallPromptEvent | null = null
+const installPromptListeners = new Set<(prompt: InstallPromptEvent | null) => void>()
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault()
+    pendingInstallPrompt = event as InstallPromptEvent
+    installPromptListeners.forEach(listener => listener(pendingInstallPrompt))
+  })
+  window.addEventListener('appinstalled', () => {
+    pendingInstallPrompt = null
+    installPromptListeners.forEach(listener => listener(null))
+  })
+}
 
 function getCachedUser(): UserInfo | null {
   try { return JSON.parse(localStorage.getItem('majo_user') ?? 'null') } catch { return null }
@@ -16,6 +35,39 @@ export default function Navbar() {
   const { unreadCount, refresh: refreshNotifications } = useNotifications()
   const { startSwitch } = useSwitchPortal()
   const [isAdmin, setIsAdmin] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
+  const [isStandalone, setIsStandalone] = useState(() => window.matchMedia('(display-mode: standalone)').matches)
+  const [showInstallHelp, setShowInstallHelp] = useState(false)
+
+  useEffect(() => {
+    const onInstallPrompt = (prompt: InstallPromptEvent | null) => {
+      setInstallPrompt(prompt)
+      if (prompt) setShowInstallHelp(false)
+    }
+    const onAppInstalled = () => {
+      setIsStandalone(true)
+      setShowInstallHelp(false)
+    }
+    installPromptListeners.add(onInstallPrompt)
+    onInstallPrompt(pendingInstallPrompt)
+    window.addEventListener('appinstalled', onAppInstalled)
+    return () => {
+      installPromptListeners.delete(onInstallPrompt)
+      window.removeEventListener('appinstalled', onAppInstalled)
+    }
+  }, [])
+
+  const installApp = async () => {
+    if (!installPrompt) {
+      setShowInstallHelp(value => !value)
+      return
+    }
+    const prompt = installPrompt
+    setInstallPrompt(null)
+    await prompt.prompt()
+    const { outcome } = await prompt.userChoice
+    if (outcome === 'dismissed') setShowInstallHelp(true)
+  }
 
   useEffect(() => {
     if (!hasAccessToken()) return
@@ -182,6 +234,34 @@ export default function Navbar() {
               <Link to="/shop" onClick={closeSearch} className="text-[15px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Shop</Link>
               <Link to="/deals" onClick={closeSearch} className="text-[15px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Deals</Link>
             </div>
+            {!isStandalone && (
+              <div className="relative hidden lg:block">
+                <button
+                  onClick={installApp}
+                  aria-label="Install Majo Gadgets app"
+                  aria-expanded={showInstallHelp}
+                  aria-controls="install-app-help"
+                  title="Install Majo Gadgets"
+                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[#071A2B] text-white text-[13px] font-bold hover:bg-[#12344A] transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Install app</span>
+                </button>
+                {showInstallHelp && !installPrompt && (
+                  <div id="install-app-help" role="dialog" aria-label="Install Majo Gadgets" className="absolute right-0 top-full mt-3 w-72 p-4 bg-white border border-[#E2E8F0] rounded-lg shadow-xl">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-[#071A2B]">Add Majo Gadgets to your desktop</p>
+                        <p className="mt-1.5 text-xs leading-5 text-[#64748B]">Choose “Install app” in Chrome or Edge, or “Add to Dock” in Safari.</p>
+                      </div>
+                      <button onClick={() => setShowInstallHelp(false)} aria-label="Close install instructions" className="p-1 text-[#64748B] hover:text-[#071A2B]">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {/* Admin icon */}
             {isAdmin && (
               <button

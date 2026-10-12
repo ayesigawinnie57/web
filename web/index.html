@@ -2,6 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <meta name="theme-color" content="#071A2B" />
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
     <link rel="preload" as="image" fetchpriority="high" media="(max-width: 767px)" href="https://res.cloudinary.com/fhklnn0f/image/upload/f_auto,q_auto,w_800/v1789152115/phone_tablets.png" />
     <link rel="preload" as="image" fetchpriority="high" media="(min-width: 768px)" href="https://res.cloudinary.com/fhklnn0f/image/upload/f_auto,q_auto,w_1200/v1789152115/phone_tablets.png" />
@@ -40,9 +42,6 @@
     </script>
     <script>var r=sessionStorage.redirect;delete sessionStorage.redirect;if(r&&r!==location.href)history.replaceState(null,null,r)</script>
     <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw-clear.js').catch(function(){})
-      }
       window.addEventListener('vite:preloadError', function() {
         if (!sessionStorage.getItem('reloaded')) {
           sessionStorage.setItem('reloaded', '1')
