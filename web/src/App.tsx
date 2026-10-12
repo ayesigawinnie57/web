@@ -4,6 +4,7 @@ import { SwitchProvider, useSwitchPortal } from './lib/SwitchContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { BASE_URL, sessionApi } from './lib/api'
 import CookieBanner from './components/CookieBanner'
+import DesktopAdminEnforcer from './components/DesktopAdminEnforcer'
 import SwitchTransition from './components/SwitchTransition'
 import LandingPage from './landing'
 
@@ -128,10 +129,26 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
+    let active = true
+    const refreshAdminStatus = () => {
+      if (!localStorage.getItem('access_token')) {
+        setIsAdmin(false)
+        return
+      }
+      sessionApi.profile().then(profile => {
+        if (active) setIsAdmin(profile.is_staff)
+      })
+    }
     fetch(`${BASE_URL}/api/settings/platform/`)
       .then(r => r.json()).then(d => setUiActive(!!d.ui_active)).catch(() => setUiActive(true))
-    if (localStorage.getItem('access_token'))
-      sessionApi.profile().then(p => setIsAdmin(p.is_staff))
+    refreshAdminStatus()
+    window.addEventListener('majo-auth-changed', refreshAdminStatus)
+    window.addEventListener('storage', refreshAdminStatus)
+    return () => {
+      active = false
+      window.removeEventListener('majo-auth-changed', refreshAdminStatus)
+      window.removeEventListener('storage', refreshAdminStatus)
+    }
   }, [])
 
   if (uiActive === false && !isAdmin) return <SiteOffline />
@@ -139,6 +156,7 @@ export default function App() {
     <SwitchProvider>
     <NotificationProvider>
     <BrowserRouter>
+      <DesktopAdminEnforcer>
       <ScrollToTop />
       <SwitchOverlay />
       <CookieBanner />
@@ -213,6 +231,7 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
+      </DesktopAdminEnforcer>
     </BrowserRouter>
     </NotificationProvider>
     </SwitchProvider>

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { authApi, BASE_URL } from '../lib/api'
+import { requiresDesktopInstall } from '../lib/pwaInstall'
+import DesktopAdminInstallGate from '../components/DesktopAdminInstallGate'
 
 type State = 'loading' | 'allowed' | 'denied'
 
@@ -50,5 +52,6 @@ export default function AdminGuard() {
     )
   }
 
+  if (state === 'allowed' && requiresDesktopInstall()) return <DesktopAdminInstallGate />
   return state === 'allowed' ? <Outlet /> : <Navigate to="/login" replace />
 }

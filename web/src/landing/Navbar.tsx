@@ -4,27 +4,9 @@ import { Bell, Download, ShoppingCart, ShieldCheck, Home, UserRound, ShoppingBag
 import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
+import { promptToInstall, subscribeToInstallPrompt, type InstallPromptEvent } from '../lib/pwaInstall'
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
-type InstallPromptEvent = Event & {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
-}
-
-let pendingInstallPrompt: InstallPromptEvent | null = null
-const installPromptListeners = new Set<(prompt: InstallPromptEvent | null) => void>()
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeinstallprompt', event => {
-    event.preventDefault()
-    pendingInstallPrompt = event as InstallPromptEvent
-    installPromptListeners.forEach(listener => listener(pendingInstallPrompt))
-  })
-  window.addEventListener('appinstalled', () => {
-    pendingInstallPrompt = null
-    installPromptListeners.forEach(listener => listener(null))
-  })
-}
 
 function getCachedUser(): UserInfo | null {
   try { return JSON.parse(localStorage.getItem('majo_user') ?? 'null') } catch { return null }
@@ -40,19 +22,17 @@ export default function Navbar() {
   const [showInstallHelp, setShowInstallHelp] = useState(false)
 
   useEffect(() => {
-    const onInstallPrompt = (prompt: InstallPromptEvent | null) => {
-      setInstallPrompt(prompt)
-      if (prompt) setShowInstallHelp(false)
-    }
     const onAppInstalled = () => {
       setIsStandalone(true)
       setShowInstallHelp(false)
     }
-    installPromptListeners.add(onInstallPrompt)
-    onInstallPrompt(pendingInstallPrompt)
+    const unsubscribe = subscribeToInstallPrompt(prompt => {
+      setInstallPrompt(prompt)
+      if (prompt) setShowInstallHelp(false)
+    })
     window.addEventListener('appinstalled', onAppInstalled)
     return () => {
-      installPromptListeners.delete(onInstallPrompt)
+      unsubscribe()
       window.removeEventListener('appinstalled', onAppInstalled)
     }
   }, [])
@@ -62,11 +42,8 @@ export default function Navbar() {
       setShowInstallHelp(value => !value)
       return
     }
-    const prompt = installPrompt
-    setInstallPrompt(null)
-    await prompt.prompt()
-    const { outcome } = await prompt.userChoice
-    if (outcome === 'dismissed') setShowInstallHelp(true)
+    const outcome = await promptToInstall()
+    if (outcome !== 'accepted') setShowInstallHelp(true)
   }
 
   useEffect(() => {

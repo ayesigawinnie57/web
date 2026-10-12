@@ -267,9 +267,11 @@ export const authApi = {
   saveTokens: (access: string, refresh: string) => {
     localStorage.setItem('access_token', access)
     localStorage.setItem('refresh_token', refresh)
+    window.dispatchEvent(new Event('majo-auth-changed'))
   },
   saveProfile: (name: string, email: string, isAdmin = false, extra?: { phone?: string; region?: string; district?: string; village?: string }) => {
     localStorage.setItem('majo_user', JSON.stringify({ name, email, isAdmin, ...extra }))
+    window.dispatchEvent(new Event('majo-auth-changed'))
   },
 }
 
