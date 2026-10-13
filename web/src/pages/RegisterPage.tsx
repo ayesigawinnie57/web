@@ -88,7 +88,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 py-10" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="auth-page-background min-h-screen flex items-center justify-center px-4 py-10" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Helmet>
         <title>Create Account - Majo Gadgets</title>
         <meta name="robots" content="noindex, nofollow" />
