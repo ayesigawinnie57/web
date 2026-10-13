@@ -3,22 +3,39 @@ export type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
 
+const INSTALLED_KEY = 'majo-pwa-installed'
 let deferredPrompt: InstallPromptEvent | null = null
 const promptListeners = new Set<(prompt: InstallPromptEvent | null) => void>()
+const installedListeners = new Set<(installed: boolean) => void>()
 
 function publishPrompt(prompt: InstallPromptEvent | null) {
   promptListeners.forEach(listener => listener(prompt))
 }
 
+function publishInstalled(installed: boolean) {
+  installedListeners.forEach(listener => listener(installed))
+}
+
+function markInstalled() {
+  localStorage.setItem(INSTALLED_KEY, 'true')
+  publishInstalled(true)
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault()
+    localStorage.removeItem(INSTALLED_KEY)
+    publishInstalled(false)
     deferredPrompt = event as InstallPromptEvent
     publishPrompt(deferredPrompt)
   })
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null
     publishPrompt(null)
+    markInstalled()
+  })
+  window.addEventListener('storage', event => {
+    if (event.key === INSTALLED_KEY) publishInstalled(event.newValue === 'true')
   })
 }
 
@@ -30,6 +47,24 @@ export function subscribeToInstallPrompt(listener: (prompt: InstallPromptEvent |
   }
 }
 
+export function isPwaInstalled() {
+  try {
+    return localStorage.getItem(INSTALLED_KEY) === 'true'
+      || window.matchMedia('(display-mode: standalone)').matches
+      || (navigator as Navigator & { standalone?: boolean }).standalone === true
+  } catch {
+    return false
+  }
+}
+
+export function subscribeToInstalledState(listener: (installed: boolean) => void) {
+  installedListeners.add(listener)
+  listener(isPwaInstalled())
+  return () => {
+    installedListeners.delete(listener)
+  }
+}
+
 export async function promptToInstall() {
   if (!deferredPrompt) return null
 
@@ -37,7 +72,9 @@ export async function promptToInstall() {
   deferredPrompt = null
   publishPrompt(null)
   await prompt.prompt()
-  return (await prompt.userChoice).outcome
+  const outcome = (await prompt.userChoice).outcome
+  if (outcome === 'accepted') markInstalled()
+  return outcome
 }
 
 export function requiresDesktopInstall() {

@@ -4,7 +4,7 @@ import { Bell, Download, ShoppingCart, ShieldCheck, Home, UserRound, ShoppingBag
 import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
-import { promptToInstall, subscribeToInstallPrompt, type InstallPromptEvent } from '../lib/pwaInstall'
+import { isPwaInstalled, promptToInstall, subscribeToInstalledState, subscribeToInstallPrompt, type InstallPromptEvent } from '../lib/pwaInstall'
 
 type UserInfo = { name: string; email: string; isAdmin: boolean }
 
@@ -19,6 +19,7 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
   const [isStandalone, setIsStandalone] = useState(() => window.matchMedia('(display-mode: standalone)').matches)
+  const [appInstalled, setAppInstalled] = useState(isPwaInstalled)
   const [showInstallHelp, setShowInstallHelp] = useState(false)
 
   useEffect(() => {
@@ -30,9 +31,11 @@ export default function Navbar() {
       setInstallPrompt(prompt)
       if (prompt) setShowInstallHelp(false)
     })
+    const unsubscribeInstalled = subscribeToInstalledState(setAppInstalled)
     window.addEventListener('appinstalled', onAppInstalled)
     return () => {
       unsubscribe()
+      unsubscribeInstalled()
       window.removeEventListener('appinstalled', onAppInstalled)
     }
   }, [])
@@ -211,7 +214,7 @@ export default function Navbar() {
               <Link to="/shop" onClick={closeSearch} className="text-[15px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Shop</Link>
               <Link to="/deals" onClick={closeSearch} className="text-[15px] font-bold text-[#071A2B] hover:text-[#1E3A8A] transition-colors">Deals</Link>
             </div>
-            {!isStandalone && (
+            {!isStandalone && !appInstalled && (
               <div className="relative hidden lg:block">
                 <button
                   onClick={installApp}

@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Download, X } from 'lucide-react'
-import { promptToInstall, subscribeToInstallPrompt } from '../lib/pwaInstall'
+import { isPwaInstalled, promptToInstall, subscribeToInstalledState, subscribeToInstallPrompt } from '../lib/pwaInstall'
 
 export default function DesktopAdminInstallGate() {
   const [installAvailable, setInstallAvailable] = useState(false)
   const [showInstallSteps, setShowInstallSteps] = useState(false)
-  const [installAccepted, setInstallAccepted] = useState(false)
+  const [appInstalled, setAppInstalled] = useState(isPwaInstalled)
 
-  useEffect(() => subscribeToInstallPrompt(prompt => setInstallAvailable(!!prompt)), [])
+  useEffect(() => {
+    const unsubscribePrompt = subscribeToInstallPrompt(prompt => setInstallAvailable(!!prompt))
+    const unsubscribeInstalled = subscribeToInstalledState(setAppInstalled)
+    return () => {
+      unsubscribePrompt()
+      unsubscribeInstalled()
+    }
+  }, [])
 
   const installApp = async () => {
     if (!installAvailable) {
@@ -16,8 +23,7 @@ export default function DesktopAdminInstallGate() {
     }
 
     const outcome = await promptToInstall()
-    if (outcome === 'accepted') setInstallAccepted(true)
-    else setShowInstallSteps(true)
+    if (outcome !== 'accepted') setShowInstallSteps(true)
   }
 
   return (
@@ -32,9 +38,9 @@ export default function DesktopAdminInstallGate() {
         <p className="mt-3 text-sm leading-6 text-[#536471]">
           To strengthen account security and prevent unauthorized access, all staff members (administrators) must install the official Windows application to access the portal securely.
         </p>
-        {installAccepted ? (
+        {appInstalled ? (
           <p role="status" className="mt-6 rounded-lg border border-[#B7E4C7] bg-white px-4 py-3 text-sm font-semibold text-[#12824C]">
-            Installation accepted. Open Majo Gadgets from your desktop to continue.
+            Majo Gadgets is installed. Open it from your desktop or apps menu to continue.
           </p>
         ) : (
           <button
@@ -45,7 +51,7 @@ export default function DesktopAdminInstallGate() {
             {installAvailable ? 'Install desktop app' : 'Show install steps'}
           </button>
         )}
-        {showInstallSteps && !installAccepted && (
+        {showInstallSteps && !appInstalled && (
           <div className="mt-5 rounded-lg border border-[#D8E1E5] bg-white p-4 text-left">
             <div className="flex items-start justify-between gap-4">
               <div>
