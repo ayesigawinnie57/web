@@ -2,7 +2,7 @@ import axios from 'axios'
 import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
 
-export const BASE_URL = 'https://backend-production-63a52.up.railway.app'
+export const BASE_URL = 'https://web-production-b3675.up.railway.app'
 
 export const PRODUCT_SHARE_URL = `${BASE_URL}/api/products/share/products`
 

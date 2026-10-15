@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Platform, Linking } from 'react-native'
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Platform, Linking } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ArrowLeft, Package, MapPin, FileText, CheckCircle, Clock, Truck, XCircle, ShoppingBag, Star, CreditCard } from 'lucide-react-native'
-import { ordersApi, productsApi, type ApiOrder } from '../../lib/products'
+import { ArrowLeft, Package, MapPin, FileText, CheckCircle, Clock, Truck, XCircle, ShoppingBag, Star, CreditCard, RotateCcw } from 'lucide-react-native'
+import { ordersApi, productsApi, type ApiOrder, type ApiReturnRequest } from '../../lib/products'
 import { pushNotification } from '../../lib/NotificationContext'
 import { C } from '../../theme'
 import PaymentModal from '../../components/PaymentModal'
@@ -39,6 +39,10 @@ export default function OrderDetailScreen() {
   const [paying, setPaying] = useState(false)
   const [payError, setPayError] = useState('')
   const [paymentUrl, setPaymentUrl] = useState('')
+  const [returnRequest, setReturnRequest] = useState<ApiReturnRequest | null>(null)
+  const [returnReason, setReturnReason] = useState('')
+  const [showReturnForm, setShowReturnForm] = useState(false)
+  const [submittingReturn, setSubmittingReturn] = useState(false)
   // slug -> true means already reviewed, false means eligible to review
   const [reviewStatus, setReviewStatus] = useState<Record<string, boolean>>({})
   const notifiedStatus = useRef<string | null>(null)
@@ -47,6 +51,9 @@ export default function OrderDetailScreen() {
     try {
       const { data } = await ordersApi.get(String(code))
         setOrder(data)
+        if (data.status === 'delivered') {
+          ordersApi.getReturn(data.code).then(({ data: currentReturn }) => setReturnRequest(currentReturn)).catch(() => {})
+        }
         if (notifiedStatus.current === data.status) return
         notifiedStatus.current = data.status
         const deliveryDate = expectedDelivery(data.created_at)
@@ -94,9 +101,25 @@ export default function OrderDetailScreen() {
 
   useEffect(() => {
     fetchOrder().finally(() => setLoading(false))
+    ordersApi.getReturn(String(code)).then(({ data }) => setReturnRequest(data)).catch(() => {})
     const interval = setInterval(fetchOrder, 15000)
     return () => clearInterval(interval)
   }, [code])
+
+  const handleReturn = async () => {
+    if (!order || !returnReason.trim()) return
+    setSubmittingReturn(true)
+    try {
+      const { data } = await ordersApi.submitReturn(order.code, returnReason.trim())
+      setReturnRequest(data)
+      setReturnReason('')
+      setShowReturnForm(false)
+    } catch (error: any) {
+      Alert.alert('Return request failed', error?.response?.data?.detail ?? 'Could not submit your return request.')
+    } finally {
+      setSubmittingReturn(false)
+    }
+  }
 
   const handlePay = async () => {
     if (!order) return
@@ -341,6 +364,47 @@ export default function OrderDetailScreen() {
           )}
         </View>
 
+        {isDelivered && (
+          <View style={styles.card}>
+            <View style={styles.sectionHeader}>
+              <RotateCcw size={15} color={C.green} />
+              <Text style={styles.sectionTitle}>Returns</Text>
+            </View>
+            {returnRequest ? (
+              <View style={styles.returnContent}>
+                <Text style={styles.returnStatus}>Status: {returnRequest.status === 'approved' ? 'Refund processing' : returnRequest.status.replace('_', ' ')}</Text>
+                <Text style={styles.returnReason}>Reason: {returnRequest.reason}</Text>
+                {returnRequest.refund_amount ? <Text style={styles.returnReason}>Refund: UGX {Number(returnRequest.refund_amount).toLocaleString()}</Text> : null}
+                {returnRequest.admin_note ? <Text style={styles.returnNote}>{returnRequest.admin_note}</Text> : null}
+              </View>
+            ) : showReturnForm ? (
+              <View style={styles.returnContent}>
+                <TextInput
+                  value={returnReason}
+                  onChangeText={setReturnReason}
+                  placeholder="Tell us why you want to return this order"
+                  multiline
+                  textAlignVertical="top"
+                  style={styles.returnInput}
+                />
+                <View style={styles.returnActions}>
+                  <TouchableOpacity onPress={handleReturn} disabled={submittingReturn || !returnReason.trim()} style={[styles.returnSubmit, (submittingReturn || !returnReason.trim()) && styles.payBtnDisabled]}>
+                    {submittingReturn ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.returnSubmitText}>Submit request</Text>}
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowReturnForm(false)} style={styles.returnCancel}>
+                    <Text style={styles.returnCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity onPress={() => setShowReturnForm(true)} style={styles.returnButton}>
+                <RotateCcw size={14} color={C.navy} />
+                <Text style={styles.returnButtonText}>Request return</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Delivery info */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
@@ -483,6 +547,18 @@ const styles = StyleSheet.create({
   payBtn: { height: 44, borderRadius: 12, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   payBtnDisabled: { opacity: 0.6 },
   payBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  returnContent: { padding: 16, gap: 10 },
+  returnStatus: { fontSize: 13, color: C.navy, fontWeight: '800', textTransform: 'capitalize' },
+  returnReason: { fontSize: 12, color: C.muted, lineHeight: 18 },
+  returnNote: { fontSize: 12, color: C.navy, lineHeight: 18 },
+  returnInput: { minHeight: 96, borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 12, color: C.navy, fontSize: 13, backgroundColor: '#fff' },
+  returnActions: { flexDirection: 'row', gap: 8 },
+  returnSubmit: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: C.green, paddingHorizontal: 12 },
+  returnSubmitText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  returnCancel: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 16 },
+  returnCancelText: { color: C.muted, fontSize: 12, fontWeight: '700' },
+  returnButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  returnButtonText: { color: C.navy, fontSize: 13, fontWeight: '700' },
 
   etaCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F0FDF4', borderRadius: 16, borderWidth: 1, borderColor: '#BBF7D0', padding: 14 },
   etaIconWrap: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#DCFCE7', alignItems: 'center', justifyContent: 'center' },
