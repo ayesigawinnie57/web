@@ -150,6 +150,7 @@ const REGIONS = [
 ]
 
 type District = { id: number; name: string; region: string }
+type DistrictPage = { results: District[]; next: string | null }
 
 function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
   name: string; email: string; tmpToken: string
@@ -160,14 +161,38 @@ function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
   const [region, setRegion] = useState('')
   const [district, setDistrict] = useState('')
   const [village, setVillage] = useState('')
+  const [districtsLoading, setDistrictsLoading] = useState(true)
+  const [districtError, setDistrictError] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch(`${BASE_URL}/api/settings/districts/`)
-      .then(r => r.ok ? r.json() : [])
-      .then(d => setDistricts(Array.isArray(d) ? d : (d.results ?? [])))
-      .catch(() => {})
+    let active = true
+    const loadDistricts = async () => {
+      const allDistricts: District[] = []
+      let page = 1
+      try {
+        while (true) {
+          const response = await fetch(`${BASE_URL}/api/settings/districts/?page=${page}`)
+          if (!response.ok) throw new Error('Failed to load districts')
+          const data: DistrictPage | District[] = await response.json()
+          if (Array.isArray(data)) {
+            allDistricts.push(...data)
+            break
+          }
+          allDistricts.push(...data.results)
+          if (!data.next) break
+          page += 1
+        }
+        if (active) setDistricts(allDistricts)
+      } catch {
+        if (active) setDistrictError('Could not load districts. Please refresh and try again.')
+      } finally {
+        if (active) setDistrictsLoading(false)
+      }
+    }
+    void loadDistricts()
+    return () => { active = false }
   }, [])
 
   const regionDistricts = useMemo(() => districts.filter(d => d.region === region), [districts, region])
@@ -209,12 +234,13 @@ function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
           <label className="block">
             <span className="block text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] mb-2">District</span>
             <div className="relative">
-              <select value={district} disabled={!region || regionDistricts.length === 0} onChange={e => setDistrict(e.target.value)} className="appearance-none w-full px-3 py-3 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] outline-none disabled:opacity-50">
-                <option value="">{region ? 'Select district' : 'Choose a region first'}</option>
+              <select value={district} disabled={!region || districtsLoading || regionDistricts.length === 0} onChange={e => setDistrict(e.target.value)} className="appearance-none w-full px-3 py-3 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] outline-none disabled:opacity-50">
+                <option value="">{districtsLoading ? 'Loading districts...' : region ? 'Select district' : 'Choose a region first'}</option>
                 {regionDistricts.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
               </select>
               <ChevronDown className="absolute right-3 top-3 text-[#64748B] pointer-events-none" size={16} />
             </div>
+            {districtError && <p role="alert" className="mt-2 text-[12px] text-red-600">{districtError}</p>}
           </label>
           <Field label="Village / Street (optional)" type="text" value={village} onChange={setVillage} placeholder="e.g. Nakawa" required={false} />
           <button disabled={loading} className="w-full h-12 bg-[#1E3A8A] text-white text-[14px] font-bold disabled:opacity-50">
