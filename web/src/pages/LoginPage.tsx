@@ -2,7 +2,7 @@ import { type FormEvent, useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, ChevronDown } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
-import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, BASE_URL } from '../lib/api'
+import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, fetchAllDistricts, type DistrictRecord } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { Helmet } from 'react-helmet-async'
 
@@ -149,8 +149,7 @@ const REGIONS = [
   { value: 'Western Region', label: 'Western Uganda' },
 ]
 
-type District = { id: number; name: string; region: string }
-type DistrictPage = { results: District[]; next: string | null }
+type District = Pick<DistrictRecord, 'id' | 'name' | 'region'>
 
 function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
   name: string; email: string; tmpToken: string
@@ -168,30 +167,14 @@ function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
 
   useEffect(() => {
     let active = true
-    const loadDistricts = async () => {
-      const allDistricts: District[] = []
-      let page = 1
-      try {
-        while (true) {
-          const response = await fetch(`${BASE_URL}/api/settings/districts/?page=${page}`)
-          if (!response.ok) throw new Error('Failed to load districts')
-          const data: DistrictPage | District[] = await response.json()
-          if (Array.isArray(data)) {
-            allDistricts.push(...data)
-            break
-          }
-          allDistricts.push(...data.results)
-          if (!data.next) break
-          page += 1
-        }
-        if (active) setDistricts(allDistricts)
-      } catch {
+    fetchAllDistricts()
+      .then(allDistricts => { if (active) setDistricts(allDistricts) })
+      .catch(() => {
         if (active) setDistrictError('Could not load districts. Please refresh and try again.')
-      } finally {
+      })
+      .finally(() => {
         if (active) setDistrictsLoading(false)
-      }
-    }
-    void loadDistricts()
+      })
     return () => { active = false }
   }, [])
 

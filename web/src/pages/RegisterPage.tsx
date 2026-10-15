@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown, Eye, EyeOff, UserPlus } from 'lucide-react'
-import { authApi, BASE_URL, LOGO } from '../lib/api'
+import { authApi, fetchAllDistricts, LOGO, type DistrictRecord } from '../lib/api'
 import { Helmet } from 'react-helmet-async'
 
 const REGIONS = [
@@ -11,7 +11,7 @@ const REGIONS = [
   { value: 'Western Region', label: 'Western Uganda' },
 ] as const
 
-type District = { id: number; name: string; price: string; region: string }
+type District = DistrictRecord
 type Form = { name: string; email: string; phone: string; region: string; district: string; village: string; password: string; confirm: string }
 
 export default function RegisterPage() {
@@ -25,9 +25,8 @@ export default function RegisterPage() {
   const set = (key: keyof Form, value: string) => setForm(current => ({ ...current, [key]: value }))
 
   useEffect(() => {
-    fetch(`${BASE_URL}/api/settings/districts/`)
-      .then(res => (res.ok ? res.json() : []))
-      .then(data => setDistricts(Array.isArray(data) ? data : (data.results ?? [])))
+    fetchAllDistricts()
+      .then(setDistricts)
       .catch(() => setDistricts([]))
   }, [])
 

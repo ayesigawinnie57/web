@@ -20,6 +20,23 @@ const api = axios.create({
   headers: { 'ngrok-skip-browser-warning': 'true' },
 })
 
+export type DistrictRecord = { id: number; name: string; price: string; region: string }
+type DistrictPage = { results: DistrictRecord[]; next: string | null }
+
+export async function fetchAllDistricts(): Promise<DistrictRecord[]> {
+  const districts: DistrictRecord[] = []
+  let page = 1
+
+  while (true) {
+    const { data } = await api.get<DistrictPage | DistrictRecord[]>(`/api/settings/districts/?page=${page}`)
+    if (Array.isArray(data)) return [...districts, ...data]
+
+    districts.push(...data.results)
+    if (!data.next) return districts
+    page += 1
+  }
+}
+
 const API_CACHE_TTL = 3 * 60 * 1000
 const apiCache = new Map<string, { expiresAt: number; data: unknown }>()
 const apiRequests = new Map<string, Promise<unknown>>()

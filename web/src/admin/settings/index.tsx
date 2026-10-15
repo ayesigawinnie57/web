@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Skull, TriangleAlert, CircleX, ChevronDown, Settings as SettingsIcon, Users as UsersIcon, Truck } from 'lucide-react'
-import { BASE_URL } from '../../lib/api'
+import { BASE_URL, fetchAllDistricts, type DistrictRecord } from '../../lib/api'
 import { parseError } from '../ErrorBanner'
 
 type Toast = { message: string; type: 'success' | 'error' }
@@ -440,25 +440,7 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
 }
 
 // ── Delivery ──────────────────────────────────────────────────────────────────
-type District = { id: number; name: string; price: string; region: string }
-type DistrictPage = { results: District[]; next: string | null }
-
-async function fetchAllDistricts(): Promise<District[]> {
-  const districts: District[] = []
-  let page = 1
-
-  while (true) {
-    const response = await fetch(`${BASE_URL}/api/settings/districts/?page=${page}`, { headers: authHeaders() })
-    if (!response.ok) throw new Error('Failed to load districts')
-
-    const data: DistrictPage | District[] = await response.json()
-    if (Array.isArray(data)) return [...districts, ...data]
-
-    districts.push(...data.results)
-    if (!data.next) return districts
-    page += 1
-  }
-}
+type District = DistrictRecord
 
 const UGANDA_REGIONS: Record<string, string[]> = {
   'Central Region': ['Buikwe','Bukomansimbi','Butambala','Buvuma','Gomba','Kalangala','Kalungu','Kampala','Kassanda','Kayunga','Kiboga','Kyankwanzi','Kyotera','Luweero','Lwengo','Lyantonde','Masaka','Mityana','Mpigi','Mubende','Mukono','Nakaseke','Nakasongola','Rakai','Sembabule','Wakiso'],
