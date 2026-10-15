@@ -50,6 +50,7 @@ const AdminCategories = lazy(() => import('./admin/categories/index'))
 const AddCategory     = lazy(() => import('./admin/categories/add'))
 const EditCategory    = lazy(() => import('./admin/categories/[id]'))
 const AdminOrders     = lazy(() => import('./admin/orders/index'))
+const AdminReturns    = lazy(() => import('./admin/returns/index'))
 const AdminOrderDetail = lazy(() => import('./admin/orders/[code]'))
 const AdminFlashSales = lazy(() => import('./admin/flashsales/index'))
 const AddFlashSale    = lazy(() => import('./admin/flashsales/add'))
@@ -215,6 +216,7 @@ export default function App() {
               <Route path="categories/add" element={<AddCategory />} />
               <Route path="categories/:id" element={<EditCategory />} />
               <Route path="orders" element={<AdminOrders />} />
+              <Route path="returns" element={<AdminReturns />} />
               <Route path="orders/:code" element={<AdminOrderDetail />} />
               <Route path="pickup" element={<AdminPickupPage />} />
               <Route path="flashsales" element={<AdminFlashSales />} />

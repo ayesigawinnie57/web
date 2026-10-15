@@ -19,7 +19,6 @@ const TABS = [
   { key: 'shipped', label: 'Shipped', icon: Truck },
   { key: 'delivered', label: 'Delivered', icon: CheckCircle },
   { key: 'cancelled', label: 'Cancelled', icon: XCircle },
-  { key: 'returns', label: 'Returns', icon: RotateCcw },
 ]
 
 function formatDate(iso: string) {

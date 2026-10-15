@@ -21,21 +21,23 @@ const api = axios.create({
 })
 
 export type DistrictRecord = { id: number; name: string; price: string; region: string }
-type DistrictPage = { results: DistrictRecord[]; next: string | null }
+type ApiPage<T> = { results: T[]; next: string | null }
 
-export async function fetchAllDistricts(): Promise<DistrictRecord[]> {
-  const districts: DistrictRecord[] = []
+async function fetchAllPages<T>(path: string): Promise<T[]> {
+  const items: T[] = []
   let page = 1
 
   while (true) {
-    const { data } = await api.get<DistrictPage | DistrictRecord[]>(`/api/settings/districts/?page=${page}`)
-    if (Array.isArray(data)) return [...districts, ...data]
+    const { data } = await api.get<ApiPage<T> | T[]>(`${path}?page=${page}`)
+    if (Array.isArray(data)) return [...items, ...data]
 
-    districts.push(...data.results)
-    if (!data.next) return districts
+    items.push(...data.results)
+    if (!data.next) return items
     page += 1
   }
 }
+
+export const fetchAllDistricts = () => fetchAllPages<DistrictRecord>('/api/settings/districts/')
 
 const API_CACHE_TTL = 3 * 60 * 1000
 const apiCache = new Map<string, { expiresAt: number; data: unknown }>()
@@ -523,7 +525,7 @@ export const adminOrdersApi = {
   readyForPickup: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/ready-for-pickup/`),
   deliver: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/deliver/`),
   cancel: (code: string, reason: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/cancel/`, { reason }),
-  listReturns: () => api.get<AdminReturnRequest[]>('/api/orders/admin/returns/'),
+  listReturns: async () => ({ data: await fetchAllPages<AdminReturnRequest>('/api/orders/admin/returns/') }),
   approveReturn: (id: number) => api.post<AdminReturnRequest>(`/api/orders/admin/returns/${id}/approve/`),
   rejectReturn: (id: number, admin_note: string) => api.post<AdminReturnRequest>(`/api/orders/admin/returns/${id}/reject/`, { admin_note }),
   markReturnRefunded: (id: number) => api.post<AdminReturnRequest>(`/api/orders/admin/returns/${id}/refunded/`),
@@ -568,6 +570,7 @@ export const inventoryApi = {
 export type ApiAccountingDashboard = {
   total_revenue: number; cogs: number; gross_profit: number
   total_expenses: number; net_profit: number
+  total_refunds: number
   gross_margin: number; net_margin: number
   cash_bank: number; inventory_cost: number; inventory_sales_value: number
   receivables: number; payables: number

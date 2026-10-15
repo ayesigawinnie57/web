@@ -79,6 +79,7 @@ function DashboardTab({ data }: { data: ApiAccountingDashboard }) {
             { label: 'COGS', value: fmt(data.cogs), color: '#f59e0b' },
             { label: 'Gross Profit', value: fmt(data.gross_profit), color: '#6366f1' },
             { label: 'Expenses', value: fmt(data.total_expenses), color: '#ef4444' },
+            { label: 'Refunds', value: fmt(data.total_refunds), color: '#f59e0b' },
             { label: 'Net Profit', value: fmt(data.net_profit), color: data.net_profit >= 0 ? '#22C55E' : '#ef4444' },
             { label: 'Gross Margin', value: pct(data.gross_margin), color: '#0ea5e9' },
           ].map(({ label, value, color }) => (
