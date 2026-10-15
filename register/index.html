@@ -40,7 +40,8 @@
     </script>
     <script>var r=sessionStorage.redirect;delete sessionStorage.redirect;if(r&&r!==location.href)history.replaceState(null,null,r)</script>
     <script>
-      window.addEventListener('vite:preloadError', function() {
+      window.addEventListener('vite:preloadError', function(event) {
+        event.preventDefault()
         if (!sessionStorage.getItem('reloaded')) {
           sessionStorage.setItem('reloaded', '1')
           window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now()
