@@ -30,7 +30,7 @@ export default function DesktopAdminInstallGate() {
     <main className="min-h-screen bg-[#F4F7F8] flex items-center justify-center px-5 py-12">
       <section className="w-full max-w-2xl text-center">
         <img
-          src="/Majo%20Gadgets%20App%20Promotional%20Workspace.png"
+          src="/OG.png"
           alt="Majo Gadgets app shown on desktop and mobile"
           className="w-full rounded-lg border border-[#D8E1E5] shadow-sm"
         />
