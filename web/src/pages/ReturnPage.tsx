@@ -9,8 +9,11 @@ const money = (v: string | number) => Number(v).toLocaleString()
 
 const RETURN_STATUS_STYLES: Record<string, string> = {
   pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-  approved: 'bg-green-50 text-green-700 border-green-200',
+  processing: 'bg-blue-50 text-blue-700 border-blue-200',
+  approved: 'bg-blue-50 text-blue-700 border-blue-200',
+  refunded: 'bg-green-50 text-green-700 border-green-200',
   rejected: 'bg-red-50 text-red-600 border-red-200',
+  refund_failed: 'bg-red-50 text-red-700 border-red-200',
 }
 
 export default function ReturnPage() {
@@ -103,10 +106,11 @@ export default function ReturnPage() {
                       <RotateCcw size={13} className="text-[#64748B]" />
                       <span className="text-[12px] text-[#64748B]">Return request submitted</span>
                       <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${RETURN_STATUS_STYLES[ret.status]}`}>
-                        {ret.status.charAt(0).toUpperCase() + ret.status.slice(1)}
+                        {ret.status === 'approved' ? 'Refund processing' : ret.status.replace('_', ' ').replace(/^\w/, c => c.toUpperCase())}
                       </span>
                     </div>
                     <p className="text-[12px] text-[#64748B] pl-5">Reason: {ret.reason}</p>
+                    {ret.refund_amount && <p className="text-[12px] text-[#334155] pl-5 font-semibold">Refund amount: UGX {money(ret.refund_amount)}</p>}
                     {ret.admin_note && (
                       <p className="text-[12px] text-[#334155] pl-5 font-medium">Admin note: {ret.admin_note}</p>
                     )}

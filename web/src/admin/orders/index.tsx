@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ShoppingBag, Clock, CheckCircle, Truck, XCircle, Package, ChevronRight, Search } from 'lucide-react'
-import { adminOrdersApi, type ApiAdminOrder } from '../../lib/api'
+import { ShoppingBag, Clock, CheckCircle, Truck, XCircle, Package, ChevronRight, Search, RotateCcw } from 'lucide-react'
+import { adminOrdersApi, type ApiAdminOrder, type AdminReturnRequest } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -19,6 +19,7 @@ const TABS = [
   { key: 'shipped', label: 'Shipped', icon: Truck },
   { key: 'delivered', label: 'Delivered', icon: CheckCircle },
   { key: 'cancelled', label: 'Cancelled', icon: XCircle },
+  { key: 'returns', label: 'Returns', icon: RotateCcw },
 ]
 
 function formatDate(iso: string) {
@@ -29,15 +30,21 @@ export default function AdminOrders() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('')
   const [orders, setOrders] = useState<ApiAdminOrder[]>([])
+  const [returnRequests, setReturnRequests] = useState<AdminReturnRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [actingReturnId, setActingReturnId] = useState<number | null>(null)
 
   useEffect(() => {
     setLoading(true)
     setError('')
-    adminOrdersApi.list(tab || undefined)
-      .then(({ data }) => setOrders(Array.isArray(data) ? data : (data as any).results ?? []))
+    const load = tab === 'returns' ? adminOrdersApi.listReturns() : adminOrdersApi.list(tab || undefined)
+    load
+      .then(({ data }) => {
+        if (tab === 'returns') setReturnRequests(Array.isArray(data) ? data : (data as any).results ?? [])
+        else setOrders(Array.isArray(data) ? data : (data as any).results ?? [])
+      })
       .catch(err => setError(parseError(err, 'Failed to load orders.')))
       .finally(() => setLoading(false))
   }, [tab])
@@ -50,13 +57,44 @@ export default function AdminOrders() {
       )
     : orders
 
+  const filteredReturns = search.trim()
+    ? returnRequests.filter(item =>
+        item.order_code.toLowerCase().includes(search.toLowerCase()) ||
+        item.customer_name.toLowerCase().includes(search.toLowerCase()) ||
+        item.customer_email.toLowerCase().includes(search.toLowerCase())
+      )
+    : returnRequests
+
+  const actOnReturn = async (item: AdminReturnRequest, action: 'approve' | 'reject' | 'mark-refunded') => {
+    const confirmed = action === 'approve'
+      ? window.confirm(`Approve the return and request a UGX ${Number(item.refund_amount ?? item.order_total).toLocaleString()} refund to the original payment method?`)
+      : action === 'mark-refunded'
+        ? window.confirm(`Confirm that the refund for order ${item.order_code} has actually been processed to the customer?`)
+        : window.confirm(`Reject the return request for order ${item.order_code}?`)
+    if (!confirmed) return
+    setActingReturnId(item.id)
+    setError('')
+    try {
+      const { data } = action === 'approve'
+        ? await adminOrdersApi.approveReturn(item.id)
+        : action === 'mark-refunded'
+          ? await adminOrdersApi.markReturnRefunded(item.id)
+          : await adminOrdersApi.rejectReturn(item.id, '')
+      setReturnRequests(current => current.map(row => row.id === item.id ? data : row))
+    } catch (err) {
+      setError(parseError(err, action === 'approve' ? 'Refund request failed.' : action === 'mark-refunded' ? 'Could not confirm refund.' : 'Could not reject return.'))
+    } finally {
+      setActingReturnId(null)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] bg-white shrink-0">
         <div>
           <h1 className="text-[18px] font-extrabold text-[#071A2B]">Orders</h1>
-          <p className="text-[12px] text-[#64748B]">{filtered.length} of {orders.length} orders</p>
+          <p className="text-[12px] text-[#64748B]">{tab === 'returns' ? `${filteredReturns.length} return requests` : `${filtered.length} of ${orders.length} orders`}</p>
         </div>
         {/* Search */}
         <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3 h-9 w-64">
@@ -90,7 +128,42 @@ export default function AdminOrders() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {loading ? (
+        {tab === 'returns' ? loading ? (
+          <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" /></div>
+        ) : filteredReturns.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#94A3B8]"><RotateCcw size={40} /><p className="text-[14px] font-semibold">No return requests</p></div>
+        ) : (
+          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-3">
+            {filteredReturns.map(item => (
+              <article key={item.id} className="bg-white border border-[#E2E8F0] rounded-lg p-4 md:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <button onClick={() => navigate(`/admin/orders/${item.order_code}`)} className="text-[14px] font-extrabold text-[#071A2B] hover:underline">Order {item.order_code}</button>
+                    <p className="text-[12px] text-[#64748B] mt-1">{item.customer_name} · {item.customer_email}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[14px] font-extrabold text-[#071A2B]">UGX {Number(item.order_total).toLocaleString()}</p>
+                    <p className="text-[11px] text-[#64748B]">{item.payment_method || item.payment_status || 'Payment details unavailable'}</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-[13px] text-[#334155] whitespace-pre-wrap">{item.reason}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#E2E8F0] pt-3">
+                  <div>
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                      item.status === 'refunded' ? 'bg-green-50 text-green-700' : item.status === 'approved' ? 'bg-blue-50 text-blue-700' : item.status === 'rejected' || item.status === 'refund_failed' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'
+                    }`}>{item.status === 'approved' ? 'Refund requested' : item.status.replace('_', ' ')}</span>
+                    {item.admin_note && <p className="max-w-xl text-[11px] text-[#64748B] mt-2">{item.admin_note}</p>}
+                  </div>
+                  {item.status === 'pending' && <div className="flex gap-2">
+                    <button onClick={() => actOnReturn(item, 'reject')} disabled={actingReturnId === item.id} className="px-3 py-2 border border-[#E2E8F0] rounded-md text-[12px] font-bold text-[#64748B] hover:bg-[#F8FAFC] disabled:opacity-50">Reject</button>
+                    <button onClick={() => actOnReturn(item, 'approve')} disabled={actingReturnId === item.id} className="px-3 py-2 rounded-md bg-[#15803D] text-white text-[12px] font-bold hover:bg-[#166534] disabled:opacity-50">{actingReturnId === item.id ? 'Processing...' : 'Approve & Refund'}</button>
+                  </div>}
+                  {item.status === 'approved' && <button onClick={() => actOnReturn(item, 'mark-refunded')} disabled={actingReturnId === item.id} className="px-3 py-2 rounded-md bg-[#15803D] text-white text-[12px] font-bold hover:bg-[#166534] disabled:opacity-50">{actingReturnId === item.id ? 'Saving...' : 'Mark Refund Processed'}</button>}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : loading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" /></div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#94A3B8]">

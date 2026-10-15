@@ -384,10 +384,20 @@ export type ReturnRequest = {
   id: number
   order_code: string
   reason: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'processing' | 'approved' | 'refunded' | 'rejected' | 'refund_failed'
   admin_note: string
+  refund_amount: string | null
+  refund_reference: string
   created_at: string
   updated_at: string
+}
+
+export type AdminReturnRequest = ReturnRequest & {
+  customer_name: string
+  customer_email: string
+  order_total: string
+  payment_status: string | null
+  payment_method: string
 }
 
 export const ordersApi = {
@@ -496,6 +506,10 @@ export const adminOrdersApi = {
   readyForPickup: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/ready-for-pickup/`),
   deliver: (code: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/deliver/`),
   cancel: (code: string, reason: string) => api.post<ApiAdminOrder>(`/api/orders/admin/${code}/cancel/`, { reason }),
+  listReturns: () => api.get<AdminReturnRequest[]>('/api/orders/admin/returns/'),
+  approveReturn: (id: number) => api.post<AdminReturnRequest>(`/api/orders/admin/returns/${id}/approve/`),
+  rejectReturn: (id: number, admin_note: string) => api.post<AdminReturnRequest>(`/api/orders/admin/returns/${id}/reject/`, { admin_note }),
+  markReturnRefunded: (id: number) => api.post<AdminReturnRequest>(`/api/orders/admin/returns/${id}/refunded/`),
 }
 
 export const adminUsersApi = {

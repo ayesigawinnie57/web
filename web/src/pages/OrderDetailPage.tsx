@@ -319,10 +319,12 @@ export default function OrderDetailPage() {
                     <RotateCcw size={13} className="text-[#64748B]" />
                     <span className="text-[12px] font-bold text-[#64748B]">Return Request</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                      returnRequest.status === 'approved' ? 'bg-green-50 text-green-700 border-green-200'
-                      : returnRequest.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200'
+                      returnRequest.status === 'refunded' ? 'bg-green-50 text-green-700 border-green-200'
+                      : returnRequest.status === 'approved' ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : returnRequest.status === 'rejected' || returnRequest.status === 'refund_failed' ? 'bg-red-50 text-red-600 border-red-200'
+                      : returnRequest.status === 'processing' ? 'bg-blue-50 text-blue-700 border-blue-200'
                       : 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                    }`}>{returnRequest.status.charAt(0).toUpperCase() + returnRequest.status.slice(1)}</span>
+                    }`}>{returnRequest.status === 'approved' ? 'Refund processing' : returnRequest.status.replace('_', ' ').replace(/^\w/, c => c.toUpperCase())}</span>
                   </div>
                   {returnRequest.admin_note && (
                     <p className="text-[12px] text-[#334155] mt-1">Note: {returnRequest.admin_note}</p>
