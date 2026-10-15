@@ -441,6 +441,24 @@ function UsersTab({ showToast }: { showToast: (m: string, t?: Toast['type']) => 
 
 // ── Delivery ──────────────────────────────────────────────────────────────────
 type District = { id: number; name: string; price: string; region: string }
+type DistrictPage = { results: District[]; next: string | null }
+
+async function fetchAllDistricts(): Promise<District[]> {
+  const districts: District[] = []
+  let page = 1
+
+  while (true) {
+    const response = await fetch(`${BASE_URL}/api/settings/districts/?page=${page}`, { headers: authHeaders() })
+    if (!response.ok) throw new Error('Failed to load districts')
+
+    const data: DistrictPage | District[] = await response.json()
+    if (Array.isArray(data)) return [...districts, ...data]
+
+    districts.push(...data.results)
+    if (!data.next) return districts
+    page += 1
+  }
+}
 
 const UGANDA_REGIONS: Record<string, string[]> = {
   'Central Region': ['Buikwe','Bukomansimbi','Butambala','Buvuma','Gomba','Kalangala','Kalungu','Kampala','Kassanda','Kayunga','Kiboga','Kyankwanzi','Kyotera','Luweero','Lwengo','Lyantonde','Masaka','Mityana','Mpigi','Mubende','Mukono','Nakaseke','Nakasongola','Rakai','Sembabule','Wakiso'],
@@ -463,10 +481,10 @@ function DeliveryTab({ showToast }: { showToast: (m: string, t?: Toast['type']) 
     setLoading(true)
     Promise.all([
       fetch(`${BASE_URL}/api/settings/delivery/`, { headers: authHeaders() }).then(r => r.json()),
-      fetch(`${BASE_URL}/api/settings/districts/`, { headers: authHeaders() }).then(r => r.json()),
+      fetchAllDistricts(),
     ]).then(([d, dist]) => {
       setGlobalFee(d.global_fee ?? '')
-      setDistricts(Array.isArray(dist) ? dist : dist.results ?? [])
+      setDistricts(dist)
     }).catch(() => {}).finally(() => setLoading(false))
   }
   useEffect(load, [])
