@@ -49,7 +49,7 @@ export default function TraderFlashSales() {
   }, [traderUuid])
 
   // Only show flash sales that belong to this trader's products
-  const myProductIds = new Set(myProducts.map(p => p.id))
+  const myProductIds = new Set(myProducts.map(p => p.public_product_id).filter((id): id is number => id !== null))
   const mySales = sales.filter(s => myProductIds.has(s.product.id))
 
   const openAdd = () => {
@@ -83,10 +83,11 @@ export default function TraderFlashSales() {
       .map(s => String(s.product.id))
   )
   const availableProducts = myProducts.filter(p =>
-    !usedIds.has(String(p.id)) &&
+    p.public_product_id !== null &&
+    !usedIds.has(String(p.public_product_id)) &&
     (!productSearch.trim() || p.name.toLowerCase().includes(productSearch.toLowerCase()))
   )
-  const selectedProduct = myProducts.find(p => String(p.id) === form.product_id)
+  const selectedProduct = myProducts.find(p => String(p.public_product_id) === form.product_id)
 
   const handleSave = async () => {
     if (!form.product_id || !form.flash_price || !form.ends_at || !form.stock_limit) {
@@ -255,7 +256,7 @@ export default function TraderFlashSales() {
                             key={p.id}
                             onClick={() => {
                               setProductSearch(p.name)
-                              setForm(f => ({ ...f, product_id: String(p.id), flash_price: String(p.price), stock_limit: String(p.stock) }))
+                              setForm(f => ({ ...f, product_id: String(p.public_product_id), flash_price: String(p.price), stock_limit: String(p.stock) }))
                             }}
                             className="flex items-center gap-3 w-full px-3 py-2.5 border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC] text-left"
                           >

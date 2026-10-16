@@ -704,6 +704,7 @@ export type ApiTraderDashboard = {
 
 export type ApiTraderProduct = {
   id: number
+  public_product_id: number | null
   uuid: string
   name: string
   short_description: string
