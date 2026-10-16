@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, X } from 'lucide-react'
 import { adminFlashSalesApi, adminProductsApi, type ApiProduct } from '../../lib/api'
+import { parseError } from '../ErrorBanner'
+import FlashSaleErrorModal from './FlashSaleErrorModal'
 
 type FormState = { product_id: string; flash_price: string; ends_at: string; stock_limit: string; is_active: boolean }
 
@@ -24,9 +26,10 @@ export default function AddFlashSale() {
   useEffect(() => { adminProductsApi.listAll().then(setProducts).catch(() => {}) }, [])
 
   const selectedProduct = products.find(p => String(p.id) === form.product_id)
+  const eligibleProducts = products.filter(p => !p.seller_uuid)
   const filteredProducts = productSearch.trim()
-    ? products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
-    : products
+    ? eligibleProducts.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+    : eligibleProducts
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,8 +48,8 @@ export default function AddFlashSale() {
         is_active: form.is_active,
       })
       navigate('/admin/flashsales')
-    } catch (err: any) {
-      setError(JSON.stringify(err?.response?.data) ?? 'Failed to save.')
+    } catch (err) {
+      setError(parseError(err, 'Failed to create flash sale.'))
     } finally {
       setSaving(false)
     }
@@ -58,8 +61,6 @@ export default function AddFlashSale() {
         <button onClick={() => navigate('/admin/flashsales')} className="p-1 hover:opacity-70"><ArrowLeft size={20} color="#071A2B" /></button>
         <h1 className="text-xl font-extrabold text-[#071A2B]">New Flash Sale</h1>
       </div>
-
-      {error && <div className="mb-4 p-3 bg-red-50 border border-red-100 text-[13px] text-red-600 font-semibold rounded-lg">{error}</div>}
 
       <form onSubmit={handleSave} className="space-y-4">
         <div>
@@ -79,6 +80,7 @@ export default function AddFlashSale() {
                 className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px] text-[#071A2B] outline-none focus:border-[#22C55E] mb-2"
               />
               <div className="max-h-48 overflow-y-auto border border-[#E2E8F0] rounded-xl">
+                {filteredProducts.length === 0 && <p className="px-3 py-4 text-[13px] text-[#64748B]">No eligible products found.</p>}
                 {filteredProducts.map(p => (
                   <button
                     key={p.id}
@@ -146,6 +148,7 @@ export default function AddFlashSale() {
           {saving ? 'Creating...' : 'Create Flash Sale'}
         </button>
       </form>
+      <FlashSaleErrorModal message={error} onClose={() => setError('')} />
     </div>
   )
 }

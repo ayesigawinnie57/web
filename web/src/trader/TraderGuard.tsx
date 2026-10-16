@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useParams } from 'react-router-dom'
 import { tradersApi } from '../lib/api'
+import { requiresDesktopInstall } from '../lib/pwaInstall'
+import DesktopAdminInstallGate from '../components/DesktopAdminInstallGate'
 
 export default function TraderGuard() {
   const { traderUuid } = useParams<{ traderUuid: string }>()
@@ -15,5 +17,6 @@ export default function TraderGuard() {
 
   if (state === 'loading') return null
   if (state === 'denied') return <Navigate to="/login" replace />
+  if (requiresDesktopInstall()) return <DesktopAdminInstallGate />
   return <Outlet />
 }

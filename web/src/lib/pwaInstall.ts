@@ -23,6 +23,7 @@ function markInstalled() {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault()
     localStorage.removeItem(INSTALLED_KEY)
     publishInstalled(false)
     deferredPrompt = event as InstallPromptEvent

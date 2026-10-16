@@ -36,7 +36,7 @@ export default function DesktopAdminInstallGate() {
         />
         <h1 className="mt-6 text-2xl font-extrabold text-[#071A2B]">Install Majo Gadgets to continue</h1>
         <p className="mt-3 text-sm leading-6 text-[#536471]">
-          To strengthen account security and prevent unauthorized access, all staff members (administrators) must install the official Windows application to access the portal securely.
+          Install the Majo Gadgets web app on this desktop, then open it from your desktop or apps menu to access the portal.
         </p>
         {appInstalled ? (
           <p role="status" className="mt-6 rounded-lg border border-[#B7E4C7] bg-white px-4 py-3 text-sm font-semibold text-[#12824C]">

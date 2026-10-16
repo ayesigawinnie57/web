@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Zap, Clock, Ban, Flame, X } from 'lucide-react'
 import { adminFlashSalesApi, adminProductsApi, type ApiFlashSaleItem, type ApiProduct } from '../../lib/api'
-import ErrorBanner, { parseError } from '../ErrorBanner'
+import { parseError } from '../ErrorBanner'
+import FlashSaleErrorModal from './FlashSaleErrorModal'
 
 type FormState = { product_id: string; flash_price: string; ends_at: string; stock_limit: string; is_active: boolean }
 
@@ -23,7 +24,6 @@ export default function AdminFlashSales() {
   const [productSearch, setProductSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [loadError, setLoadError] = useState('')
 
   const set = (k: keyof FormState) => (v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
 
@@ -32,7 +32,7 @@ export default function AdminFlashSales() {
       adminFlashSalesApi.list().then(({ data }) => setSales(Array.isArray(data) ? data : (data as any).results ?? [])),
       adminProductsApi.listAll().then(setProducts),
     ])
-      .catch(err => setLoadError(parseError(err, 'Failed to load flash sales.')))
+      .catch(err => setError(parseError(err, 'Failed to load flash sales.')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -80,7 +80,7 @@ export default function AdminFlashSales() {
       await adminFlashSalesApi.delete(s.id)
       setSales(prev => prev.filter(x => x.id !== s.id))
     } catch (err) {
-      setLoadError(parseError(err, 'Failed to delete flash sale.'))
+      setError(parseError(err, 'Failed to delete flash sale.'))
     }
   }
 
@@ -88,10 +88,11 @@ export default function AdminFlashSales() {
     sales.filter(s => !s.is_expired && s.is_active && (!editing || s.id !== editing.id)).map(s => String(s.product.id))
   )
 
-  const selectedProduct = products.find(p => String(p.id) === form.product_id)
+  const eligibleProducts = products.filter(p => !p.seller_uuid)
+  const selectedProduct = eligibleProducts.find(p => String(p.id) === form.product_id)
   const filteredProducts = productSearch.trim()
-    ? products.filter(p => !usedProductIds.has(String(p.id)) && p.name.toLowerCase().includes(productSearch.toLowerCase()))
-    : products.filter(p => !usedProductIds.has(String(p.id)))
+    ? eligibleProducts.filter(p => !usedProductIds.has(String(p.id)) && p.name.toLowerCase().includes(productSearch.toLowerCase()))
+    : eligibleProducts.filter(p => !usedProductIds.has(String(p.id)))
 
   return (
     <div className="p-8">
@@ -108,8 +109,6 @@ export default function AdminFlashSales() {
         </button>
       </div>
 
-      {loadError && <ErrorBanner message={loadError} onDismiss={() => setLoadError('')} />}
-
       {loading ? (
         <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" /></div>
       ) : sales.length === 0 ? (
@@ -120,6 +119,7 @@ export default function AdminFlashSales() {
             const stockPct = s.stock_limit > 0 ? s.stock_left / s.stock_limit : 1
             const critical = stockPct <= 0.2
             const expired = s.is_expired || !s.is_active
+            const traderOwned = Boolean(s.product.seller_uuid)
             return (
               <div key={s.id} className={`bg-white border border-[#E2E8F0] rounded-xl p-4 ${expired ? 'opacity-55' : ''}`}>
                 <div className="flex items-center gap-3 mb-3">
@@ -129,6 +129,7 @@ export default function AdminFlashSales() {
                   }
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-bold text-[#071A2B] truncate">{s.product.name}</p>
+                    {traderOwned && <span className="mt-1 inline-block rounded bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold text-[#64748B]">Trader-managed</span>}
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[14px] font-extrabold text-[#F97316]">UGX {Number(s.flash_price).toLocaleString()}</span>
                       <span className="text-[12px] text-[#94A3B8] line-through">UGX {Number(s.product.price).toLocaleString()}</span>
@@ -142,10 +143,10 @@ export default function AdminFlashSales() {
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <button onClick={() => openEdit(s)} className="w-8 h-8 rounded-lg bg-[#6366f118] flex items-center justify-center hover:opacity-80">
+                    <button onClick={() => openEdit(s)} disabled={traderOwned} title={traderOwned ? 'Trader-owned flash sales are managed by the trader' : 'Edit flash sale'} className="w-8 h-8 rounded-lg bg-[#6366f118] flex items-center justify-center hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40">
                       <Pencil size={13} color="#6366f1" />
                     </button>
-                    <button onClick={() => handleDelete(s)} className="w-8 h-8 rounded-lg bg-[#ef444418] flex items-center justify-center hover:opacity-80">
+                    <button onClick={() => handleDelete(s)} disabled={traderOwned} title={traderOwned ? 'Trader-owned flash sales are managed by the trader' : 'Delete flash sale'} className="w-8 h-8 rounded-lg bg-[#ef444418] flex items-center justify-center hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40">
                       <Trash2 size={13} color="#ef4444" />
                     </button>
                   </div>
@@ -273,6 +274,7 @@ export default function AdminFlashSales() {
           </div>
         </div>
       )}
+      <FlashSaleErrorModal message={error} onClose={() => setError('')} />
     </div>
   )
 }
