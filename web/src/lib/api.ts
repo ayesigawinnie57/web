@@ -122,6 +122,7 @@ export type ApiProduct = {
   image: string | null
   rating: string
   reviews_count: number
+  seller_uuid?: string | null
   stock: number
   delivery_fee: string
   short_description: string
@@ -143,6 +144,7 @@ export type Product = {
   images: { id: number; url: string; order: number }[]
   rating: number
   reviewsCount: number
+  sellerUuid?: string | null
   stock: number
   deliveryFee: number
   shortDescription: string
@@ -170,6 +172,7 @@ export const toProduct = (p: ApiProduct): Product => ({
   images: p.images ?? [],
   rating: Number(p.rating),
   reviewsCount: p.reviews_count ?? 0,
+  sellerUuid: p.seller_uuid ?? null,
   stock: p.stock ?? 0,
   deliveryFee: Number(p.delivery_fee ?? 0),
   shortDescription: p.short_description?.trim() || DEFAULT_PRODUCT_DESCRIPTION,
@@ -274,6 +277,33 @@ export const productsApi = {
   checkEligibility: (slug: string, orderCode?: string) => api.get<{ eligible: boolean; reason?: string; order_id?: number; order_item_id?: number; order_code?: string; existing_review_id?: number | null }>(`/api/products/${slug}/reviews/eligibility/`, { params: orderCode ? { order_code: orderCode } : undefined }),
   submitReview: (slug: string, data: FormData) => api.post(`/api/products/${slug}/reviews/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   shareUrl: (slug: string) => `https://www.majogadgets.com/shop/${slug}`,
+}
+
+export type ApiPublicSeller = {
+  uuid: string
+  business_name: string
+  location: string
+  district: string
+  bio: string
+  is_verified: boolean
+  is_official?: boolean
+  follower_count: number | null
+  is_following: boolean
+  customer_rating: number | null
+  review_count: number
+  quality_rating: number | null
+  quality_review_count: number
+  shipping_speed_score: number | null
+  shipping_sample_count: number
+  cancellation_rate: number | null
+  order_item_count: number
+  seller_score: number | null
+}
+
+export const publicSellerApi = {
+  profile: (uuid: string) => api.get<ApiPublicSeller>(`/api/traders/public/${uuid}/`),
+  follow: (uuid: string) => api.post<{ following: boolean; follower_count: number }>(`/api/traders/public/${uuid}/`),
+  unfollow: (uuid: string) => api.delete<{ following: boolean; follower_count: number }>(`/api/traders/public/${uuid}/`),
 }
 
 export const authApi = {

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { ChevronDown, ChevronRight, Star } from 'lucide-react'
-import { cartApi, hasAccessToken, productsApi, wishlistApi, notifyWishlistUpdated, toProduct, type Product, type ApiReview } from '../lib/api'
+import { BadgeCheck, ChevronDown, ChevronRight, MapPin, Star, Users } from 'lucide-react'
+import { cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiPublicSeller, type Product, type ApiReview } from '../lib/api'
 import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../landing/Navbar'
@@ -20,6 +20,116 @@ function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
   )
 }
 
+function ratingLabel(rating: number | null) {
+  if (rating === null) return 'No data yet'
+  if (rating >= 4.5) return 'Excellent'
+  if (rating >= 3.5) return 'Good'
+  if (rating >= 2.5) return 'Average'
+  if (rating >= 1.5) return 'Poor'
+  return 'Very poor'
+}
+
+function percentLabel(value: number | null, lowerIsBetter = false) {
+  if (value === null) return 'Not enough data'
+  const normalized = lowerIsBetter ? 100 - value : value
+  if (normalized >= 90) return 'Excellent'
+  if (normalized >= 75) return 'Good'
+  if (normalized >= 60) return 'Average'
+  if (normalized >= 40) return 'Poor'
+  return 'Very poor'
+}
+
+function SellerInformationPanel({
+  seller,
+  followBusy,
+  followError,
+  onFollow,
+}: {
+  seller: ApiPublicSeller
+  followBusy: boolean
+  followError: string
+  onFollow: () => void
+}) {
+  const performanceRows = [
+    {
+      label: 'Shipping speed',
+      value: seller.shipping_speed_score === null ? 'Not enough data' : `${seller.shipping_speed_score}% ready within 48h`,
+      detail: `${seller.shipping_sample_count} tracked order${seller.shipping_sample_count === 1 ? '' : 's'}`,
+      rating: percentLabel(seller.shipping_speed_score),
+    },
+    {
+      label: 'Quality score',
+      value: seller.quality_rating === null ? 'Not enough data' : `${seller.quality_rating.toFixed(1)} / 5`,
+      detail: `${seller.quality_review_count} product review${seller.quality_review_count === 1 ? '' : 's'}`,
+      rating: ratingLabel(seller.quality_rating),
+    },
+    {
+      label: 'Customer rating',
+      value: seller.customer_rating === null ? 'Not enough data' : `${seller.customer_rating.toFixed(1)} / 5`,
+      detail: `${seller.review_count} product review${seller.review_count === 1 ? '' : 's'}`,
+      rating: ratingLabel(seller.customer_rating),
+    },
+    {
+      label: 'Cancellation rate',
+      value: seller.cancellation_rate === null ? 'Not enough data' : `${seller.cancellation_rate}%`,
+      detail: `${seller.order_item_count} finalized order item${seller.order_item_count === 1 ? '' : 's'}`,
+      rating: percentLabel(seller.cancellation_rate, true),
+    },
+  ]
+
+  return (
+    <aside className="self-start border border-[#E2E8F0] bg-white p-5 lg:sticky lg:top-20">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase text-[#94A3B8]">Seller Information</p>
+          <h3 className="mt-1 break-words text-[16px] font-extrabold text-[#071A2B]">{seller.business_name}</h3>
+          {(seller.district || seller.location) && <p className="mt-1 flex items-start gap-1.5 text-[12px] text-[#64748B]"><MapPin size={13} className="mt-0.5 shrink-0" />{[seller.district, seller.location].filter(Boolean).join(' · ')}</p>}
+        </div>
+        {seller.is_official
+          ? <span className="shrink-0 bg-[#071A2B] px-2 py-1 text-[10px] font-bold text-white">Official store</span>
+          : seller.is_verified && <span className="inline-flex shrink-0 items-center gap-1 bg-green-50 px-2 py-1 text-[10px] font-bold text-green-700"><BadgeCheck size={13} /> Verified</span>}
+      </div>
+
+      {seller.bio && <p className="mt-3 line-clamp-3 text-[12px] leading-5 text-[#64748B]">{seller.bio}</p>}
+
+      <div className="mt-4 border-y border-[#E2E8F0] py-3">
+        <p className="text-[10px] font-bold uppercase text-[#94A3B8]">Seller score</p>
+        {seller.seller_score === null ? (
+          <p className="mt-1 text-[13px] font-semibold text-[#64748B]">Collecting performance data</p>
+        ) : (
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-[28px] font-extrabold leading-none text-[#071A2B]">{Math.round(seller.seller_score)}%</span>
+            <span className="text-[11px] text-[#64748B]">average of available metrics</span>
+          </div>
+        )}
+      </div>
+
+      <div className="divide-y divide-[#F1F5F9]">
+        {performanceRows.map(row => (
+          <div key={row.label} className="py-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12px] font-semibold text-[#334155]">{row.label}</p>
+              <span className="text-right text-[11px] font-bold text-[#071A2B]">{row.rating}</span>
+            </div>
+            <div className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-[#64748B]">
+              <span>{row.value}</span>
+              <span className="text-right">{row.detail}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {seller.uuid && <div className="mt-2 flex items-center justify-between gap-3 border-t border-[#E2E8F0] pt-4">
+        {seller.follower_count !== null && <span className="flex items-center gap-1.5 text-[12px] font-semibold text-[#475569]"><Users size={14} />{seller.follower_count.toLocaleString()} followers</span>}
+        <button onClick={onFollow} disabled={followBusy} className={`min-w-24 border px-3 py-2 text-[12px] font-bold disabled:opacity-50 ${seller.is_following ? 'border-[#CBD5E1] bg-[#F8FAFC] text-[#475569]' : 'border-[#071A2B] bg-[#071A2B] text-white'}`}>
+          {followBusy ? 'Saving...' : seller.is_following ? 'Following' : 'Follow'}
+        </button>
+      </div>}
+      {followError && <p role="alert" className="mt-2 text-[11px] text-red-600">{followError}</p>}
+    </aside>
+  )
+}
+
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
@@ -28,7 +138,9 @@ export default function ProductPage() {
   const [related, setRelated] = useState<Product[]>([])
   const [alsoBy, setAlsoBy] = useState<Product[]>([])
   const [reviews, setReviews] = useState<ApiReview[]>([])
+  const [seller, setSeller] = useState<ApiPublicSeller | null>(null)
   const [summary, setSummary] = useState<{ average: number; total: number; breakdown: Record<string, number> } | null>(null)
+  const [hasReviewedProduct, setHasReviewedProduct] = useState(false)
   const [loading, setLoading] = useState(true)
   const [activeImg, setActiveImg] = useState(0)
   const [qty, setQty] = useState(1)
@@ -38,6 +150,8 @@ export default function ProductPage() {
   const [cartBusy, setCartBusy] = useState(false)
   const [cartToast, setCartToast] = useState<string | null>(null)
   const [inCart, setInCart] = useState(false)
+  const [followBusy, setFollowBusy] = useState(false)
+  const [followError, setFollowError] = useState('')
 
   useEffect(() => {
     if (!slug) return
@@ -47,11 +161,43 @@ export default function ProductPage() {
     setWishlisted(false)
     setProductDetailsExpanded(false)
     setReviews([])
+    setSeller(null)
     setSummary(null)
+    setHasReviewedProduct(false)
+
+    if (hasAccessToken()) {
+      productsApi.checkEligibility(slug)
+        .then(({ data }) => setHasReviewedProduct(data.reason === 'already_reviewed'))
+        .catch(() => undefined)
+    }
 
     productsApi.bySlug(slug).then(({ data }) => {
       const p = toProduct(data)
       setProduct(p)
+      if (p.sellerUuid) {
+        publicSellerApi.profile(p.sellerUuid).then(({ data: sellerData }) => setSeller(sellerData)).catch(() => setSeller(null))
+      } else {
+        setSeller({
+          uuid: '',
+          business_name: 'Majo Gadgets',
+          location: 'Uganda',
+          district: '',
+          bio: 'Official Majo Gadgets store.',
+          is_verified: false,
+          is_official: true,
+          follower_count: null,
+          is_following: false,
+          customer_rating: null,
+          review_count: 0,
+          quality_rating: null,
+          quality_review_count: 0,
+          shipping_speed_score: null,
+          shipping_sample_count: 0,
+          cancellation_rate: null,
+          order_item_count: 0,
+          seller_score: null,
+        })
+      }
 
       // Track behaviour
       if (p.category) {
@@ -86,6 +232,26 @@ export default function ProductPage() {
 
     }).catch(() => navigate('/')).finally(() => setLoading(false))
   }, [slug])
+
+  const toggleSellerFollow = async () => {
+    if (!seller || !product) return
+    if (!hasAccessToken()) {
+      navigate(`/login?next=${encodeURIComponent(`/shop/${product.slug}`)}`)
+      return
+    }
+    setFollowBusy(true)
+    setFollowError('')
+    try {
+      const { data } = seller.is_following
+        ? await publicSellerApi.unfollow(seller.uuid)
+        : await publicSellerApi.follow(seller.uuid)
+      setSeller(current => current ? { ...current, is_following: data.following, follower_count: data.follower_count } : current)
+    } catch {
+      setFollowError('Could not update your follow. Please try again.')
+    } finally {
+      setFollowBusy(false)
+    }
+  }
 
   if (loading) return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -417,8 +583,8 @@ export default function ProductPage() {
           </div>
 
           {/* Customer reviews */}
-          <div className="mb-10">
-            <div>
+          <div className="mb-10 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="min-w-0">
               <button
                 onClick={() => setProductDetailsExpanded(value => !value)}
                 className="w-full flex items-center justify-between py-4 border-b border-[#E2E8F0] text-left"
@@ -448,9 +614,11 @@ export default function ProductPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] font-bold text-[#1E3A8A]">{product.reviewsCount} {product.reviewsCount === 1 ? 'review' : 'reviews'}</span>
-                  <Link to={`/rate-product/${product.slug}`} className="inline-flex items-center gap-1.5 border border-[#E2E8F0] px-3 py-2 text-[12px] font-bold text-[#071A2B] hover:border-[#F59E0B] hover:text-[#B45309]">
-                    <Star size={14} /> Write a review
-                  </Link>
+                  {!hasReviewedProduct && (
+                    <Link to={`/rate-product/${product.slug}`} className="inline-flex items-center gap-1.5 border border-[#E2E8F0] px-3 py-2 text-[12px] font-bold text-[#071A2B] hover:border-[#F59E0B] hover:text-[#B45309]">
+                      <Star size={14} /> Write a review
+                    </Link>
+                  )}
                 </div>
               </div>
               <div>
@@ -533,6 +701,7 @@ export default function ProductPage() {
                   )}
                 </div>
             </div>
+            {seller && <SellerInformationPanel seller={seller} followBusy={followBusy} followError={followError} onFollow={toggleSellerFollow} />}
           </div>
 
           {/* Related Products */}
