@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Package, Truck, MapPin, XCircle, Clock, Loader2, RotateCcw, CreditCard } from 'lucide-react'
+import { Package, Truck, MapPin, XCircle, Clock, Loader2, RotateCcw, CreditCard, Star } from 'lucide-react'
 import { ordersApi, hasAccessToken, type ApiOrderDetail, type ReturnRequest } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
@@ -240,6 +240,11 @@ export default function OrderDetailPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-bold text-[#071A2B] truncate">{item.product?.name}</p>
                       <p className="text-[12px] text-[#64748B] mt-0.5">Qty: {item.quantity}</p>
+                      {order.status === 'delivered' && item.product?.slug && (
+                        <Link to={`/rate-product/${item.product.slug}?order_code=${encodeURIComponent(order.code)}`} className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-[#B45309] hover:underline">
+                          <Star size={13} /> Review product
+                        </Link>
+                      )}
                     </div>
                     <span className="text-[13px] font-bold text-[#1E3A8A] shrink-0">
                       UGX {money(Number(item.price) * item.quantity)}
@@ -304,13 +309,6 @@ export default function OrderDetailPage() {
                 </div>
               )}
             </div>
-
-            {order.status === 'delivered' && !order.has_service_rating && (
-              <Link to={`/rate/${order.code}`}
-                className="block text-center bg-[#1E3A8A] text-white py-3 rounded-xl text-[13px] font-bold hover:opacity-90 transition-opacity">
-                Rate This Order ⭐
-              </Link>
-            )}
 
             {order.status === 'delivered' && (
               returnRequest ? (

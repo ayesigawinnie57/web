@@ -83,6 +83,7 @@ export default function RateProductPage() {
   const { slug } = useParams<{ slug: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const orderCode = searchParams.get('order_code')
 
   const [loading, setLoading] = useState(true)
   const [product, setProduct] = useState<ApiProduct | null>(null)
@@ -102,18 +103,19 @@ export default function RateProductPage() {
   const attrs = getAttrs(product?.category?.slug)
 
   useEffect(() => {
-    if (!hasAccessToken()) { navigate(`/login?next=/rate-product/${slug}`); return }
+    const returnPath = `/rate-product/${slug}${orderCode ? `?order_code=${encodeURIComponent(orderCode)}` : ''}`
+    if (!hasAccessToken()) { navigate(`/login?next=${encodeURIComponent(returnPath)}`); return }
     if (!slug) return
     Promise.all([
       productsApi.bySlug(slug),
-      productsApi.checkEligibility(slug),
+      productsApi.checkEligibility(slug, orderCode ?? undefined),
     ]).then(([pRes, eRes]) => {
       setProduct(pRes.data)
       setEligibility(eRes.data)
     }).catch(() => {
       setEligibility({ eligible: false, reason: 'error' })
     }).finally(() => setLoading(false))
-  }, [slug])
+  }, [slug, orderCode, navigate])
 
   const pickOverall = (val: number) => {
     setOverall(val)
@@ -194,7 +196,6 @@ export default function RateProductPage() {
   }
 
   if (done) {
-    const orderCode = searchParams.get('order_code')
     return (
       <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
         <Navbar />

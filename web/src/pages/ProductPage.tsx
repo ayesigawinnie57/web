@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Star } from 'lucide-react'
 import { cartApi, hasAccessToken, productsApi, wishlistApi, notifyWishlistUpdated, toProduct, type Product, type ApiReview } from '../lib/api'
 import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
 import ProductCard from '../components/ProductCard'
@@ -446,7 +446,12 @@ export default function ProductPage() {
                   <h2 className="text-[18px] font-extrabold text-[#071A2B]">Customer reviews</h2>
                   <p className="text-[12px] text-[#64748B] mt-1">What customers say about this product</p>
                 </div>
-                <span className="text-[12px] font-bold text-[#1E3A8A]">{product.reviewsCount} {product.reviewsCount === 1 ? 'review' : 'reviews'}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px] font-bold text-[#1E3A8A]">{product.reviewsCount} {product.reviewsCount === 1 ? 'review' : 'reviews'}</span>
+                  <Link to={`/rate-product/${product.slug}`} className="inline-flex items-center gap-1.5 border border-[#E2E8F0] px-3 py-2 text-[12px] font-bold text-[#071A2B] hover:border-[#F59E0B] hover:text-[#B45309]">
+                    <Star size={14} /> Write a review
+                  </Link>
+                </div>
               </div>
               <div>
                   {/* Summary */}
