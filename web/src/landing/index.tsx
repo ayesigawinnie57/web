@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Navbar from './Navbar'
 import Hero from './Hero'
 import Products from './Products'
+import PromoBanners from './PromoBanners'
 import FlashDeals from './FlashDeals'
 import ShopByCategory from './ShopByCategory'
 import Recommended from './Recommended'
@@ -33,6 +34,7 @@ export default function LandingPage() {
       <div className="pt-[150px] lg:pt-[156px] pb-16 lg:pb-0">
         <Hero />
         {loading ? <ProductsSkeleton /> : <Products products={products} />}
+        <PromoBanners />
         <FlashDeals products={[]} />
         <ShopByCategory />
         {!loading && <Recommended products={products} featuredIds={new Set(products.slice(0, 12).map(p => p.id))} />}

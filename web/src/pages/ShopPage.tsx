@@ -17,6 +17,7 @@ export default function ShopPage() {
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? ''
   const saleOnly = searchParams.get('sale') === 'true'
+  const topBought = searchParams.get('top_bought') === 'true'
 
   useEffect(() => {
     setLoading(true)
@@ -24,6 +25,7 @@ export default function ShopPage() {
     const params = new URLSearchParams()
     if (query) params.set('search', query)
     if (category) params.set('category', category)
+    if (topBought) params.set('top_bought', 'true')
 
     Promise.all([
       productsApi.list(params.toString()),
@@ -47,7 +49,7 @@ export default function ShopPage() {
 
       setError(false)
     }).catch(() => setError(true)).finally(() => setLoading(false))
-  }, [query, category, saleOnly])
+  }, [query, category, saleOnly, topBought])
 
   const updateFilter = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams)
@@ -57,7 +59,7 @@ export default function ShopPage() {
   }
 
   const categoryName = categories.find(c => c.slug === category)?.name
-  const heading = saleOnly ? 'Deals' : categoryName ?? (query ? `Results for "${query}"` : 'Shop all products')
+  const heading = topBought ? 'Top Bought Products' : saleOnly ? 'Deals' : categoryName ?? (query ? `Results for "${query}"` : 'Shop all products')
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>

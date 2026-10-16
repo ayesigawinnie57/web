@@ -36,3 +36,39 @@ input[type='reset'] {
 * {
   -webkit-font-smoothing: antialiased;
 }
+
+.promo-carousel__viewport {
+  overflow: hidden;
+  aspect-ratio: 3 / 1;
+  background: #071A2B;
+  border-radius: 10px;
+}
+
+.promo-carousel__track {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  will-change: transform;
+}
+
+.promo-carousel__slide {
+  display: block;
+  flex: 0 0 50%;
+  height: 100%;
+  overflow: hidden;
+  background: #071A2B;
+}
+
+.promo-carousel__slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-carousel__track {
+    transition: none !important;
+    will-change: auto;
+  }
+}
