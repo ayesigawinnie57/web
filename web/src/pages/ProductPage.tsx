@@ -137,6 +137,7 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [related, setRelated] = useState<Product[]>([])
   const [alsoBy, setAlsoBy] = useState<Product[]>([])
+  const [sellerProducts, setSellerProducts] = useState<Product[]>([])
   const [reviews, setReviews] = useState<ApiReview[]>([])
   const [seller, setSeller] = useState<ApiPublicSeller | null>(null)
   const [summary, setSummary] = useState<{ average: number; total: number; breakdown: Record<string, number> } | null>(null)
@@ -161,6 +162,7 @@ export default function ProductPage() {
     setWishlisted(false)
     setProductDetailsExpanded(false)
     setReviews([])
+    setSellerProducts([])
     setSeller(null)
     setSummary(null)
     setHasReviewedProduct(false)
@@ -176,6 +178,10 @@ export default function ProductPage() {
       setProduct(p)
       if (p.sellerUuid) {
         publicSellerApi.profile(p.sellerUuid).then(({ data: sellerData }) => setSeller(sellerData)).catch(() => setSeller(null))
+        productsApi.list(`seller=${encodeURIComponent(p.sellerUuid)}`).then(({ data: sellerData }) => {
+          const raw = Array.isArray(sellerData) ? sellerData : sellerData.results ?? []
+          setSellerProducts(raw.map(toProduct).filter((sellerProduct: Product) => sellerProduct.slug !== slug).slice(0, 6))
+        }).catch(() => setSellerProducts([]))
       } else {
         setSeller({
           uuid: '',
@@ -734,6 +740,18 @@ export default function ProductPage() {
                 {alsoBy.map(p => <ProductCard key={p.id} product={p} />)}
               </div>
             </div>
+          )}
+
+          {sellerProducts.length > 0 && (
+            <section className="mb-10" aria-labelledby="same-seller-products-title">
+              <div className="mb-4">
+                <h2 id="same-seller-products-title" className="text-[18px] font-extrabold text-[#071A2B]">Products from the same seller</h2>
+                <p className="mt-0.5 text-[12px] text-[#64748B]">More from {seller?.business_name ?? 'this seller'}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                {sellerProducts.map(sellerProduct => <ProductCard key={sellerProduct.id} product={sellerProduct} />)}
+              </div>
+            </section>
           )}
 
         </div>
