@@ -60,11 +60,11 @@ export default function PaymentPage() {
             <div className="mt-5 rounded-2xl border border-[#BAE6FD] bg-[#E0F2FE] p-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#1E3A8A]">WhatsApp</p>
               <p className="mt-2 text-[18px] font-black text-[#071A2B]">Majo Gadgets Support</p>
-              <p className="mt-1 text-[15px] text-[#334155]">0794448439</p>
+              <p className="mt-1 text-[15px] text-[#334155]">+256 779 122 222</p>
             </div>
 
             <a
-              href="https://wa.me/256794448439?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20want%20to%20confirm%20payment%20for%20my%20order."
+              href="https://wa.me/256779122222?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20want%20to%20confirm%20payment%20for%20my%20order."
               target="_blank"
               rel="noreferrer"
               className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#1ebc5f]"

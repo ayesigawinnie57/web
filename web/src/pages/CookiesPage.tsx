@@ -36,7 +36,7 @@ const DEFAULT_SECTIONS = [
   },
   {
     title: '8. Contact us',
-    text: 'If you have questions about our use of cookies, please contact us via WhatsApp at 0794448439 or through the support channels available on the website.',
+    text: 'If you have questions about our use of cookies, please contact us via WhatsApp at +256 779 122 222 or through the support channels available on the website.',
   },
 ]
 

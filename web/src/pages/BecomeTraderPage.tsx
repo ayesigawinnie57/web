@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Store, CheckCircle, ArrowLeft, Clock, XCircle } from 'lucide-react'
 import { tradersApi, authApi, hasAccessToken } from '../lib/api'
@@ -12,6 +12,41 @@ const BUSINESS_TYPES = [
 
 const STEPS = ['Personal Info', 'Business Info', 'What You Sell', 'Review & Submit']
 
+const TRADER_TERMS = [
+  {
+    title: '1. Accurate application and account details',
+    body: 'You must provide truthful, current personal and business information, including contact details and any registration or tax details requested. Keep your account credentials private and notify Majo Gadgets if your business or contact information changes.',
+  },
+  {
+    title: '2. Products and listings',
+    body: 'You are responsible for ensuring that products are genuine, lawful to sell, safe, and accurately described. Product titles, specifications, condition, images, prices, and availability must not mislead customers or infringe another person’s rights. Counterfeit, prohibited, or unsafe goods must not be listed.',
+  },
+  {
+    title: '3. Stock, orders, and delivery',
+    body: 'Keep stock quantities and prices current. Once an order is accepted, prepare the correct item and quantity, package it appropriately, and cooperate with the agreed delivery or pickup process. Notify Majo Gadgets promptly if an order cannot be fulfilled or is delayed.',
+  },
+  {
+    title: '4. Customer care, returns, and complaints',
+    body: 'Respond professionally to customer and platform enquiries. Cooperate with order investigations, returns, replacements, and refunds under the applicable Majo Gadgets policies and local law. Do not ask customers to bypass the platform’s order or payment process.',
+  },
+  {
+    title: '5. Fees, payments, and taxes',
+    body: 'Applicable activation charges, commissions, withdrawal requirements, delivery charges, and taxes are those shown in the platform or communicated by Majo Gadgets before they apply. Review those amounts before accepting sales or requesting withdrawals. You remain responsible for your own business taxes and legal obligations.',
+  },
+  {
+    title: '6. Prohibited conduct',
+    body: 'Do not manipulate reviews, orders, prices, or platform activity; misuse customer information; impersonate another business; or use the service for unlawful, fraudulent, or abusive activity. Majo Gadgets may investigate reports and restrict listings or accounts where needed to protect customers and the platform.',
+  },
+  {
+    title: '7. Review and account status',
+    body: 'Submitting an application does not guarantee approval. Majo Gadgets may request supporting information and will review the application before granting trader access. Approval may be suspended or withdrawn for material breaches of these rules, platform policies, or applicable law.',
+  },
+  {
+    title: '8. Acceptance',
+    body: 'By continuing, you confirm that you have read these trader rules and agree to follow them, together with applicable Majo Gadgets policies and laws. Keep a copy for your records and contact support if any requirement is unclear before applying.',
+  },
+]
+
 export default function BecomeTraderPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -20,6 +55,9 @@ export default function BecomeTraderPage() {
   const [error, setError] = useState('')
   const [checking, setChecking] = useState(true)
   const [traderStatus, setTraderStatus] = useState<'pending' | 'rejected' | null>(null)
+  const [termsReadToEnd, setTermsReadToEnd] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const termsScrollRef = useRef<HTMLDivElement>(null)
 
   const [form, setForm] = useState({
     full_name: '', email: '', phone: '', national_id: '',
@@ -104,6 +142,19 @@ export default function BecomeTraderPage() {
     setStep(s => s + 1)
   }
 
+  const handleTermsScroll = () => {
+    const element = termsScrollRef.current
+    if (element && element.scrollTop + element.clientHeight >= element.scrollHeight - 8) {
+      setTermsReadToEnd(true)
+    }
+  }
+
+  const continueToApplication = () => {
+    if (!termsReadToEnd || !termsAccepted) return
+    setForm(current => ({ ...current, agreed_to_terms: true }))
+    setError('')
+  }
+
   if (checking) return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
       <div className="flex flex-col items-center gap-3">
@@ -144,6 +195,47 @@ export default function BecomeTraderPage() {
           Back to Store
         </button>
       </div>
+    </div>
+  )
+
+  if (!form.agreed_to_terms) return (
+    <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-3xl">
+        <button onClick={() => navigate('/')} className="mb-5 inline-flex items-center gap-2 text-[13px] font-bold text-[#475569] hover:text-[#071A2B]">
+          <ArrowLeft size={16} /> Back to store
+        </button>
+        <section className="overflow-hidden rounded-2xl border border-[#DCE5EB] bg-white shadow-sm">
+          <header className="bg-[#071A2B] px-5 py-6 text-white sm:px-8">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#FDBA74]">
+              <Store size={15} /> Trader application
+            </div>
+            <h1 className="mt-3 text-2xl font-extrabold sm:text-3xl">Trader rules and terms</h1>
+            <p className="mt-2 max-w-2xl text-[13px] leading-6 text-white/75">
+              Review the requirements below before opening the application form.
+            </p>
+          </header>
+
+          <div ref={termsScrollRef} onScroll={handleTermsScroll} tabIndex={0} aria-label="Trader rules and terms, scroll to read all sections" className="max-h-[min(55vh,460px)] space-y-5 overflow-y-auto px-5 py-5 sm:px-8">
+            {TRADER_TERMS.map(section => (
+              <section key={section.title}>
+                <h2 className="text-[14px] font-extrabold text-[#071A2B]">{section.title}</h2>
+                <p className="mt-1.5 text-[13px] leading-6 text-[#475569]">{section.body}</p>
+              </section>
+            ))}
+          </div>
+
+          <div className="border-t border-[#E2E8F0] bg-[#F8FAFC] px-5 py-5 sm:px-8">
+            {!termsReadToEnd && <p className="mb-3 text-[12px] font-semibold text-[#9A3412]">Scroll through all sections to continue.</p>}
+            <label className={`flex items-start gap-3 text-[13px] leading-6 ${termsReadToEnd ? 'cursor-pointer text-[#334155]' : 'cursor-not-allowed text-[#94A3B8]'}`}>
+              <input type="checkbox" checked={termsAccepted} disabled={!termsReadToEnd} onChange={event => setTermsAccepted(event.target.checked)} className="mt-1 h-4 w-4 accent-[#071A2B]" />
+              <span>I have read and agree to the trader rules and terms above.</span>
+            </label>
+            <button type="button" onClick={continueToApplication} disabled={!termsReadToEnd || !termsAccepted} className="mt-4 w-full rounded-xl bg-[#071A2B] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#0F2B43] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto">
+              Continue to application
+            </button>
+          </div>
+        </section>
+      </main>
     </div>
   )
 

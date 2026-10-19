@@ -7,8 +7,8 @@ const contactMethods = [
   {
     icon: Phone,
     label: 'Call or WhatsApp',
-    value: '0794448439',
-    href: 'https://wa.me/256794448439?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20need%20help.%20',
+    value: '+256 779 122 222',
+    href: 'https://wa.me/256779122222?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20need%20help.%20',
   },
   {
     icon: Mail,
@@ -73,10 +73,10 @@ export default function ContactUsPage() {
             <div className="mt-6 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] p-5">
               <p className="text-[14px] font-bold text-[#071A2B]">WhatsApp support</p>
               <p className="mt-2 text-[14px] leading-7 text-[#475569]">
-                For quick assistance, message us directly on WhatsApp at 0794448439 and we will guide you to the next step.
+                For quick assistance, message us directly on WhatsApp at +256 779 122 222 and we will guide you to the next step.
               </p>
               <a
-                href="https://wa.me/256794448439?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20need%20help.%20"
+                href="https://wa.me/256779122222?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20need%20help.%20"
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-[#25D366] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#1ebc5f]"

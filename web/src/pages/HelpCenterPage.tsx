@@ -194,11 +194,11 @@ export default function HelpCenterPage() {
             <div className="rounded-2xl border border-[#BAE6FD] bg-white px-4 py-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#1E3A8A]">WhatsApp support</p>
               <p className="mt-1 text-[15px] font-extrabold text-[#071A2B]">Majo Gadgets Support</p>
-              <p className="text-[13px] text-[#334155]">0794448439</p>
+              <p className="text-[13px] text-[#334155]">+256 779 122 222</p>
             </div>
 
             <a
-              href="https://wa.me/256794448439?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20need%20help.%20"
+              href="https://wa.me/256779122222?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20need%20help.%20"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center rounded-xl bg-[#25D366] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#1ebc5f]"

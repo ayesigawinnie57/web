@@ -52,7 +52,7 @@ const sections = [
   {
     title: '10. Contact us',
     text:
-      'If you have questions, concerns, or requests regarding this Privacy Policy, please contact us through WhatsApp at 0794448439 or using the support channels available on the website.',
+      'If you have questions, concerns, or requests regarding this Privacy Policy, please contact us through WhatsApp at +256 779 122 222 or using the support channels available on the website.',
   },
 ]
 

@@ -62,7 +62,7 @@ const sections = [
   {
     title: '12. Contact us',
     text:
-      'If you have questions about these Terms and Conditions, please contact us via WhatsApp at 0794448439 or through the support channels available on the website.',
+      'If you have questions about these Terms and Conditions, please contact us via WhatsApp at +256 779 122 222 or through the support channels available on the website.',
   },
 ]
 
