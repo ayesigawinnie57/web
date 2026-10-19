@@ -37,6 +37,10 @@ export default function NotificationsPage() {
   const handlePress = (n: Notification) => {
     if (selecting) { toggleSelect(n.id); return }
     markRead(n.id)
+    if (n.actionUrl) {
+      router.push(n.actionUrl as any)
+      return
+    }
     router.push(`/notification/${n.id}` as any)
   }
 

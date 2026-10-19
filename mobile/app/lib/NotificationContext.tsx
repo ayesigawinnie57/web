@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import api from './api'
 
 export type NotificationType = 'order' | 'welcome' | 'promo' | 'system' | 'service_rating' | 'product_rating'
 
@@ -11,6 +12,7 @@ export type Notification = {
   time: string
   read: boolean
   createdAt?: string
+  actionUrl?: string
 }
 
 const STORAGE_KEY = 'majo_notifications'
@@ -114,6 +116,34 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  useEffect(() => {
+    if (!loaded) return
+    const refreshServerNotifications = async () => {
+      try {
+        const { data } = await api.get<Array<{ id: number; type: NotificationType; title: string; body: string; action_url: string; read: boolean; created_at: string }>>('/api/auth/notifications/')
+        const serverItems: Notification[] = data.map(item => ({
+          id: `server-${item.id}`,
+          type: item.type,
+          title: item.title,
+          body: item.body,
+          actionUrl: item.action_url || undefined,
+          read: item.read,
+          createdAt: item.created_at,
+          time: new Date(item.created_at).toLocaleDateString(),
+        }))
+        setNotifications(current => [
+          ...serverItems,
+          ...current.filter(item => !item.id.startsWith('server-')),
+        ])
+      } catch {
+        // Keep local notifications available if the user is signed out or offline.
+      }
+    }
+    refreshServerNotifications()
+    const interval = setInterval(refreshServerNotifications, 60_000)
+    return () => clearInterval(interval)
+  }, [loaded])
+
   // Persist whenever notifications change (after initial load)
   useEffect(() => {
     if (!loaded) return
@@ -122,20 +152,28 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const unreadCount = notifications.filter(n => !n.read).length
 
-  const markRead = useCallback((id: string) =>
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)), [])
+  const markRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+    if (id.startsWith('server-')) api.patch(`/api/auth/notifications/${id.slice(7)}/`, {}).catch(() => {})
+  }, [])
 
   const markAllRead = useCallback(() =>
     setNotifications(prev => prev.map(n => ({ ...n, read: true }))), [])
 
-  const markSelectedRead = useCallback((ids: string[]) =>
-    setNotifications(prev => prev.map(n => ids.includes(n.id) ? { ...n, read: true } : n)), [])
+  const markSelectedRead = useCallback((ids: string[]) => {
+    setNotifications(prev => prev.map(n => ids.includes(n.id) ? { ...n, read: true } : n))
+    ids.filter(id => id.startsWith('server-')).forEach(id => api.patch(`/api/auth/notifications/${id.slice(7)}/`, {}).catch(() => {}))
+  }, [])
 
-  const deleteNotification = useCallback((id: string) =>
-    setNotifications(prev => prev.filter(n => n.id !== id)), [])
+  const deleteNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id))
+    if (id.startsWith('server-')) api.delete(`/api/auth/notifications/${id.slice(7)}/`).catch(() => {})
+  }, [])
 
-  const deleteSelected = useCallback((ids: string[]) =>
-    setNotifications(prev => prev.filter(n => !ids.includes(n.id))), [])
+  const deleteSelected = useCallback((ids: string[]) => {
+    setNotifications(prev => prev.filter(n => !ids.includes(n.id)))
+    ids.filter(id => id.startsWith('server-')).forEach(id => api.delete(`/api/auth/notifications/${id.slice(7)}/`).catch(() => {}))
+  }, [])
 
   const addNotification: AddFn = useCallback((n) =>
     setNotifications(prev => [{
