@@ -18,6 +18,10 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString('en-UG', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] ?? character)
+}
+
 export default function AdminTraders() {
   const [all, setAll] = useState<ApiTraderApplication[]>([])
   const [filter, setFilter] = useState<Filter>('all')
@@ -103,6 +107,28 @@ export default function AdminTraders() {
     finally { setActing(false) }
   }
 
+  const printAgreement = () => {
+    if (!selected) return
+    const printWindow = window.open('', '_blank', 'width=900,height=700')
+    if (!printWindow) {
+      setError('Allow pop-ups to print the trader agreement.')
+      return
+    }
+    const fields: Array<[string, string]> = [
+      ['Trader name', selected.full_name],
+      ['National ID number', selected.national_id],
+      ['Business name', selected.business_name],
+      ['Business location', selected.location],
+      ['Business registration number', selected.business_reg_no || 'Not provided'],
+      ['Agreement reference', selected.agreement_reference],
+    ]
+    const rows = fields.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')
+    printWindow.document.write(`<!doctype html><html><head><title>Trader Agreement</title><style>body{font:15px Georgia,serif;color:#17212b;max-width:760px;margin:48px auto;line-height:1.6}h1{font-size:24px}table{width:100%;border-collapse:collapse;margin:28px 0}th,td{text-align:left;padding:10px;border-bottom:1px solid #dce5eb}th{width:38%}.signature{margin-top:64px;display:flex;gap:64px}.signature div{flex:1;border-top:1px solid #17212b;padding-top:8px}@media print{body{margin:20mm auto}}</style></head><body><h1>Majo Gadgets Trader Agreement</h1><p>This agreement records the trader details and acceptance of the Majo Gadgets trader terms. The trader confirms that the details below are accurate and agrees to comply with the terms accepted during application.</p><table>${rows}</table><p>Terms accepted: ${escapeHtml(selected.terms_accepted_at ? new Date(selected.terms_accepted_at).toLocaleString() : 'Not recorded')}</p><div class="signature"><div>Trader signature</div><div>For Majo Gadgets</div></div></body></html>`)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
+
   // Detail view
   if (selected) {
     const cfg = STATUS_COLOR[selected.status]
@@ -175,7 +201,6 @@ export default function AdminTraders() {
             <label className="mt-4 flex items-start gap-3 border-t border-[#E2E8F0] pt-4 text-[12px] leading-5 text-[#334155]">
               <input type="checkbox" checked={documentsVerified} onChange={event => setDocumentsVerified(event.target.checked)} disabled={!allDocumentsViewed || selected.status === 'approved'} className="mt-0.5 h-4 w-4 accent-[#071A2B]" />
               <span>{allDocumentsViewed ? 'I reviewed every submitted document, confirmed the ID matches the submitted details, and verified the business information.' : 'Open every submitted document above before confirming verification.'}</span>
-                        <button onClick={() => { setDocumentsVerified(false); setViewedDocuments(new Set()); setError(''); setSelected(a) }}
             </label>
           </section>
 
@@ -205,12 +230,12 @@ export default function AdminTraders() {
 
           {/* Actions */}
           <div className="flex gap-3">
+            {selected.status === 'approved' && <button onClick={printAgreement} className="flex-1 rounded-xl border border-[#DCE5EB] py-3 text-[13px] font-bold text-[#071A2B]">Print agreement</button>}
             <button onClick={() => setRejectModal(true)} disabled={acting || selected.status === 'rejected'}
               className="flex-1 py-3 rounded-xl bg-red-600 text-white text-[13px] font-bold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
               {selected.status === 'rejected' ? 'Rejected' : 'Reject'}
             </button>
-            <button onClick={handleApprove} disabled={acting || selected.status === 'approved'}
-                          <button onClick={handleApprove} disabled={acting || selected.status === 'approved' || !documentsComplete || !allDocumentsViewed || !documentsVerified}
+            <button onClick={handleApprove} disabled={acting || selected.status === 'approved' || !documentsComplete || !allDocumentsViewed || !documentsVerified}
               className="flex-1 py-3 rounded-xl bg-[#22C55E] text-white text-[13px] font-bold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed">
               {acting ? 'Processing...' : selected.status === 'approved' ? 'Approved' : 'Approve'}
             </button>
