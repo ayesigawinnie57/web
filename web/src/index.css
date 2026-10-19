@@ -33,6 +33,10 @@ input[type='reset'] {
   border-radius: 0 !important;
 }
 
+.floating-chat-toggle {
+  border-radius: 50% !important;
+}
+
 * {
   -webkit-font-smoothing: antialiased;
 }

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store, ArrowLeftRight, PackageCheck, RotateCcw, MessageCircle } from 'lucide-react'
-import { LOGO, sessionApi } from '../lib/api'
+import { LOGO, sessionApi, supportChatApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
 import { ASSIGNED_PAGES_KEY } from './AdminGuard'
@@ -41,12 +41,31 @@ export default function AdminLayout() {
   const [search, setSearch] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
   const [traderUuid, setTraderUuid] = useState<string | null>(null)
+  const [unreadSupportCount, setUnreadSupportCount] = useState(0)
   const { startSwitch } = useSwitchPortal()
 
   useEffect(() => {
     sessionApi.trader().then(t => {
       if (t?.status === 'approved') setTraderUuid(t.uuid)
     })
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    const refreshUnreadCount = async () => {
+      try {
+        const { data } = await supportChatApi.adminConversations()
+        if (active) setUnreadSupportCount(data.reduce((total, conversation) => total + conversation.unread_count, 0))
+      } catch {
+        if (active) setUnreadSupportCount(0)
+      }
+    }
+    void refreshUnreadCount()
+    const timer = window.setInterval(refreshUnreadCount, 5000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
   }, [])
 
   const switchToTrader = (close?: () => void) => {
@@ -137,9 +156,12 @@ export default function AdminLayout() {
               <button onClick={() => setDrawerOpen(false)}><X className="w-5 h-5 text-white/60" /></button>
             </div>
             <nav className="flex-1 py-2 overflow-y-auto">
-              {NAV.map(({ to, label, end }) => (
+              {NAV.map(({ to, label, end, pageKey }) => (
                 <NavLink key={to} to={to} end={end} onClick={() => setDrawerOpen(false)} className={drawerLinkClass}>
-                  {label}
+                  <span className="flex w-full items-center justify-between gap-3">
+                    {label}
+                    {pageKey === 'Support' && unreadSupportCount > 0 && <span aria-label={`${unreadSupportCount} unread messages`} className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E5484D] px-1.5 text-[10px] font-extrabold text-white">{unreadSupportCount > 99 ? '99+' : unreadSupportCount}</span>}
+                  </span>
                 </NavLink>
               ))}
             </nav>
@@ -169,9 +191,12 @@ export default function AdminLayout() {
         {/* Desktop sidebar */}
         <aside className="hidden md:flex w-56 bg-[#071A2B] flex-col shrink-0">
           <nav className="flex-1 py-4 overflow-y-auto">
-            {NAV.map(({ to, label, end }) => (
+            {NAV.map(({ to, label, end, pageKey }) => (
               <NavLink key={to} to={to} end={end} className={sideNavClass}>
-                {label}
+                <span className="flex w-full items-center justify-between gap-3">
+                  {label}
+                  {pageKey === 'Support' && unreadSupportCount > 0 && <span aria-label={`${unreadSupportCount} unread messages`} className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E5484D] px-1.5 text-[10px] font-extrabold text-white">{unreadSupportCount > 99 ? '99+' : unreadSupportCount}</span>}
+                </span>
               </NavLink>
             ))}
           </nav>
@@ -205,6 +230,9 @@ export default function AdminLayout() {
         <NavLink to="/admin/orders" className={tabClass}>
           <ShoppingBag size={20} /><span>Orders</span>
         </NavLink>
+        {NAV.some(item => item.pageKey === 'Support') && <NavLink to="/admin/support" className={tabClass}>
+          <span className="relative"><MessageCircle size={20} />{unreadSupportCount > 0 && <span aria-label={`${unreadSupportCount} unread messages`} className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#E5484D] px-1 text-[8px] font-extrabold text-white">{unreadSupportCount > 9 ? '9+' : unreadSupportCount}</span>}</span><span>Support</span>
+        </NavLink>}
         <NavLink to="/notifications" className={tabClass}>
           <Bell size={20} /><span>Notifications</span>
         </NavLink>
