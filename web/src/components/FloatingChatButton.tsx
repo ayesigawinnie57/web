@@ -203,7 +203,7 @@ export default function FloatingChatButton() {
         onClick={() => setOpen(value => !value)}
         aria-label={open ? 'Close support chat' : 'Open support chat'}
         aria-expanded={open}
-        className="floating-chat-toggle group fixed bottom-5 right-5 z-[80] inline-flex h-14 w-14 items-center justify-center rounded-[50%] bg-[#C2410C] text-white shadow-[0_18px_40px_rgba(194,65,12,0.35)] transition duration-200 hover:-translate-y-1 hover:scale-105 sm:right-6"
+        className="floating-chat-toggle group fixed bottom-20 right-5 z-[80] inline-flex h-14 w-14 items-center justify-center rounded-[50%] bg-[#C2410C] text-white shadow-[0_18px_40px_rgba(194,65,12,0.35)] transition duration-200 hover:-translate-y-1 hover:scale-105 sm:right-6 lg:bottom-5"
       >
         {!open && <span aria-hidden="true" className="absolute inset-0 -z-10 rounded-full bg-[#C2410C] opacity-20 motion-reduce:animate-none animate-ping" />}
         {open ? <X className="h-6 w-6" /> : <MessageCircleMore className="h-6 w-6" />}
