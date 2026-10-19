@@ -4,6 +4,7 @@ import { SwitchProvider, useSwitchPortal } from './lib/SwitchContext'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { authApi, BASE_URL } from './lib/api'
 import CookieBanner from './components/CookieBanner'
+import FloatingChatButton from './components/FloatingChatButton'
 import DesktopAdminEnforcer from './components/DesktopAdminEnforcer'
 import SwitchTransition from './components/SwitchTransition'
 import LandingPage from './landing'
@@ -51,6 +52,7 @@ const AddCategory     = lazy(() => import('./admin/categories/add'))
 const EditCategory    = lazy(() => import('./admin/categories/[id]'))
 const AdminOrders     = lazy(() => import('./admin/orders/index'))
 const AdminReturns    = lazy(() => import('./admin/returns/index'))
+const AdminSupport    = lazy(() => import('./admin/support'))
 const AdminOrderDetail = lazy(() => import('./admin/orders/[code]'))
 const AdminFlashSales = lazy(() => import('./admin/flashsales/index'))
 const AddFlashSale    = lazy(() => import('./admin/flashsales/add'))
@@ -160,6 +162,7 @@ export default function App() {
       <DesktopAdminEnforcer>
       <ScrollToTop />
       <SwitchOverlay />
+      <FloatingChatButton />
       <CookieBanner />
       <Suspense fallback={<div style={{ position: 'fixed', inset: 0, background: '#071A2B' }} />}>
         <Routes>
@@ -217,6 +220,7 @@ export default function App() {
               <Route path="categories/:id" element={<EditCategory />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="returns" element={<AdminReturns />} />
+              <Route path="support" element={<AdminSupport />} />
               <Route path="orders/:code" element={<AdminOrderDetail />} />
               <Route path="pickup" element={<AdminPickupPage />} />
               <Route path="flashsales" element={<AdminFlashSales />} />

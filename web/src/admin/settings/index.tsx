@@ -26,7 +26,7 @@ const TABS = [
 ] as const
 type Tab = typeof TABS[number]['key']
 
-const PAGE_OPTIONS = ['Dashboard', 'Products', 'Flash Sales', 'Categories', 'Orders', 'Users', 'Payments', 'Settings']
+const PAGE_OPTIONS = ['Dashboard', 'Products', 'Flash Sales', 'Categories', 'Orders', 'Support', 'Users', 'Payments', 'Settings']
 
 function authHeaders() {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('access_token')}` }

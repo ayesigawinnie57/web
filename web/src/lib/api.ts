@@ -836,6 +836,31 @@ export type ApiNotification = {
   created_at: string
 }
 
+export type SupportMessage = {
+  id: number
+  conversation_id: number
+  sender_id: number
+  sender_name: string
+  is_staff: boolean
+  body: string
+  is_read: boolean
+  created_at: string
+}
+
+export type SupportConversationSummary = {
+  id: number
+  user_id: number
+  user_name: string
+  user_email: string
+  updated_at: string
+  unread_count: number
+  last_message: SupportMessage | null
+}
+
+export type SupportConversationDetail = Omit<SupportConversationSummary, 'updated_at' | 'unread_count' | 'last_message'> & {
+  messages: SupportMessage[]
+}
+
 // ── Session cache: single fetch per page load ────────────────────────────────
 let _profilePromise: Promise<{ is_staff: boolean }> | null = null
 let _traderPromise: Promise<{ uuid: string; status: string } | null> | null = null
@@ -859,6 +884,18 @@ export const notificationsApi = {
   markRead: (id: number) => api.patch(`/api/auth/notifications/${id}/`, {}),
   markAllRead: () => api.post('/api/auth/notifications/mark-all-read/', {}),
   delete: (id: number) => api.delete(`/api/auth/notifications/${id}/`),
+}
+
+export const supportChatApi = {
+  customerChat: (markRead = false) =>
+    api.get<{ conversation_id: number | null; messages: SupportMessage[]; unread_count: number }>(
+      `/api/auth/support/chat/${markRead ? '?mark_read=true' : ''}`
+    ),
+  sendCustomerMessage: (body: string) => api.post<SupportMessage>('/api/auth/support/chat/', { body }),
+  adminConversations: () => api.get<SupportConversationSummary[]>('/api/auth/admin/support/conversations/'),
+  adminConversation: (id: number) => api.get<SupportConversationDetail>(`/api/auth/admin/support/conversations/${id}/`),
+  sendAdminReply: (id: number, body: string) =>
+    api.post<SupportMessage>(`/api/auth/admin/support/conversations/${id}/`, { body }),
 }
 
 export const behaviourApi = {
