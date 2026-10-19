@@ -10,6 +10,7 @@ export type Notification = {
   type: NotificationType
   title: string
   body: string
+  actionUrl: string
   read: boolean
   createdAt: string
   slug: string
@@ -29,6 +30,7 @@ function fromApi(n: ApiNotification): Notification {
     type: n.type,
     title: n.title,
     body: n.body,
+    actionUrl: n.action_url,
     read: n.read,
     createdAt: n.created_at,
     slug: toSlug(String(n.id), n.title),

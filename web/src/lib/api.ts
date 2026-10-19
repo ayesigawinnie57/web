@@ -709,11 +709,30 @@ export type ApiTraderApplication = {
   documents_verified: boolean
   agreement_reference: string
   agreement_issued_at: string | null
+  agreement_version: string
+  agreement_required: boolean
+  agreement_signed_name: string
+  agreement_signed_at: string | null
+  has_agreement_signature_image: boolean
   status: 'pending' | 'approved' | 'rejected'
   admin_note: string
   reviewed_by_name: string | null
   reviewed_at: string | null
   created_at: string
+}
+
+export type ApiTraderAgreement = {
+  title: string
+  reference: string
+  version: string
+  issued_at: string | null
+  effective_at: string | null
+  ready_to_sign: boolean
+  platform: { name: string; operator: string; address: string; signatory: string; title: string; signed_at: string | null }
+  trader: { name: string; id: string; application_uuid: string; business_name: string; address: string; email: string; national_id: string; registration_number: string; signed_name: string; signed_at: string | null; has_signature_image: boolean }
+  sections: Array<{ title: string; paragraphs: string[] }>
+  declaration: string
+  id_document_included: false
 }
 
 export type ApiTraderDashboard = {
@@ -808,7 +827,7 @@ export type ApiTraderInventoryItem = {
 
 export const tradersApi = {
   apply: (data: FormData) => api.post<ApiTraderApplication>('/api/traders/apply/', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  me: () => api.get<{ id: number; uuid: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; email: string; full_name: string } | null>('/api/traders/me/').catch(() => ({ data: null })),
+  me: () => api.get<{ id: number; uuid: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; email: string; full_name: string; agreement_required: boolean; agreement_signed_at: string | null } | null>('/api/traders/me/').catch(() => ({ data: null })),
   adminList: (status?: string) => api.get<ApiTraderApplication[]>(`/api/traders/admin/${status ? `?status=${status}` : ''}`),
   adminGet: (id: number) => api.get<ApiTraderApplication>(`/api/traders/admin/${id}/`),
   adminDocument: (id: number, documentType: 'national-id' | 'ura-certificate' | 'business-location') =>
@@ -817,6 +836,8 @@ export const tradersApi = {
   reject: (id: number, note: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/reject/`, { admin_note: note }),
   // Trader portal
   profile: (uuid: string) => api.get<ApiTraderApplication>(`/api/traders/${uuid}/profile/`),
+  agreement: (uuid: string) => api.get<ApiTraderAgreement>(`/api/traders/${uuid}/agreement/`),
+  signAgreement: (uuid: string, data: FormData) => api.post<ApiTraderAgreement>(`/api/traders/${uuid}/agreement/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   dashboard: (uuid: string) => api.get<ApiTraderDashboard>(`/api/traders/${uuid}/dashboard/`),
   products: (uuid: string) => api.get<ApiTraderProduct[]>(`/api/traders/${uuid}/products/`),
   createProduct: (uuid: string, data: FormData) => api.post<ApiTraderProduct>(`/api/traders/${uuid}/products/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
@@ -843,6 +864,7 @@ export type ApiNotification = {
   type: 'order' | 'welcome' | 'promo' | 'system' | 'service_rating' | 'product_rating'
   title: string
   body: string
+  action_url: string
   read: boolean
   created_at: string
 }

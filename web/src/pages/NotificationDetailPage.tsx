@@ -99,6 +99,12 @@ export default function NotificationDetailPage() {
             ))}
           </div>
 
+          {n.actionUrl && (
+            <Link to={n.actionUrl} className="inline-flex items-center justify-center bg-[#071A2B] px-5 py-3 text-sm font-bold text-white">
+              Review trader agreement
+            </Link>
+          )}
+
           {isServiceRating && ratingTarget && (
             <Link to={`/rate/${ratingTarget}`} className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-amber-400 text-white text-[14px] font-extrabold">
               <Star size={16} fill="#fff" color="#fff" /> Rate Your Experience

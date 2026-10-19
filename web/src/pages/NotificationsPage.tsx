@@ -28,7 +28,7 @@ export default function NotificationsPage() {
   const handleClick = (n: Notification) => {
     if (selecting) { toggle(n.id); return }
     markRead(n.id)
-    navigate(`/notifications/${n.slug}`)
+    navigate(n.actionUrl || `/notifications/${n.slug}`)
   }
 
   const deleteSelected = () => {

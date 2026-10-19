@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Store, CheckCircle, XCircle, Clock, RefreshCw, ChevronRight } from 'lucide-react'
+import { Store, CheckCircle, XCircle, Clock, RefreshCw, ChevronRight, X } from 'lucide-react'
 import { tradersApi, type ApiTraderApplication } from '../../lib/api'
 
 const FILTERS = ['all', 'pending', 'approved', 'rejected'] as const
@@ -18,10 +18,6 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString('en-UG', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] ?? character)
-}
-
 export default function AdminTraders() {
   const [all, setAll] = useState<ApiTraderApplication[]>([])
   const [filter, setFilter] = useState<Filter>('all')
@@ -34,6 +30,11 @@ export default function AdminTraders() {
   const [documentsVerified, setDocumentsVerified] = useState(false)
   const [openingDocument, setOpeningDocument] = useState<string | null>(null)
   const [viewedDocuments, setViewedDocuments] = useState<Set<string>>(new Set())
+  const [documentPreview, setDocumentPreview] = useState<{ type: string; url: string; contentType: string } | null>(null)
+
+  useEffect(() => () => {
+    if (documentPreview) URL.revokeObjectURL(documentPreview.url)
+  }, [documentPreview])
 
   const load = () => {
     setLoading(true)
@@ -71,23 +72,14 @@ export default function AdminTraders() {
 
   const previewDocument = async (documentType: 'national-id' | 'ura-certificate' | 'business-location') => {
     if (!selected) return
-    const preview = window.open('', '_blank')
-    if (!preview) {
-      setError('Allow pop-ups to preview application documents.')
-      return
-    }
-    preview.document.title = 'Loading secure document'
-    preview.document.body.textContent = 'Loading secure document…'
     setOpeningDocument(documentType)
     setError('')
     try {
       const { data } = await tradersApi.adminDocument(selected.id, documentType)
       const documentUrl = URL.createObjectURL(data)
-      preview.location.href = documentUrl
+      setDocumentPreview({ type: documentType, url: documentUrl, contentType: data.type })
       setViewedDocuments(current => new Set(current).add(documentType))
-      window.setTimeout(() => URL.revokeObjectURL(documentUrl), 60_000)
     } catch {
-      preview.close()
       setError('Could not open this document. Refresh the application and try again.')
     } finally {
       setOpeningDocument(null)
@@ -105,28 +97,6 @@ export default function AdminTraders() {
       setRejectNote('')
     } catch { setError('Failed to reject.') }
     finally { setActing(false) }
-  }
-
-  const printAgreement = () => {
-    if (!selected) return
-    const printWindow = window.open('', '_blank', 'width=900,height=700')
-    if (!printWindow) {
-      setError('Allow pop-ups to print the trader agreement.')
-      return
-    }
-    const fields: Array<[string, string]> = [
-      ['Trader name', selected.full_name],
-      ['National ID number', selected.national_id],
-      ['Business name', selected.business_name],
-      ['Business location', selected.location],
-      ['Business registration number', selected.business_reg_no || 'Not provided'],
-      ['Agreement reference', selected.agreement_reference],
-    ]
-    const rows = fields.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')
-    printWindow.document.write(`<!doctype html><html><head><title>Trader Agreement</title><style>body{font:15px Georgia,serif;color:#17212b;max-width:760px;margin:48px auto;line-height:1.6}h1{font-size:24px}table{width:100%;border-collapse:collapse;margin:28px 0}th,td{text-align:left;padding:10px;border-bottom:1px solid #dce5eb}th{width:38%}.signature{margin-top:64px;display:flex;gap:64px}.signature div{flex:1;border-top:1px solid #17212b;padding-top:8px}@media print{body{margin:20mm auto}}</style></head><body><h1>Majo Gadgets Trader Agreement</h1><p>This agreement records the trader details and acceptance of the Majo Gadgets trader terms. The trader confirms that the details below are accurate and agrees to comply with the terms accepted during application.</p><table>${rows}</table><p>Terms accepted: ${escapeHtml(selected.terms_accepted_at ? new Date(selected.terms_accepted_at).toLocaleString() : 'Not recorded')}</p><div class="signature"><div>Trader signature</div><div>For Majo Gadgets</div></div></body></html>`)
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
   }
 
   // Detail view
@@ -230,7 +200,6 @@ export default function AdminTraders() {
 
           {/* Actions */}
           <div className="flex gap-3">
-            {selected.status === 'approved' && <button onClick={printAgreement} className="flex-1 rounded-xl border border-[#DCE5EB] py-3 text-[13px] font-bold text-[#071A2B]">Print agreement</button>}
             <button onClick={() => setRejectModal(true)} disabled={acting || selected.status === 'rejected'}
               className="flex-1 py-3 rounded-xl bg-red-600 text-white text-[13px] font-bold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
               {selected.status === 'rejected' ? 'Rejected' : 'Reject'}
@@ -241,6 +210,20 @@ export default function AdminTraders() {
             </button>
           </div>
         </div>
+
+        {documentPreview && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-3 sm:p-8" role="dialog" aria-modal="true" aria-label="Application document preview" onClick={() => setDocumentPreview(null)}>
+            <section className="flex h-[min(90vh,900px)] w-full max-w-5xl flex-col overflow-hidden bg-white shadow-2xl" onClick={event => event.stopPropagation()}>
+              <header className="flex items-center justify-between border-b border-[#DCE5EB] px-4 py-3">
+                <h2 className="text-sm font-extrabold text-[#071A2B]">{documentPreview.type.replace('-', ' ')} preview</h2>
+                <button onClick={() => setDocumentPreview(null)} aria-label="Close document preview" className="flex h-9 w-9 items-center justify-center hover:bg-[#F1F5F9]"><X size={18} /></button>
+              </header>
+              {documentPreview.contentType.startsWith('image/')
+                ? <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-[#F1F5F9] p-4"><img src={documentPreview.url} alt="Submitted application evidence" className="max-h-full max-w-full object-contain" /></div>
+                : <iframe title="Submitted application document" src={documentPreview.url} className="min-h-0 flex-1 border-0" />}
+            </section>
+          </div>
+        )}
 
         {/* Reject modal */}
         {rejectModal && (

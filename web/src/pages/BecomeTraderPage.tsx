@@ -153,6 +153,10 @@ export default function BecomeTraderPage() {
         }))
         if (me) {
           if (me.status === 'approved') {
+            if (me.agreement_required && !me.agreement_signed_at) {
+              navigate(`/agreement/${me.uuid}`, { replace: true })
+              return
+            }
             navigate(`/trader/${me.uuid}`, { replace: true })
           } else {
             setTraderStatus(me.status as 'pending' | 'rejected')

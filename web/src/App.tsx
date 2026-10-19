@@ -37,6 +37,7 @@ const PrivacyPolicyPage      = lazy(() => import('./pages/PrivacyPolicyPage'))
 const TermsPage              = lazy(() => import('./pages/TermsPage'))
 const CookiesPage            = lazy(() => import('./pages/CookiesPage'))
 const BecomeTraderPage       = lazy(() => import('./pages/BecomeTraderPage'))
+const TraderAgreementPage    = lazy(() => import('./pages/TraderAgreementPage'))
 const PaymentCallbackPage    = lazy(() => import('./pages/PaymentCallbackPage'))
 
 const AdminPickupPage  = lazy(() => import('./admin/orders/pickup'))
@@ -196,6 +197,7 @@ export default function App() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/become-a-trader" element={<BecomeTraderPage />} />
+          <Route path="/agreement/:traderUuid" element={<TraderAgreementPage />} />
           <Route path="/payment-callback" element={<PaymentCallbackPage />} />
           <Route element={<TraderGuard />}>
             <Route path="/trader/:traderUuid" element={<TraderLayout />}>
