@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, Eye, EyeOff, UserPlus } from 'lucide-react'
 import { authApi, fetchAllDistricts, LOGO, type DistrictRecord } from '../lib/api'
 import { Helmet } from 'react-helmet-async'
@@ -146,6 +146,9 @@ export default function RegisterPage() {
               {loading ? 'Creating account...' : 'Create account'}
             </button>
           </form>
+            <p className="mt-5 text-center text-[13px] text-[#64748B]">
+              Already have an account? <Link to="/login" className="font-bold text-[#1E3A8A] hover:underline">Sign in</Link>
+            </p>
         </section>
       </div>
   )

@@ -689,17 +689,26 @@ export type ApiTraderApplication = {
   email: string
   phone: string
   national_id: string
+  has_national_id_document: boolean
+  ura_certificate_document?: string | null
+  business_location_proof?: string | null
   business_name: string
   business_type: string
   business_reg_no: string
   tin: string
+  has_ura_certificate_document: boolean
   location: string
+  has_business_location_proof: boolean
   district: string
   website: string
   product_categories: string
   monthly_volume: string
   experience: string
   agreed_to_terms: boolean
+  terms_accepted_at: string | null
+  documents_verified: boolean
+  agreement_reference: string
+  agreement_issued_at: string | null
   status: 'pending' | 'approved' | 'rejected'
   admin_note: string
   reviewed_by_name: string | null
@@ -798,11 +807,13 @@ export type ApiTraderInventoryItem = {
 }
 
 export const tradersApi = {
-  apply: (data: object) => api.post<ApiTraderApplication>('/api/traders/apply/', data),
+  apply: (data: FormData) => api.post<ApiTraderApplication>('/api/traders/apply/', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   me: () => api.get<{ id: number; uuid: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; email: string; full_name: string } | null>('/api/traders/me/').catch(() => ({ data: null })),
   adminList: (status?: string) => api.get<ApiTraderApplication[]>(`/api/traders/admin/${status ? `?status=${status}` : ''}`),
   adminGet: (id: number) => api.get<ApiTraderApplication>(`/api/traders/admin/${id}/`),
-  approve: (id: number, note?: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/approve/`, { admin_note: note ?? '' }),
+  adminDocument: (id: number, documentType: 'national-id' | 'ura-certificate' | 'business-location') =>
+    api.get<Blob>(`/api/traders/admin/${id}/documents/${documentType}/`, { responseType: 'blob' }),
+  approve: (id: number, note?: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/approve/`, { admin_note: note ?? '', documents_verified: true }),
   reject: (id: number, note: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/reject/`, { admin_note: note }),
   // Trader portal
   profile: (uuid: string) => api.get<ApiTraderApplication>(`/api/traders/${uuid}/profile/`),

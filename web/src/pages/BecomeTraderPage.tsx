@@ -57,6 +57,51 @@ const TRADER_TERMS = [
 
 const TRADER_TERMS_INTRO = 'By registering as a trader, you agree to the following rules:'
 const TRADER_TERMS_CLOSING = 'Majo Gadgets reserves the right to update these terms with appropriate notice. All traders must comply with applicable laws and the platform\'s policies.'
+const TRADER_TERMS_SECTION_COUNT = TRADER_TERMS.length + 2
+const EVIDENCE_ACCEPT = '.jpg,.jpeg,.png,.pdf'
+const MAX_EVIDENCE_SIZE = 10 * 1024 * 1024
+
+type EvidenceKey = 'national_id_document' | 'ura_certificate_document' | 'business_location_proof'
+
+function EvidenceField({ label, help, file, required = true, onChange, onError }: {
+  label: string
+  help: string
+  file: File | null
+  required?: boolean
+  onChange: (file: File | null) => void
+  onError: (message: string) => void
+}) {
+  return (
+    <label className="block rounded-lg border border-[#DCE5EB] bg-[#F8FAFC] p-4">
+      <span className="block text-[12px] font-bold text-[#071A2B]">{label}{required && <span className="ml-1 text-red-600">*</span>}</span>
+      <span className="mt-1 block text-[11px] leading-5 text-[#64748B]">{help} JPG, PNG, or PDF, up to 10 MB.</span>
+      <input
+        type="file"
+        accept={EVIDENCE_ACCEPT}
+        required={required && !file}
+        onChange={event => {
+          const selected = event.target.files?.[0] ?? null
+          if (!selected) return
+          const extension = selected.name.split('.').pop()?.toLowerCase()
+          if (!['jpg', 'jpeg', 'png', 'pdf'].includes(extension ?? '')) {
+            onError(`${label} must be a JPG, PNG, or PDF.`)
+            event.target.value = ''
+            return
+          }
+          if (selected.size > MAX_EVIDENCE_SIZE) {
+            onError(`${label} must be 10 MB or smaller.`)
+            event.target.value = ''
+            return
+          }
+          onError('')
+          onChange(selected)
+        }}
+        className="mt-3 block w-full text-[12px] text-[#475569] file:mr-3 file:rounded-lg file:border-0 file:bg-[#071A2B] file:px-3 file:py-2 file:text-[11px] file:font-bold file:text-white"
+      />
+      {file && <span className="mt-2 block truncate text-[11px] font-semibold text-[#166534]">Selected: {file.name}</span>}
+    </label>
+  )
+}
 
 export default function BecomeTraderPage() {
   const navigate = useNavigate()
@@ -67,8 +112,15 @@ export default function BecomeTraderPage() {
   const [checking, setChecking] = useState(true)
   const [traderStatus, setTraderStatus] = useState<'pending' | 'rejected' | null>(null)
   const [termsReadToEnd, setTermsReadToEnd] = useState(false)
+  const [termsReadCount, setTermsReadCount] = useState(0)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const termsScrollRef = useRef<HTMLDivElement>(null)
+  const readTermsSections = useRef(new Set<number>())
+  const [evidence, setEvidence] = useState<Record<EvidenceKey, File | null>>({
+    national_id_document: null,
+    ura_certificate_document: null,
+    business_location_proof: null,
+  })
 
   const [form, setForm] = useState({
     full_name: '', email: '', phone: '', national_id: '',
@@ -125,11 +177,61 @@ export default function BecomeTraderPage() {
     return () => { active = false }
   }, [navigate])
 
+  useEffect(() => {
+    if (checking || traderStatus || form.agreed_to_terms) return
+    const container = termsScrollRef.current
+    if (!container) return
+
+    const pendingTimers = new Map<number, number>()
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        const sectionIndex = Number((entry.target as HTMLElement).dataset.termsSection)
+        if (readTermsSections.current.has(sectionIndex)) return
+
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
+          if (!pendingTimers.has(sectionIndex)) {
+            const timer = window.setTimeout(() => {
+              readTermsSections.current.add(sectionIndex)
+              pendingTimers.delete(sectionIndex)
+              setTermsReadCount(readTermsSections.current.size)
+              const atEnd = container.scrollTop + container.clientHeight >= container.scrollHeight - 8
+              if (atEnd && readTermsSections.current.size === TRADER_TERMS_SECTION_COUNT) setTermsReadToEnd(true)
+            }, 1200)
+            pendingTimers.set(sectionIndex, timer)
+          }
+        } else {
+          const timer = pendingTimers.get(sectionIndex)
+          if (timer !== undefined) {
+            window.clearTimeout(timer)
+            pendingTimers.delete(sectionIndex)
+          }
+        }
+      })
+    }, { root: container, threshold: [0.55] })
+
+    container.querySelectorAll<HTMLElement>('[data-terms-section]').forEach(section => observer.observe(section))
+    return () => {
+      observer.disconnect()
+      pendingTimers.forEach(timer => window.clearTimeout(timer))
+    }
+  }, [checking, traderStatus, form.agreed_to_terms])
+
   const handleSubmit = async () => {
     if (!form.agreed_to_terms) { setError('You must agree to the terms.'); return }
+    if (!evidence.national_id_document || !evidence.business_location_proof) {
+      setError('Upload a copy of your National ID and proof of your business location.'); return
+    }
+    if (!form.tin.trim() && !evidence.ura_certificate_document) {
+      setError('Enter your URA TIN or upload a URA certificate.'); return
+    }
     setSubmitting(true); setError('')
     try {
-      await tradersApi.apply(form)
+      const payload = new FormData()
+      Object.entries(form).forEach(([key, value]) => payload.append(key, String(value)))
+      Object.entries(evidence).forEach(([key, file]) => {
+        if (file) payload.append(key, file)
+      })
+      await tradersApi.apply(payload)
       setSubmitted(true)
     } catch (e: any) {
       const data = e?.response?.data
@@ -143,8 +245,23 @@ export default function BecomeTraderPage() {
     if (step === 0 && (!form.full_name.trim() || !form.email.trim() || !form.phone.trim() || !form.national_id.trim())) {
       setError('All fields including National ID / Passport are required.'); return
     }
+    if (step === 0) {
+      const normalizedId = form.national_id.replace(/[\s-]/g, '')
+      if (!/^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{8,20}$/i.test(normalizedId)) {
+        setError('Enter the National ID exactly as printed on your ID document. It must contain letters and numbers.'); return
+      }
+      if (!evidence.national_id_document) {
+        setError('Upload a clear copy of your National ID before continuing.'); return
+      }
+    }
     if (step === 1 && (!form.business_name.trim() || !form.location.trim())) {
       setError('Business Name and Location are required.'); return
+    }
+    if (step === 1 && !form.tin.trim() && !evidence.ura_certificate_document) {
+      setError('Enter your URA TIN or upload a URA certificate.'); return
+    }
+    if (step === 1 && !evidence.business_location_proof) {
+      setError('Upload proof that your business operates from a physical location.'); return
     }
     if (step === 2 && !form.product_categories.trim()) {
       setError('Please describe the products / categories you want to sell.'); return
@@ -155,7 +272,7 @@ export default function BecomeTraderPage() {
 
   const handleTermsScroll = () => {
     const element = termsScrollRef.current
-    if (element && element.scrollTop + element.clientHeight >= element.scrollHeight - 8) {
+    if (element && readTermsSections.current.size === TRADER_TERMS_SECTION_COUNT && element.scrollTop + element.clientHeight >= element.scrollHeight - 8) {
       setTermsReadToEnd(true)
     }
   }
@@ -210,45 +327,48 @@ export default function BecomeTraderPage() {
   )
 
   if (!form.agreed_to_terms) return (
-    <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 sm:px-6">
-      <main className="mx-auto max-w-3xl">
-        <button onClick={() => navigate('/')} className="mb-5 inline-flex items-center gap-2 text-[13px] font-bold text-[#475569] hover:text-[#071A2B]">
-          <ArrowLeft size={16} /> Back to store
-        </button>
-        <section className="overflow-hidden rounded-2xl border border-[#DCE5EB] bg-white shadow-sm">
-          <header className="bg-[#071A2B] px-5 py-6 text-white sm:px-8">
+    <div className="flex h-screen min-h-[100dvh] flex-col overflow-hidden bg-[#F8FAFC]">
+      <header className="shrink-0 bg-[#071A2B] px-5 py-5 text-white sm:px-8">
+        <div className="mx-auto flex max-w-5xl items-center gap-4">
+          <button onClick={() => navigate('/')} aria-label="Back to store" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white/80 transition hover:bg-white/10 hover:text-white">
+            <ArrowLeft size={19} />
+          </button>
+          <div>
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#FDBA74]">
               <Store size={15} /> Trader application
             </div>
-            <h1 className="mt-3 text-2xl font-extrabold sm:text-3xl">Trader rules and terms</h1>
-            <p className="mt-2 max-w-2xl text-[13px] leading-6 text-white/75">
-              Review the requirements below before opening the application form.
-            </p>
-          </header>
-
-          <div ref={termsScrollRef} onScroll={handleTermsScroll} tabIndex={0} aria-label="Trader rules and terms, scroll to read all sections" className="max-h-[min(55vh,460px)] space-y-5 overflow-y-auto px-5 py-5 sm:px-8">
-            <p className="text-[13px] leading-6 text-[#475569]">{TRADER_TERMS_INTRO}</p>
-            {TRADER_TERMS.map(section => (
-              <section key={section.title}>
-                <h2 className="text-[14px] font-extrabold text-[#071A2B]">{section.title}</h2>
-                <p className="mt-1.5 text-[13px] leading-6 text-[#475569]">{section.title === '6. Returns Policy' ? <>{section.body.split('More than three returns')[0]}<strong>More than three returns of the same product from the same trader will trigger automatic temporary disabling of the trader account pending investigation.</strong>{' '}Fraud or serious misconduct may result in immediate suspension.</> : section.body}</p>
-              </section>
-            ))}
-            <p className="text-[13px] leading-6 text-[#475569]"><strong>{TRADER_TERMS_CLOSING}</strong></p>
+            <h1 className="mt-1 text-xl font-extrabold sm:text-2xl">Majo Gadgets Trader Terms &amp; Conditions</h1>
           </div>
+        </div>
+      </header>
 
-          <div className="border-t border-[#E2E8F0] bg-[#F8FAFC] px-5 py-5 sm:px-8">
-            {!termsReadToEnd && <p className="mb-3 text-[12px] font-semibold text-[#9A3412]">Scroll through all sections to continue.</p>}
+      <main ref={termsScrollRef} onScroll={handleTermsScroll} tabIndex={0} aria-label="Trader rules and terms, scroll to read all sections" className="min-h-0 flex-1 overflow-y-auto px-5 py-6 outline-none sm:px-8 sm:py-8">
+        <article className="mx-auto max-w-5xl space-y-6 pb-4">
+          <p data-terms-section="0" className="text-[14px] leading-7 text-[#334155]">{TRADER_TERMS_INTRO}</p>
+          {TRADER_TERMS.map((section, index) => (
+            <section key={section.title} data-terms-section={index + 1} className="border-b border-[#E2E8F0] pb-5 last:border-0">
+              <h2 className="text-[15px] font-extrabold text-[#071A2B]">{section.title}</h2>
+              <p className="mt-2 text-[14px] leading-7 text-[#475569]">{section.title === '6. Returns Policy' ? <>{section.body.split('More than three returns')[0]}<strong>More than three returns of the same product from the same trader will trigger automatic temporary disabling of the trader account pending investigation.</strong>{' '}Fraud or serious misconduct may result in immediate suspension.</> : section.body}</p>
+            </section>
+          ))}
+          <p data-terms-section={TRADER_TERMS_SECTION_COUNT - 1} className="pb-2 text-[14px] leading-7 text-[#334155]"><strong>{TRADER_TERMS_CLOSING}</strong></p>
+        </article>
+      </main>
+
+      <footer className="z-10 shrink-0 border-t border-[#DCE5EB] bg-white px-5 py-4 shadow-[0_-8px_24px_rgba(7,26,43,0.06)] sm:px-8">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            {!termsReadToEnd && <p className="mb-2 text-[12px] font-semibold text-[#9A3412]">Read each section, then reach the end to continue ({termsReadCount}/{TRADER_TERMS_SECTION_COUNT}).</p>}
             <label className={`flex items-start gap-3 text-[13px] leading-6 ${termsReadToEnd ? 'cursor-pointer text-[#334155]' : 'cursor-not-allowed text-[#94A3B8]'}`}>
               <input type="checkbox" checked={termsAccepted} disabled={!termsReadToEnd} onChange={event => setTermsAccepted(event.target.checked)} className="mt-1 h-4 w-4 accent-[#071A2B]" />
               <span>I have read and agree to the trader rules and terms above.</span>
             </label>
-            <button type="button" onClick={continueToApplication} disabled={!termsReadToEnd || !termsAccepted} className="mt-4 w-full rounded-xl bg-[#071A2B] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#0F2B43] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto">
-              Continue to application
-            </button>
           </div>
-        </section>
-      </main>
+          <button type="button" onClick={continueToApplication} disabled={!termsReadToEnd || !termsAccepted} className="w-full rounded-xl bg-[#071A2B] px-6 py-3 text-[13px] font-bold text-white transition hover:bg-[#0F2B43] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto">
+            Continue to application
+          </button>
+        </div>
+      </footer>
     </div>
   )
 
@@ -318,7 +438,7 @@ export default function BecomeTraderPage() {
                 { k: 'full_name', label: 'Full Name', type: 'text', required: true },
                 { k: 'email', label: 'Email Address', type: 'email', required: true },
                 { k: 'phone', label: 'Phone Number', type: 'tel', required: true },
-                { k: 'national_id', label: 'National ID / Passport', type: 'text', required: true },
+                { k: 'national_id', label: 'National ID Number', type: 'text', required: true },
               ].map(({ k, label, type, required }) => (
                 <div key={k}>
                   <label className="text-[11px] font-bold text-[#64748B] mb-1 block">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
@@ -326,6 +446,13 @@ export default function BecomeTraderPage() {
                     className="w-full px-4 py-3 border border-[#E2E8F0] rounded-none text-[13px] text-[#071A2B] outline-none focus:border-[#071A2B]" />
                 </div>
               ))}
+              <EvidenceField
+                label="Copy of National ID"
+                help="Upload a clear photo or PDF. Admin will compare it with the ID number you entered."
+                file={evidence.national_id_document}
+                onChange={file => setEvidence(current => ({ ...current, national_id_document: file }))}
+                onError={setError}
+              />
             </div>
           )}
 
@@ -346,7 +473,7 @@ export default function BecomeTraderPage() {
               </div>
               {[
                 { k: 'business_reg_no', label: 'Business Registration No. (optional)' },
-                { k: 'tin', label: 'TIN (optional)' },
+                { k: 'tin', label: 'URA TIN (or upload certificate below)' },
                 { k: 'location', label: 'Business Location / Address', required: true },
                 { k: 'district', label: 'District' },
                 { k: 'website', label: 'Website (optional)' },
@@ -357,6 +484,21 @@ export default function BecomeTraderPage() {
                     className="w-full px-4 py-3 border border-[#E2E8F0] rounded-none text-[13px] text-[#071A2B] outline-none focus:border-[#071A2B]" />
                 </div>
               ))}
+              <EvidenceField
+                label="URA Certificate (optional if TIN entered)"
+                help="Upload the certificate if you are not entering a URA TIN."
+                file={evidence.ura_certificate_document}
+                required={false}
+                onChange={file => setEvidence(current => ({ ...current, ura_certificate_document: file }))}
+                onError={setError}
+              />
+              <EvidenceField
+                label="Proof of Physical Business Location"
+                help="Upload a photo or document showing your shop or business premises."
+                file={evidence.business_location_proof}
+                onChange={file => setEvidence(current => ({ ...current, business_location_proof: file }))}
+                onError={setError}
+              />
             </div>
           )}
 
@@ -391,7 +533,10 @@ export default function BecomeTraderPage() {
                 ['Full Name', form.full_name], ['Email', form.email], ['Phone', form.phone],
                 ['National ID', form.national_id], ['Business Name', form.business_name],
                 ['Business Type', form.business_type.replace('_', ' ')],
+                ['National ID Copy', evidence.national_id_document?.name ?? 'Missing'],
                 ['Location', form.location], ['District', form.district || '—'],
+                ['URA Evidence', evidence.ura_certificate_document?.name ?? (form.tin.trim() ? `TIN: ${form.tin}` : 'Missing')],
+                ['Business Location Proof', evidence.business_location_proof?.name ?? 'Missing'],
                 ['Products', form.product_categories], ['Monthly Volume', form.monthly_volume || '—'],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-4 py-2 border-b border-[#F1F5F9] last:border-0">

@@ -95,6 +95,9 @@ export default function LoginPage() {
           <button disabled={loading} className="w-full h-12 bg-[#1E3A8A] text-white rounded-xl text-[13px] font-bold disabled:opacity-60 hover:opacity-90">{loading ? 'Signing in...' : 'Sign In'}</button>
         </form>
         <p className="text-center text-[13px] text-[#64748B] mt-6"><Link to="/forgot-password" className="font-bold text-[#1E3A8A]">Forgot password?</Link></p>
+        <p className="mt-4 text-center text-[13px] text-[#64748B]">
+          Don’t have an account? <Link to="/register" className="font-bold text-[#1E3A8A] hover:underline">Sign up</Link>
+        </p>
         {hasGoogleClientId && <GoogleButton loading={loading} onSuccess={afterLogin} onError={setError} onNeedsProfile={setPendingProfile} />}
       </section>
     </div>
