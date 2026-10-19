@@ -1,6 +1,22 @@
 import axios from 'axios'
 
-export const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+const DEFAULT_BACKEND_URL = 'https://web-production-b3675.up.railway.app'
+
+const resolveApiBaseUrl = () => {
+  const configured = import.meta.env.VITE_API_URL
+  if (configured && configured.trim()) return configured.trim().replace(/\/+$/, '')
+
+  if (typeof window !== 'undefined') {
+    const { hostname, protocol, port } = window.location
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '0.0.0.0') {
+      return `${protocol}//${hostname}${port ? `:${port}` : ''}`
+    }
+  }
+
+  return DEFAULT_BACKEND_URL
+}
+
+export const BASE_URL = resolveApiBaseUrl()
 
 export const LOGO = 'https://res.cloudinary.com/d5qqtsou/image/upload/v1788691351/Majo_Gadgets_logo_an2hbc.png'
 
