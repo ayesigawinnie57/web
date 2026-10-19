@@ -858,6 +858,7 @@ export type SupportConversationSummary = {
 }
 
 export type SupportConversationDetail = Omit<SupportConversationSummary, 'updated_at' | 'unread_count' | 'last_message'> & {
+  customer_typing: boolean
   messages: SupportMessage[]
 }
 
@@ -888,12 +889,14 @@ export const notificationsApi = {
 
 export const supportChatApi = {
   customerChat: (markRead = false) =>
-    api.get<{ conversation_id: number | null; messages: SupportMessage[]; unread_count: number }>(
+    api.get<{ conversation_id: number | null; messages: SupportMessage[]; unread_count: number; staff_typing: boolean }>(
       `/api/auth/support/chat/${markRead ? '?mark_read=true' : ''}`
     ),
   sendCustomerMessage: (body: string) => api.post<SupportMessage>('/api/auth/support/chat/', { body }),
+  setCustomerTyping: (is_typing: boolean) => api.patch('/api/auth/support/chat/', { is_typing }),
   adminConversations: () => api.get<SupportConversationSummary[]>('/api/auth/admin/support/conversations/'),
   adminConversation: (id: number) => api.get<SupportConversationDetail>(`/api/auth/admin/support/conversations/${id}/`),
+  setAdminTyping: (id: number, is_typing: boolean) => api.patch(`/api/auth/admin/support/conversations/${id}/`, { is_typing }),
   sendAdminReply: (id: number, body: string) =>
     api.post<SupportMessage>(`/api/auth/admin/support/conversations/${id}/`, { body }),
 }

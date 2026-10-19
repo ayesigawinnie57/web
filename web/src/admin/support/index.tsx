@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ArrowLeft, MessageCircle, RefreshCw, Send } from 'lucide-react'
 import { supportChatApi, type SupportConversationDetail, type SupportConversationSummary } from '../../lib/api'
+import TypingIndicator from '../../components/TypingIndicator'
 
 const formatTime = (value: string) => new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
 
@@ -15,6 +16,9 @@ export default function AdminSupport() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const messagesRef = useRef<HTMLDivElement>(null)
+  const typingHeartbeat = useRef<number | null>(null)
+  const typingTimeout = useRef<number | null>(null)
+  const typingActive = useRef(false)
 
   useEffect(() => {
     let active = true
@@ -72,6 +76,7 @@ export default function AdminSupport() {
     event.preventDefault()
     const body = draft.trim()
     if (!body || selectedId === null || sending) return
+    stopTyping()
     setSending(true)
     setError('')
     try {
@@ -87,6 +92,40 @@ export default function AdminSupport() {
       setSending(false)
     }
   }
+
+  const stopTyping = () => {
+    if (typingHeartbeat.current !== null) window.clearInterval(typingHeartbeat.current)
+    if (typingTimeout.current !== null) window.clearTimeout(typingTimeout.current)
+    typingHeartbeat.current = null
+    typingTimeout.current = null
+    if (typingActive.current && selectedId !== null) {
+      typingActive.current = false
+      void supportChatApi.setAdminTyping(selectedId, false).catch(() => {})
+    }
+  }
+
+  const handleDraftChange = (value: string) => {
+    setDraft(value)
+    if (!value.trim() || selectedId === null) {
+      stopTyping()
+      return
+    }
+    if (!typingActive.current) {
+      typingActive.current = true
+      void supportChatApi.setAdminTyping(selectedId, true).catch(() => {})
+      typingHeartbeat.current = window.setInterval(() => {
+        void supportChatApi.setAdminTyping(selectedId, true).catch(() => {})
+      }, 3000)
+    }
+    if (typingTimeout.current !== null) window.clearTimeout(typingTimeout.current)
+    typingTimeout.current = window.setTimeout(stopTyping, 4500)
+  }
+
+  useEffect(() => () => {
+    if (typingHeartbeat.current !== null) window.clearInterval(typingHeartbeat.current)
+    if (typingTimeout.current !== null) window.clearTimeout(typingTimeout.current)
+    if (typingActive.current && selectedId !== null) void supportChatApi.setAdminTyping(selectedId, false).catch(() => {})
+  }, [selectedId])
 
   const visibleConversations = conversations.filter(item =>
     `${item.user_name} ${item.user_email} ${item.last_message?.body ?? ''}`.toLowerCase().includes(filter.trim().toLowerCase())
@@ -153,11 +192,12 @@ export default function AdminSupport() {
                     </div>
                   </div>
                 ))}
+                {conversation.customer_typing && <TypingIndicator label="Customer is typing" />}
               </div>
 
               {error && <p role="alert" className="border-t border-red-100 bg-white px-4 py-2 text-[11px] text-red-600">{error}</p>}
               <form onSubmit={sendReply} className="flex items-end gap-2 border-t border-[#E2E8F0] bg-white p-3">
-                <textarea value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => {
+                <textarea value={draft} onChange={event => handleDraftChange(event.target.value)} onBlur={stopTyping} onKeyDown={event => {
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault()
                     event.currentTarget.form?.requestSubmit()
