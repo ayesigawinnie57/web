@@ -14,38 +14,49 @@ const STEPS = ['Personal Info', 'Business Info', 'What You Sell', 'Review & Subm
 
 const TRADER_TERMS = [
   {
-    title: '1. Accurate application and account details',
-    body: 'You must provide truthful, current personal and business information, including contact details and any registration or tax details requested. Keep your account credentials private and notify Majo Gadgets if your business or contact information changes.',
+    title: '1. Honest Registration',
+    body: 'Provide accurate personal or business information and genuine verification documents when required. False information may result in account suspension.',
   },
   {
-    title: '2. Products and listings',
-    body: 'You are responsible for ensuring that products are genuine, lawful to sell, safe, and accurately described. Product titles, specifications, condition, images, prices, and availability must not mislead customers or infringe another person’s rights. Counterfeit, prohibited, or unsafe goods must not be listed.',
+    title: '2. Customer Privacy',
+    body: 'Traders must never directly contact customers or access their names, phone numbers, email addresses, or other personal details. All customer communication, orders, complaints, and returns are handled by Majo Gadgets.',
   },
   {
-    title: '3. Stock, orders, and delivery',
-    body: 'Keep stock quantities and prices current. Once an order is accepted, prepare the correct item and quantity, package it appropriately, and cooperate with the agreed delivery or pickup process. Notify Majo Gadgets promptly if an order cannot be fulfilled or is delayed.',
+    title: '3. Product Quality',
+    body: 'Sell only genuine, lawful products. Product descriptions, images, prices, specifications, stock levels, and warranties must be accurate. Counterfeit, defective, misleading, or prohibited products are not allowed.',
   },
   {
-    title: '4. Customer care, returns, and complaints',
-    body: 'Respond professionally to customer and platform enquiries. Cooperate with order investigations, returns, replacements, and refunds under the applicable Majo Gadgets policies and local law. Do not ask customers to bypass the platform’s order or payment process.',
+    title: '4. Order Fulfilment',
+    body: 'Fulfil orders promptly and supply exactly what the customer ordered. Do not falsely mark orders as completed, substitute products without authorization, or conceal stock shortages.',
   },
   {
-    title: '5. Fees, payments, and taxes',
-    body: 'Applicable activation charges, commissions, withdrawal requirements, delivery charges, and taxes are those shown in the platform or communicated by Majo Gadgets before they apply. Review those amounts before accepting sales or requesting withdrawals. You remain responsible for your own business taxes and legal obligations.',
+    title: '5. Trust and Transparency',
+    body: 'Do not manipulate prices, fake reviews, create fraudulent orders, falsify records, or mislead customers or Majo Gadgets. Cooperate honestly with investigations and quality checks.',
   },
   {
-    title: '6. Prohibited conduct',
-    body: 'Do not manipulate reviews, orders, prices, or platform activity; misuse customer information; impersonate another business; or use the service for unlawful, fraudulent, or abusive activity. Majo Gadgets may investigate reports and restrict listings or accounts where needed to protect customers and the platform.',
+    title: '6. Returns Policy',
+    body: 'Majo Gadgets manages all returns and refunds. More than three returns of the same product from the same trader will trigger automatic temporary disabling of the trader account pending investigation. Fraud or serious misconduct may result in immediate suspension.',
   },
   {
-    title: '7. Review and account status',
-    body: 'Submitting an application does not guarantee approval. Majo Gadgets may request supporting information and will review the application before granting trader access. Approval may be suspended or withdrawn for material breaches of these rules, platform policies, or applicable law.',
+    title: '7. Payments and Fees',
+    body: 'Trader commissions, applicable fees, payout schedules, and deductions will be communicated separately. Traders must provide accurate payment details and comply with applicable tax obligations.',
   },
   {
-    title: '8. Acceptance',
-    body: 'By continuing, you confirm that you have read these trader rules and agree to follow them, together with applicable Majo Gadgets policies and laws. Keep a copy for your records and contact support if any requirement is unclear before applying.',
+    title: '8. Account Security',
+    body: 'Keep your login credentials secure. Do not access unauthorized information, manipulate the platform, or create accounts to bypass a suspension.',
+  },
+  {
+    title: '9. Violations and Suspension',
+    body: 'Majo Gadgets may remove products, restrict accounts, suspend traders, or terminate accounts for fraud, repeated violations, poor product quality, or breaches of these terms. Appeals may be considered where appropriate.',
+  },
+  {
+    title: '10. Agreement',
+    body: 'By accepting these terms, you confirm that your information is accurate, you will follow Majo Gadgets policies, protect customer privacy, and conduct business honestly.',
   },
 ]
+
+const TRADER_TERMS_INTRO = 'By registering as a trader, you agree to the following rules:'
+const TRADER_TERMS_CLOSING = 'Majo Gadgets reserves the right to update these terms with appropriate notice. All traders must comply with applicable laws and the platform\'s policies.'
 
 export default function BecomeTraderPage() {
   const navigate = useNavigate()
@@ -216,12 +227,14 @@ export default function BecomeTraderPage() {
           </header>
 
           <div ref={termsScrollRef} onScroll={handleTermsScroll} tabIndex={0} aria-label="Trader rules and terms, scroll to read all sections" className="max-h-[min(55vh,460px)] space-y-5 overflow-y-auto px-5 py-5 sm:px-8">
+            <p className="text-[13px] leading-6 text-[#475569]">{TRADER_TERMS_INTRO}</p>
             {TRADER_TERMS.map(section => (
               <section key={section.title}>
                 <h2 className="text-[14px] font-extrabold text-[#071A2B]">{section.title}</h2>
-                <p className="mt-1.5 text-[13px] leading-6 text-[#475569]">{section.body}</p>
+                <p className="mt-1.5 text-[13px] leading-6 text-[#475569]">{section.title === '6. Returns Policy' ? <>{section.body.split('More than three returns')[0]}<strong>More than three returns of the same product from the same trader will trigger automatic temporary disabling of the trader account pending investigation.</strong>{' '}Fraud or serious misconduct may result in immediate suspension.</> : section.body}</p>
               </section>
             ))}
+            <p className="text-[13px] leading-6 text-[#475569]"><strong>{TRADER_TERMS_CLOSING}</strong></p>
           </div>
 
           <div className="border-t border-[#E2E8F0] bg-[#F8FAFC] px-5 py-5 sm:px-8">
