@@ -13,8 +13,8 @@ const contactMethods = [
   {
     icon: Mail,
     label: 'Email',
-    value: 'support@majogadgets.com',
-    href: 'mailto:support@majogadgets.com',
+    value: 'contact@majogadgets.com',
+    href: 'mailto:contact@majogadgets.com',
   },
   {
     icon: MapPin,

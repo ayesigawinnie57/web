@@ -36,9 +36,9 @@ export default function Footer() {
             </p>
 
             <div className="mt-5 space-y-3 text-sm text-slate-300">
-              <a href="mailto:gadgetsmajo@gmail.com" className="flex items-center gap-3 transition hover:text-white">
+              <a href="mailto:info@majogadgets.com" className="flex items-center gap-3 transition hover:text-white">
                 <Mail className="h-4 w-4 shrink-0 text-cyan-300" aria-hidden="true" />
-                gadgetsmajo@gmail.com
+                info@majogadgets.com
               </a>
               <a href="tel:+256779122222" className="flex items-center gap-3 transition hover:text-white">
                 <Phone className="h-4 w-4 shrink-0 text-cyan-300" aria-hidden="true" />

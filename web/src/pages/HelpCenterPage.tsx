@@ -205,6 +205,9 @@ export default function HelpCenterPage() {
             >
               Chat on WhatsApp
             </a>
+            <a href="mailto:support@majogadgets.com" className="inline-flex items-center justify-center rounded-xl border border-[#0F2B43] px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-white">
+              Email support
+            </a>
           </div>
 
           <p className="mt-4 max-w-3xl text-[14px] leading-7 text-[#334155]">

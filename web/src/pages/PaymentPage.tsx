@@ -72,6 +72,9 @@ export default function PaymentPage() {
               Chat on WhatsApp
               <ArrowRight size={15} />
             </a>
+            <a href="mailto:support@majogadgets.com" className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-[#DCE5EB] px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-[#F8FAFC]">
+              Email support
+            </a>
 
             <div className="mt-6 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
               <p className="flex items-center gap-2 text-[13px] font-bold text-[#071A2B]">
