@@ -5,24 +5,28 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
 import App from './App.tsx'
 
-const PRELOAD_RELOAD_KEY = 'majo-preload-reload'
+const PRELOAD_RELOAD_KEY = 'majo-preload-reload-at'
+const PRELOAD_ROUTE_KEY = 'majo-preload-route'
 
 window.addEventListener('vite:preloadError', event => {
   event.preventDefault()
-  if (sessionStorage.getItem(PRELOAD_RELOAD_KEY)) {
-    sessionStorage.removeItem(PRELOAD_RELOAD_KEY)
+  const previousReloadAt = Number(sessionStorage.getItem(PRELOAD_RELOAD_KEY))
+  if (previousReloadAt && Date.now() - previousReloadAt < 60_000) {
     return
   }
 
-  sessionStorage.setItem(PRELOAD_RELOAD_KEY, 'true')
-  const url = new URL(window.location.href)
+  sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(Date.now()))
+  sessionStorage.setItem(PRELOAD_ROUTE_KEY, `${window.location.pathname}${window.location.search}${window.location.hash}`)
+  const url = new URL('/', window.location.origin)
   url.searchParams.set('_preload', Date.now().toString())
   window.location.replace(url)
 })
 
-window.addEventListener('load', () => {
-  sessionStorage.removeItem(PRELOAD_RELOAD_KEY)
-}, { once: true })
+const routeToRestore = sessionStorage.getItem(PRELOAD_ROUTE_KEY)
+if (routeToRestore) {
+  sessionStorage.removeItem(PRELOAD_ROUTE_KEY)
+  window.history.replaceState(null, '', routeToRestore)
+}
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
