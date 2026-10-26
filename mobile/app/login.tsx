@@ -15,6 +15,29 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [challenge, setChallenge] = useState<{ id: string; emailHint: string } | null>(null)
+  const [code, setCode] = useState('')
+  const [error, setError] = useState('')
+
+  const finishLogin = async (access: string, refresh: string, accountPassword?: string) => {
+    await tokenStore.save(access, refresh)
+    try {
+      const { data: profile } = await authApi.profile(access)
+      if (accountPassword) await initializeSupportEncryptionBackup(profile.id, accountPassword)
+    } catch {
+      Alert.alert(
+        'Chat backup unavailable',
+        'You are signed in, but your encrypted chat-key backup could not be updated or restored. Existing chat remains on this device. A password reset cannot unlock an older backup.',
+      )
+    }
+    pushNotification({
+      type: 'welcome',
+      title: 'Welcome back',
+      body: 'You are now signed in. Explore the latest gadgets and deals.',
+      time: 'Just now',
+    })
+    router.replace('/' as any)
+  }
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -22,28 +45,47 @@ export default function LoginScreen() {
       return
     }
     setLoading(true)
+    setError('')
     try {
-      const { data } = await authApi.login(email.trim(), password)
-      await tokenStore.save(data.access, data.refresh)
-      try {
-        const { data: profile } = await authApi.profile(data.access)
-        await initializeSupportEncryptionBackup(profile.id, password)
-      } catch {
-        Alert.alert(
-          'Chat backup unavailable',
-          'You are signed in, but your encrypted chat-key backup could not be updated or restored. Existing chat remains on this device. A password reset cannot unlock an older backup.',
-        )
+      const trustedDevice = await tokenStore.getTrustedDevice()
+      const { data } = await authApi.login(email.trim(), password, trustedDevice)
+      if ('mfa_required' in data) {
+        setChallenge({ id: data.challenge_id, emailHint: data.email_hint })
+      } else {
+        if (data.trusted_device) await tokenStore.saveTrustedDevice(data.trusted_device)
+        await finishLogin(data.access, data.refresh, password)
       }
-      pushNotification({
-        type: 'welcome',
-        title: 'Welcome back',
-        body: `You are now signed in. Explore the latest gadgets and deals.`,
-        time: 'Just now',
-      })
-      router.replace('/' as any)
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? 'Invalid email or password.'
-      Alert.alert('Login Failed', msg)
+      setError(e?.response?.data?.detail ?? 'Invalid email or password.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const verifyCode = async () => {
+    if (!challenge || code.length !== 6) return
+    setLoading(true)
+    setError('')
+    try {
+      const { data } = await authApi.verifyEmailMfa(challenge.id, code)
+      if (data.trusted_device) await tokenStore.saveTrustedDevice(data.trusted_device)
+      await finishLogin(data.access, data.refresh, password)
+    } catch (e: any) {
+      setError(e?.response?.data?.detail ?? 'Could not verify the sign-in code.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resendCode = async () => {
+    if (!challenge) return
+    setLoading(true)
+    setError('')
+    try {
+      await authApi.resendEmailMfa(challenge.id)
+      Alert.alert('Code sent', `A new sign-in code was sent to ${challenge.emailHint}.`)
+    } catch (e: any) {
+      setError(e?.response?.data?.detail ?? 'Could not resend the sign-in code.')
     } finally {
       setLoading(false)
     }
@@ -57,10 +99,37 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Image source={{ uri: LOGO }} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+        <Text style={styles.title}>{challenge ? 'Verify your sign-in' : 'Welcome back'}</Text>
+        <Text style={styles.subtitle}>{challenge ? `Enter the six-digit code sent to ${challenge.emailHint}. It expires in 10 minutes.` : 'Sign in to your account'}</Text>
 
         <View style={styles.form}>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {challenge ? (
+            <>
+              <View style={styles.fieldWrap}>
+                <Text style={styles.label}>Email verification code</Text>
+                <TextInput
+                  style={[styles.input, styles.codeInput]}
+                  value={code}
+                  onChangeText={value => setCode(value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  placeholderTextColor={C.mutedLight}
+                  keyboardType="number-pad"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                />
+              </View>
+              <Text style={styles.trustNotice}>This device will be remembered for 7 days. Only use this on a device you control.</Text>
+              <TouchableOpacity style={[styles.btn, (loading || code.length !== 6) && { opacity: 0.7 }]} onPress={verifyCode} disabled={loading || code.length !== 6}>
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Verify and continue</Text>}
+              </TouchableOpacity>
+              <View style={styles.challengeActions}>
+                <TouchableOpacity onPress={resendCode} disabled={loading}><Text style={styles.footerLink}>Resend code</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { setChallenge(null); setCode(''); setError('') }}><Text style={styles.cancelLink}>Use another sign-in</Text></TouchableOpacity>
+              </View>
+            </>
+          ) : (
+          <>
           <View style={styles.fieldWrap}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -101,6 +170,8 @@ export default function LoginScreen() {
               <Text style={styles.footerLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
+          </>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -123,4 +194,9 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: C.muted, fontSize: 14 },
   footerLink: { color: C.green, fontSize: 14, fontWeight: '700' },
+  error: { color: '#B91C1C', fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  codeInput: { textAlign: 'center', fontSize: 22, letterSpacing: 8, fontWeight: '800' },
+  trustNotice: { color: C.muted, fontSize: 11, lineHeight: 16, marginBottom: 12 },
+  challengeActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
+  cancelLink: { color: C.muted, fontSize: 13, fontWeight: '600' },
 })

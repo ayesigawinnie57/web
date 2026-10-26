@@ -323,10 +323,16 @@ export const publicSellerApi = {
 }
 
 export const authApi = {
-  login: (email: string, password: string) => api.post<{ access: string; refresh: string }>('/api/auth/login/', { email, password }),
-  googleLogin: (credential: string) => api.post<{ access: string; refresh: string } | { needs_profile: true; tmp_token: string; name: string; email: string }>('/api/auth/login/google/', { credential }),
-  completeGoogleProfile: (tmp_token: string, payload: { phone: string; region: string; district: string; village: string }) =>
-    api.post<{ access: string; refresh: string }>('/api/auth/login/google/complete/', { tmp_token, ...payload }),
+  login: (email: string, password: string, trusted_device?: string | null) =>
+    api.post<LoginResponse>('/api/auth/login/', { email, password, trusted_device }),
+  googleLogin: (credential: string, trusted_device?: string | null) =>
+    api.post<LoginResponse | { needs_profile: true; tmp_token: string; name: string; email: string }>('/api/auth/login/google/', { credential, trusted_device }),
+  completeGoogleProfile: (tmp_token: string, payload: { phone: string; region: string; district: string; village: string }, trusted_device?: string | null) =>
+    api.post<LoginResponse>('/api/auth/login/google/complete/', { tmp_token, trusted_device, ...payload }),
+  verifyEmailMfa: (challenge_id: string, code: string) =>
+    api.post<MfaLoginSuccess>('/api/auth/login/email-code/verify/', { challenge_id, code, remember_device: true }),
+  resendEmailMfa: (challenge_id: string) =>
+    api.post<{ detail: string }>('/api/auth/login/email-code/resend/', { challenge_id }),
   register: (payload: { name: string; email: string; phone: string; password: string; country: string; region: string; district: string; village: string }) => api.post<{ access: string; refresh: string }>('/api/auth/register/', payload),
   profile: () => api.get<{ id: number; email: string; name: string; phone: string; avatar: string | null; region: string; district: string; village: string; is_staff: boolean; is_superuser: boolean }>('/api/auth/profile/'),
   saveTokens: (access: string, refresh: string) => {
@@ -339,6 +345,20 @@ export const authApi = {
     window.dispatchEvent(new Event('majo-auth-changed'))
   },
 }
+
+export type MfaChallenge = {
+  mfa_required: true
+  challenge_id: string
+  email_hint: string
+}
+
+export type MfaLoginSuccess = {
+  access: string
+  refresh: string
+  trusted_device?: string
+}
+
+export type LoginResponse = MfaLoginSuccess | MfaChallenge
 
 export type WishlistItem = {
   id: number

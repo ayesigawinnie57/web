@@ -45,6 +45,9 @@ export default function RegisterScreen() {
         village: form.village.trim(),
       })
       const { data } = await authApi.login(form.email.trim(), form.password)
+      if ('mfa_required' in data) {
+        throw new Error('A verification code is required. Please sign in to complete the security check.')
+      }
       await tokenStore.save(data.access, data.refresh)
       try {
         const { data: profile } = await authApi.profile(data.access)

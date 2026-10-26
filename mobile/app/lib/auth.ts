@@ -33,8 +33,12 @@ export type AuthUser = {
 }
 
 export const authApi = {
-  login: (email: string, password: string) =>
-    axios.post<{ access: string; refresh: string }>(`${BASE_URL}/api/auth/login/`, { email, password }, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+  login: (email: string, password: string, trusted_device?: string | null) =>
+    axios.post<LoginResponse>(`${BASE_URL}/api/auth/login/`, { email, password, trusted_device }, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+  verifyEmailMfa: (challenge_id: string, code: string) =>
+    axios.post<MfaLoginSuccess>(`${BASE_URL}/api/auth/login/email-code/verify/`, { challenge_id, code, remember_device: true }, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+  resendEmailMfa: (challenge_id: string) =>
+    axios.post<{ detail: string }>(`${BASE_URL}/api/auth/login/email-code/resend/`, { challenge_id }, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
 
   register: (name: string, email: string, phone: string, password: string, location: { country: string; region: string; district: string; village: string }) =>
     axios.post(`${BASE_URL}/api/auth/register/`, { name, email, phone, password, ...location }, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
@@ -50,6 +54,20 @@ export const authApi = {
     }),
 }
 
+export type MfaChallenge = {
+  mfa_required: true
+  challenge_id: string
+  email_hint: string
+}
+
+export type MfaLoginSuccess = {
+  access: string
+  refresh: string
+  trusted_device?: string
+}
+
+export type LoginResponse = MfaLoginSuccess | MfaChallenge
+
 export const tokenStore = {
   save: async (access: string, refresh: string) => {
     await storage.set('access_token', access)
@@ -61,4 +79,6 @@ export const tokenStore = {
   },
   getAccess: () => storage.get('access_token'),
   getRefresh: () => storage.get('refresh_token'),
+  saveTrustedDevice: (token: string) => storage.set('mfa_trusted_device', token),
+  getTrustedDevice: () => storage.get('mfa_trusted_device'),
 }

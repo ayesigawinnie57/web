@@ -1,8 +1,8 @@
 import { type FormEvent, useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Eye, EyeOff, ChevronDown } from 'lucide-react'
+import { Eye, EyeOff, ChevronDown, ShieldCheck } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
-import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, fetchAllDistricts, type DistrictRecord } from '../lib/api'
+import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, fetchAllDistricts, type DistrictRecord, type LoginResponse } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { initializeSupportEncryptionBackup } from '../lib/supportEncryption'
 import { Helmet } from 'react-helmet-async'
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [pendingProfile, setPendingProfile] = useState<{ tmpToken: string; name: string; email: string } | null>(null)
+  const [pendingMfa, setPendingMfa] = useState<{ challengeId: string; emailHint: string } | null>(null)
 
   const afterLogin = async (access: string, refresh: string, password?: string) => {
     authApi.saveTokens(access, refresh)
@@ -63,17 +64,56 @@ export default function LoginPage() {
     refreshNotifications()
   }
 
+  const handleLoginResponse = async (data: LoginResponse, loginPassword?: string) => {
+    if ('mfa_required' in data) {
+      setPendingProfile(null)
+      setPendingMfa({ challengeId: data.challenge_id, emailHint: data.email_hint })
+      setError('')
+      return
+    }
+    if (data.trusted_device) localStorage.setItem('majo_mfa_trusted_device', data.trusted_device)
+    await afterLogin(data.access, data.refresh, loginPassword)
+  }
+
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setError('')
     if (!email.trim() || !password) { setError('Email and password are required.'); return }
     setLoading(true)
     try {
-      const { data } = await authApi.login(email.trim(), password)
-      await afterLogin(data.access, data.refresh, password)
+      const trustedDevice = localStorage.getItem('majo_mfa_trusted_device')
+      const { data } = await authApi.login(email.trim(), password, trustedDevice)
+      await handleLoginResponse(data, password)
     } catch (requestError: any) {
       setError(requestError?.response?.data?.detail ?? 'Invalid email or password.')
     } finally { setLoading(false) }
+  }
+
+  const verifyEmailCode = async (challengeId: string, code: string) => {
+    setError('')
+    setLoading(true)
+    try {
+      const { data } = await authApi.verifyEmailMfa(challengeId, code)
+      await handleLoginResponse(data, password)
+    } catch (requestError: any) {
+      setError(requestError?.response?.data?.detail ?? 'Could not verify the sign-in code.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resendEmailCode = async (challengeId: string): Promise<boolean> => {
+    setError('')
+    setLoading(true)
+    try {
+      await authApi.resendEmailMfa(challengeId)
+      return true
+    } catch (requestError: any) {
+      setError(requestError?.response?.data?.detail ?? 'Could not resend the sign-in code.')
+      return false
+    } finally {
+      setLoading(false)
+    }
   }
 
   const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -84,7 +124,20 @@ export default function LoginPage() {
         name={pendingProfile.name}
         email={pendingProfile.email}
         tmpToken={pendingProfile.tmpToken}
-        onComplete={afterLogin}
+        onComplete={handleLoginResponse}
+      />
+    )
+  }
+
+  if (pendingMfa) {
+    return (
+      <EmailMfaForm
+        emailHint={pendingMfa.emailHint}
+        loading={loading}
+        error={error}
+        onVerify={code => void verifyEmailCode(pendingMfa.challengeId, code)}
+        onResend={() => resendEmailCode(pendingMfa.challengeId)}
+        onCancel={() => { setPendingMfa(null); setPassword(''); setError('') }}
       />
     )
   }
@@ -108,7 +161,42 @@ export default function LoginPage() {
         <p className="mt-4 text-center text-[13px] text-[#64748B]">
           Don’t have an account? <Link to="/register" className="font-bold text-[#1E3A8A] hover:underline">Sign up</Link>
         </p>
-        {hasGoogleClientId && <GoogleButton loading={loading} onSuccess={afterLogin} onError={setError} onNeedsProfile={setPendingProfile} />}
+        {hasGoogleClientId && <GoogleButton loading={loading} onSuccess={data => handleLoginResponse(data)} onError={setError} onNeedsProfile={setPendingProfile} />}
+      </section>
+    </div>
+  )
+}
+
+function EmailMfaForm({ emailHint, loading, error, onVerify, onResend, onCancel }: {
+  emailHint: string
+  loading: boolean
+  error: string
+  onVerify: (code: string) => void
+  onResend: () => Promise<boolean>
+  onCancel: () => void
+}) {
+  const [code, setCode] = useState('')
+  const [notice, setNotice] = useState('')
+  return (
+    <div className="auth-page-background min-h-screen flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
+        <ShieldCheck size={36} className="mb-4 text-[#1E3A8A]" />
+        <h1 className="text-2xl font-extrabold text-[#071A2B]">Verify your sign-in</h1>
+        <p className="mt-2 text-[13px] leading-5 text-[#64748B]">We emailed a six-digit security code to <strong>{emailHint}</strong>. The code expires in 10 minutes.</p>
+        {error && <p role="alert" className="mt-4 rounded-lg border border-red-100 bg-red-50 p-3 text-[13px] text-red-700">{error}</p>}
+        {notice && <p role="status" className="mt-4 rounded-lg border border-green-100 bg-green-50 p-3 text-[13px] text-green-700">{notice}</p>}
+        <form onSubmit={event => { event.preventDefault(); onVerify(code) }} className="mt-5 space-y-4">
+          <label className="block">
+            <span className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Email verification code</span>
+            <input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-3 text-center font-mono text-xl tracking-[0.4em] outline-none focus:border-[#1E3A8A]" />
+          </label>
+          <p className="text-[11px] leading-4 text-[#64748B]">Remember this device for 7 days. Only do this on a device you control.</p>
+          <button disabled={loading || code.length !== 6} className="w-full rounded-xl bg-[#1E3A8A] py-3 text-[13px] font-bold text-white disabled:opacity-50">{loading ? 'Verifying...' : 'Verify and continue'}</button>
+        </form>
+        <div className="mt-4 flex justify-between text-[12px]">
+          <button type="button" onClick={() => { setNotice(''); void onResend().then(sent => { if (sent) setNotice('A new verification code was sent.') }) }} disabled={loading} className="font-bold text-[#1E3A8A] disabled:opacity-50">Resend code</button>
+          <button type="button" onClick={onCancel} className="font-semibold text-[#64748B]">Use another sign-in</button>
+        </div>
       </section>
     </div>
   )
@@ -116,18 +204,18 @@ export default function LoginPage() {
 
 function GoogleButton({ loading, onSuccess, onError, onNeedsProfile }: {
   loading: boolean
-  onSuccess: (access: string, refresh: string) => Promise<void>
+  onSuccess: (data: LoginResponse) => Promise<void>
   onError: (msg: string) => void
   onNeedsProfile: (p: { tmpToken: string; name: string; email: string }) => void
 }) {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const { data } = await authApi.googleLogin(tokenResponse.access_token)
+        const { data } = await authApi.googleLogin(tokenResponse.access_token, localStorage.getItem('majo_mfa_trusted_device'))
         if ('needs_profile' in data) {
           onNeedsProfile({ tmpToken: data.tmp_token, name: data.name, email: data.email })
         } else {
-          await onSuccess(data.access, data.refresh)
+          await onSuccess(data)
         }
       } catch {
         onError('Google sign-in failed. Please try again.')
@@ -166,7 +254,7 @@ type District = Pick<DistrictRecord, 'id' | 'name' | 'region'>
 
 function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
   name: string; email: string; tmpToken: string
-  onComplete: (access: string, refresh: string) => Promise<void>
+  onComplete: (data: LoginResponse) => Promise<void>
 }) {
   const [districts, setDistricts] = useState<District[]>([])
   const [phone, setPhone] = useState('')
@@ -199,8 +287,12 @@ function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
     if (!phone.trim() || !region || !district) { setError('Phone, region and district are required.'); return }
     setLoading(true)
     try {
-      const { data } = await authApi.completeGoogleProfile(tmpToken, { phone: phone.trim(), region, district, village: village.trim() })
-      await onComplete(data.access, data.refresh)
+      const { data } = await authApi.completeGoogleProfile(
+        tmpToken,
+        { phone: phone.trim(), region, district, village: village.trim() },
+        localStorage.getItem('majo_mfa_trusted_device'),
+      )
+      await onComplete(data)
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? 'Failed to save profile. Please try again.')
     } finally { setLoading(false) }
