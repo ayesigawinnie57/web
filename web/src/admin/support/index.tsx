@@ -223,7 +223,7 @@ export default function AdminSupport() {
   const closedConversationCount = conversations.filter(item => item.is_closed).length
 
   return (
-    <div className="flex h-full min-h-[520px] flex-col p-4 md:p-6">
+    <div className="flex h-[calc(100dvh-7rem)] min-h-0 flex-col p-4 md:h-full md:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#168348]">Customer care</p>
@@ -234,8 +234,8 @@ export default function AdminSupport() {
         </button>
       </div>
 
-      <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-[#DCE5EB] bg-white md:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className={`${selectedId !== null ? 'hidden md:flex' : 'flex'} min-h-0 flex-col border-r border-[#E2E8F0]`}>
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden rounded-xl border border-[#DCE5EB] bg-white md:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className={`${selectedId !== null ? 'hidden md:flex' : 'flex'} min-h-0 min-w-0 flex-col border-r border-[#E2E8F0]`}>
           <div className="border-b border-[#E2E8F0] p-3">
             <input value={filter} onChange={event => setFilter(event.target.value)} placeholder="Search conversations" aria-label="Search conversations" className="w-full rounded-lg border border-[#DCE5EB] px-3 py-2.5 text-[12px] outline-none focus:border-[#25D366]" />
             <button type="button" onClick={() => setShowClosed(!showClosed)} className="mt-2 w-full rounded-lg border border-[#DCE5EB] px-3 py-2 text-left text-[11px] font-bold text-[#475569] hover:bg-[#F8FAFC]">
@@ -260,7 +260,7 @@ export default function AdminSupport() {
           </div>
         </aside>
 
-        <section className={`${selectedId !== null ? 'flex' : 'hidden md:flex'} min-h-0 flex-col bg-[#F4F7F8]`}>
+        <section className={`${selectedId !== null ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0 flex-col bg-[#F4F7F8]`}>
           {!conversation ? (
             <div className="flex flex-1 flex-col items-center justify-center px-8 text-center text-[#64748B]">
               <MessageCircle size={32} />
