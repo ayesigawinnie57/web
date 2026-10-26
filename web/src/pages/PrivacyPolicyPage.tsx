@@ -3,7 +3,7 @@ import { ShieldCheck, CheckCircle2 } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
-const sections = [
+const sections: { title: string; text?: string; paragraphs?: string[] }[] = [
   {
     title: '1. Information we collect',
     text:
@@ -15,19 +15,33 @@ const sections = [
       'We use your information to process orders, confirm payments, communicate with you about purchases, provide customer support, improve product recommendations, prevent fraud, and maintain the security of our platform. For administrators and approved traders, we use email-based two-factor authentication (2FA) to verify sign-ins and send an email alert after a successful sign-in.',
   },
   {
-    title: '3. Two-factor authentication and sign-in alerts',
-    text:
-      'Administrators and approved traders must enter a one-time code sent to their registered email when signing in on a device that is not recognized. The code expires after 10 minutes and may only be used once. If you choose to remember a device, its browser or app credential is retained for up to seven days; the credential is stored by our service as a hash. You must still enter your password when using a remembered device. After a successful sign-in, we email the account holder the device or browser description and sign-in time. These alerts help you identify activity you do not recognize.',
+    title: '3. Account Security and Sign-In Alerts',
+    paragraphs: [
+      'We take the security of your Majo Gadgets account seriously. To help protect your account from unauthorized access, approved traders may be required to verify their identity using a one-time verification code sent to their registered email address when signing in from an unrecognized device.',
+      'Verification codes expire after 10 minutes and can only be used once. For your security, never share your verification code with anyone.',
+      'Where available, you may choose to remember a trusted device for up to seven days for a more convenient sign-in experience. Remembered-device credentials are stored securely in a hashed form. You must still enter your password when signing in from a remembered device.',
+      'After a successful sign-in, we may send you an email notification containing a description of the device or browser used and the time of access. These alerts help you recognize legitimate activity and identify sign-ins you do not recognize.',
+      'If you receive an alert about activity you did not authorize, we recommend changing your password promptly and contacting Majo Gadgets Support for assistance.',
+    ],
   },
   {
-    title: '4. Optional location in sign-in alerts',
-    text:
-      'During sign-in verification, your browser or mobile device may ask for permission to share its location. If you grant permission and the device provides coordinates, we include rounded coordinates in the successful sign-in alert email. Location permission is optional: if you deny it or location is unavailable, the alert will say that location is unavailable. We do not use this feature to track your ongoing or background location, and we do not send your coordinates to a third-party geolocation service.',
+    title: '4. Optional Location Information',
+    paragraphs: [
+      "To provide additional context in security notifications, Majo Gadgets may request permission to access your device's location during sign-in verification.",
+      'If you grant permission and your device provides location coordinates, we may include approximate, rounded coordinates in the successful sign-in notification sent to your registered email address. If you decline permission or your device cannot provide location information, the notification will indicate that the location is unavailable.',
+      "Location sharing is optional and is not required to use your account. We do not use this feature to continuously track your location or monitor your movements in the background. We also do not send your device's coordinates to a third-party geolocation service through this feature.",
+      'You may decline the location request without preventing sign-in verification from proceeding, subject to other applicable security requirements.',
+    ],
   },
   {
     title: '5. Sharing of information',
-    text:
-      'We do not sell your personal information. We may share information with trusted service providers who help us operate the website, process payments, deliver products, send notifications (including account security emails), or provide technical support, as required to deliver our services.',
+    paragraphs: [
+      'Majo Gadgets respects your privacy. We do not sell your personal information to third parties.',
+      'We may share only the information necessary with trusted service providers that help us operate our platform, process payments, fulfil and deliver orders, send transactional and security notifications, maintain our systems, and provide technical support.',
+      'These service providers are expected to protect your information and use it only for authorized purposes in accordance with applicable privacy and data protection requirements.',
+      'We may also disclose information when required by law, in response to lawful requests from competent authorities, or when reasonably necessary to protect our users, prevent fraud, investigate security incidents, and safeguard the integrity of our platform.',
+      'We take reasonable measures to protect personal information and limit its disclosure to what is necessary for the relevant purpose.',
+    ],
   },
   {
     title: '6. Cookies and tracking',
@@ -90,7 +104,13 @@ export default function PrivacyPolicyPage() {
               {sections.map(section => (
                 <div key={section.title} className="border-b border-[#E2E8F0] pb-6 last:border-b-0 last:pb-0">
                   <h2 className="text-[18px] md:text-[20px] font-extrabold text-[#071A2B] mb-3">{section.title}</h2>
-                  <p className="text-[15px] leading-8 text-[#475569]">{section.text}</p>
+                  {(section.paragraphs ?? (section.text ? [section.text] : [])).map((paragraph, index) => (
+                    <p key={index} className="text-[15px] leading-8 text-[#475569] mb-3 last:mb-0">
+                      {paragraph === 'Majo Gadgets respects your privacy. We do not sell your personal information to third parties.'
+                        ? <>Majo Gadgets respects your privacy. <strong>We do not sell your personal information to third parties.</strong></>
+                        : paragraph}
+                    </p>
+                  ))}
                 </div>
               ))}
             </div>
