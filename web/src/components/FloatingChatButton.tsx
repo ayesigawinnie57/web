@@ -198,18 +198,20 @@ export default function FloatingChatButton() {
         </section>
       )}
 
-      <button
-        type="button"
-        onClick={() => setOpen(value => !value)}
-        aria-label={open ? 'Close support chat' : 'Open support chat'}
-        aria-expanded={open}
-        className="floating-chat-toggle group fixed bottom-20 right-5 z-[80] inline-flex h-14 w-14 items-center justify-center rounded-[50%] bg-[#C2410C] text-white shadow-[0_18px_40px_rgba(194,65,12,0.35)] transition duration-200 hover:-translate-y-1 hover:scale-105 sm:right-6 lg:bottom-5"
-      >
-        {!open && <span aria-hidden="true" className="absolute inset-0 -z-10 rounded-full bg-[#C2410C] opacity-20 motion-reduce:animate-none animate-ping" />}
-        {open ? <X className="h-6 w-6" /> : <MessageCircleMore className="h-6 w-6" />}
-        {!open && <span className="absolute bottom-full right-0 mb-2 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-[#071A2B] shadow-md">{launcherLabel}</span>}
-        {!open && unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#E5484D] px-1 text-[9px] font-extrabold text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-      </button>
+      {!open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Open support chat"
+          aria-expanded={false}
+          className="floating-chat-toggle group fixed bottom-20 right-5 z-[80] inline-flex h-14 w-14 items-center justify-center rounded-[50%] bg-[#C2410C] text-white shadow-[0_18px_40px_rgba(194,65,12,0.35)] transition duration-200 hover:-translate-y-1 hover:scale-105 sm:right-6 lg:bottom-5"
+        >
+          <span aria-hidden="true" className="absolute inset-0 -z-10 rounded-full bg-[#C2410C] opacity-20 motion-reduce:animate-none animate-ping" />
+          <MessageCircleMore className="h-6 w-6" />
+          <span className="absolute bottom-full right-0 mb-2 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-[#071A2B] shadow-md">{launcherLabel}</span>
+          {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#E5484D] px-1 text-[9px] font-extrabold text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+        </button>
+      )}
     </>
   )
 }
