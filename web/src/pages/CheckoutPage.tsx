@@ -48,7 +48,7 @@ export default function CheckoutPage() {
 
       // Merge: backend profile takes priority, fallback to localStorage cache
       const name = profileData?.name ?? cached?.name ?? ''
-      const phone = profileData?.phone ?? cached?.phone ?? ''
+      const phone = profileData?.phone ?? ''
       const region = profileData?.region ?? cached?.region ?? ''
       const district = profileData?.district ?? cached?.district ?? ''
       const village = profileData?.village ?? cached?.village ?? ''
@@ -61,7 +61,6 @@ export default function CheckoutPage() {
         localStorage.setItem('majo_user', JSON.stringify({
           ...cached,
           name: profileData.name,
-          phone: profileData.phone,
           region: profileData.region,
           district: profileData.district,
           village: profileData.village,

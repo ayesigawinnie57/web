@@ -340,11 +340,27 @@ export const authApi = {
     localStorage.setItem('refresh_token', refresh)
     window.dispatchEvent(new Event('majo-auth-changed'))
   },
-  saveProfile: (name: string, email: string, isAdmin = false, extra?: { phone?: string; region?: string; district?: string; village?: string }) => {
+  saveProfile: (name: string, email: string, isAdmin = false, extra?: { region?: string; district?: string; village?: string }) => {
     localStorage.setItem('majo_user', JSON.stringify({ name, email, isAdmin, ...extra }))
     window.dispatchEvent(new Event('majo-auth-changed'))
   },
 }
+
+const removeCachedProfilePhone = () => {
+  if (typeof window === 'undefined') return
+  try {
+    const storedProfile = localStorage.getItem('majo_user')
+    if (!storedProfile) return
+    const profile = JSON.parse(storedProfile)
+    if (!profile || typeof profile !== 'object' || Array.isArray(profile) || !('phone' in profile)) return
+    delete profile.phone
+    localStorage.setItem('majo_user', JSON.stringify(profile))
+  } catch {
+    // Browser storage may be unavailable or contain malformed cached data.
+  }
+}
+
+removeCachedProfilePhone()
 
 export type MfaChallenge = {
   mfa_required: true

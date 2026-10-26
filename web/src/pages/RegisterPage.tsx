@@ -72,7 +72,6 @@ export default function RegisterPage() {
       })
       authApi.saveTokens(data.access, data.refresh)
       authApi.saveProfile(form.name.trim(), form.email.trim(), false, {
-        phone: form.phone.trim(),
         region: form.region,
         district: form.district.trim(),
         village: form.village.trim(),

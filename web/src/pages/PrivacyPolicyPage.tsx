@@ -3,16 +3,43 @@ import { ShieldCheck, CheckCircle2 } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
-const sections: { title: string; text?: string; paragraphs?: string[] }[] = [
+const sections: {
+  title: string
+  text?: string
+  paragraphs?: string[]
+  intro?: string
+  items?: { label: string; text: string }[]
+  outro?: string
+}[] = [
   {
-    title: '1. Information we collect',
-    text:
-      'We may collect personal information such as your name, email address, phone number, delivery address, order details, payment information, account preferences, and browsing activity necessary to provide our services securely and efficiently. For account security, we also process sign-in verification status, a device or browser description, and sign-in timestamps for administrator and approved trader accounts.',
+    title: '1. Information We Collect',
+    intro: 'Majo Gadgets collects information necessary to provide you with a secure, reliable, and convenient shopping experience. Depending on how you use our platform, the information we collect may include:',
+    items: [
+      { label: 'Personal information', text: 'Your name, email address, phone number, and other details you provide when creating or managing your account.' },
+      { label: 'Delivery information', text: 'Your delivery address and relevant contact details needed to fulfil your orders.' },
+      { label: 'Order information', text: 'Products purchased, order history, returns, refunds, and related transaction details.' },
+      { label: 'Payment information', text: 'Payment status, transaction references, and other information necessary to process and verify payments. Payment details may be processed by our payment service providers. Majo Gadgets does not store full card numbers, CVV/security codes, card expiry dates, mobile-money PINs, or mobile-money authorization codes in browser storage or in our order records. Card and mobile-money payment credentials are entered on the payment provider’s page; we receive transaction details needed to confirm and manage the payment. Phone numbers used as account or delivery contact details may be stored with your account or order and are not mobile-money PINs or authorization credentials. The provider and your browser may have their own data-handling or payment-saving settings, which are outside Majo Gadgets browser storage.' },
+      { label: 'Account preferences', text: 'Your saved addresses, shopping preferences, and other settings you choose to provide.' },
+      { label: 'Platform usage information', text: 'Relevant browsing activity, interactions with products, and technical information used to improve website performance, enhance your shopping experience, and maintain security.' },
+      { label: 'Security information', text: 'Where applicable, we process sign-in verification status, device or browser descriptions, sign-in timestamps, and information needed to protect accounts against unauthorized access.' },
+    ],
+    outro: 'We aim to collect only the information reasonably necessary for the purposes described in this Privacy Policy and to handle it responsibly.',
   },
   {
-    title: '2. How we use your information',
-    text:
-      'We use your information to process orders, confirm payments, communicate with you about purchases, provide customer support, improve product recommendations, prevent fraud, and maintain the security of our platform. For administrators and approved traders, we use email-based two-factor authentication (2FA) to verify sign-ins and send an email alert after a successful sign-in.',
+    title: '2. How We Use Your Information',
+    intro: 'We use your information for legitimate business and service purposes, including to:',
+    items: [
+      { label: '', text: 'Create and manage your account and provide access to our platform.' },
+      { label: '', text: 'Process orders, verify payments, arrange deliveries, and manage cancellations, returns, and refunds.' },
+      { label: '', text: 'Send order confirmations, delivery updates, account notifications, and other important service-related communications.' },
+      { label: '', text: 'Respond to enquiries and provide customer support.' },
+      { label: '', text: 'Personalize your shopping experience and improve product recommendations where appropriate.' },
+      { label: '', text: 'Monitor platform performance, improve our services, and develop new features.' },
+      { label: '', text: 'Detect and prevent fraud, unauthorized transactions, suspicious activity, and other misuse of our platform.' },
+      { label: '', text: 'Protect account security through sign-in verification, security monitoring, and email alerts where applicable.' },
+      { label: '', text: 'Comply with applicable legal obligations and resolve disputes when necessary.' },
+    ],
+    outro: 'We use your personal information only for relevant purposes, in accordance with this Privacy Policy and applicable data protection laws. Where required, we will seek your consent before using your information for purposes that require it.',
   },
   {
     title: '3. Account Security and Sign-In Alerts',
@@ -111,6 +138,18 @@ export default function PrivacyPolicyPage() {
                         : paragraph}
                     </p>
                   ))}
+                  {section.intro && <p className="text-[15px] leading-8 text-[#475569] mb-3">{section.intro}</p>}
+                  {section.items && (
+                    <ul className="list-disc pl-6 space-y-2 text-[15px] leading-8 text-[#475569]">
+                      {section.items.map((item, index) => (
+                        <li key={index}>
+                          {item.label && <><strong>{item.label}:</strong> </>}
+                          {item.text}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {section.outro && <p className="text-[15px] leading-8 text-[#475569] mt-3">{section.outro}</p>}
                 </div>
               ))}
             </div>
