@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Eye, EyeOff } from 'lucide-react-native'
 import { C, LOGO } from './theme'
-import { authApi, tokenStore } from './lib/auth'
+import { authApi, getSigninLocation, tokenStore } from './lib/auth'
 import { initializeSupportEncryptionBackup } from '../lib/supportEncryption'
 import { pushNotification } from './lib/NotificationContext'
 
@@ -48,7 +48,8 @@ export default function LoginScreen() {
     setError('')
     try {
       const trustedDevice = await tokenStore.getTrustedDevice()
-      const { data } = await authApi.login(email.trim(), password, trustedDevice)
+      const signinLocation = trustedDevice ? await getSigninLocation() : null
+      const { data } = await authApi.login(email.trim(), password, trustedDevice, signinLocation)
       if ('mfa_required' in data) {
         setChallenge({ id: data.challenge_id, emailHint: data.email_hint })
       } else {
@@ -67,7 +68,8 @@ export default function LoginScreen() {
     setLoading(true)
     setError('')
     try {
-      const { data } = await authApi.verifyEmailMfa(challenge.id, code)
+      const signinLocation = await getSigninLocation()
+      const { data } = await authApi.verifyEmailMfa(challenge.id, code, signinLocation)
       if (data.trusted_device) await tokenStore.saveTrustedDevice(data.trusted_device)
       await finishLogin(data.access, data.refresh, password)
     } catch (e: any) {
@@ -119,7 +121,7 @@ export default function LoginScreen() {
                   maxLength={6}
                 />
               </View>
-              <Text style={styles.trustNotice}>This device will be remembered for 7 days. Only use this on a device you control.</Text>
+              <Text style={styles.trustNotice}>This device will be remembered for 7 days. Only use this on a device you control. Location access is optional and is used only for the sign-in alert email.</Text>
               <TouchableOpacity style={[styles.btn, (loading || code.length !== 6) && { opacity: 0.7 }]} onPress={verifyCode} disabled={loading || code.length !== 6}>
                 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Verify and continue</Text>}
               </TouchableOpacity>
@@ -163,6 +165,7 @@ export default function LoginScreen() {
           <TouchableOpacity style={[styles.btn, loading && { opacity: 0.7 }]} onPress={handleLogin} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Sign In</Text>}
           </TouchableOpacity>
+          <Text style={styles.trustNotice}>Admins and traders may allow optional device location to include it in sign-in security alerts.</Text>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>

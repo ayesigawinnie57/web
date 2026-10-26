@@ -2,10 +2,22 @@ import { type FormEvent, useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, ChevronDown, ShieldCheck } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
-import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, fetchAllDistricts, type DistrictRecord, type LoginResponse } from '../lib/api'
+import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, fetchAllDistricts, type DistrictRecord, type LoginResponse, type SigninLocation } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { initializeSupportEncryptionBackup } from '../lib/supportEncryption'
 import { Helmet } from 'react-helmet-async'
+
+const getSigninLocation = (): Promise<SigninLocation | null> => new Promise(resolve => {
+  if (!navigator.geolocation) {
+    resolve(null)
+    return
+  }
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => resolve({ latitude: coords.latitude, longitude: coords.longitude }),
+    () => resolve(null),
+    { enableHighAccuracy: false, maximumAge: 0, timeout: 10_000 },
+  )
+})
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -82,7 +94,8 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const trustedDevice = localStorage.getItem('majo_mfa_trusted_device')
-      const { data } = await authApi.login(email.trim(), password, trustedDevice)
+      const signinLocation = trustedDevice ? await getSigninLocation() : null
+      const { data } = await authApi.login(email.trim(), password, trustedDevice, signinLocation)
       await handleLoginResponse(data, password)
     } catch (requestError: any) {
       setError(requestError?.response?.data?.detail ?? 'Invalid email or password.')
@@ -93,7 +106,8 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const { data } = await authApi.verifyEmailMfa(challengeId, code)
+      const signinLocation = await getSigninLocation()
+      const { data } = await authApi.verifyEmailMfa(challengeId, code, signinLocation)
       await handleLoginResponse(data, password)
     } catch (requestError: any) {
       setError(requestError?.response?.data?.detail ?? 'Could not verify the sign-in code.')
@@ -157,6 +171,7 @@ export default function LoginPage() {
           <label className="block"><span className="block text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] mb-2">Password</span><div className="relative"><input required type={showPassword ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder="Enter your password" className="w-full px-3 py-3 pr-11 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] outline-none focus:border-[#1E3A8A]" /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-2.5 text-[#64748B]">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
           <button disabled={loading} className="w-full h-12 bg-[#1E3A8A] text-white rounded-xl text-[13px] font-bold disabled:opacity-60 hover:opacity-90">{loading ? 'Signing in...' : 'Sign In'}</button>
         </form>
+        <p className="mt-4 text-[11px] leading-4 text-[#64748B]">Admins and traders may allow optional device location to include it in sign-in security alerts.</p>
         <p className="text-center text-[13px] text-[#64748B] mt-6"><Link to="/forgot-password" className="font-bold text-[#1E3A8A]">Forgot password?</Link></p>
         <p className="mt-4 text-center text-[13px] text-[#64748B]">
           Don’t have an account? <Link to="/register" className="font-bold text-[#1E3A8A] hover:underline">Sign up</Link>
@@ -190,7 +205,7 @@ function EmailMfaForm({ emailHint, loading, error, onVerify, onResend, onCancel 
             <span className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">Email verification code</span>
             <input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-3 text-center font-mono text-xl tracking-[0.4em] outline-none focus:border-[#1E3A8A]" />
           </label>
-          <p className="text-[11px] leading-4 text-[#64748B]">Remember this device for 7 days. Only do this on a device you control.</p>
+          <p className="text-[11px] leading-4 text-[#64748B]">Remember this device for 7 days. Only do this on a device you control. Location access is optional and is used only for the sign-in alert email.</p>
           <button disabled={loading || code.length !== 6} className="w-full rounded-xl bg-[#1E3A8A] py-3 text-[13px] font-bold text-white disabled:opacity-50">{loading ? 'Verifying...' : 'Verify and continue'}</button>
         </form>
         <div className="mt-4 flex justify-between text-[12px]">
@@ -211,7 +226,9 @@ function GoogleButton({ loading, onSuccess, onError, onNeedsProfile }: {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const { data } = await authApi.googleLogin(tokenResponse.access_token, localStorage.getItem('majo_mfa_trusted_device'))
+        const trustedDevice = localStorage.getItem('majo_mfa_trusted_device')
+        const signinLocation = trustedDevice ? await getSigninLocation() : null
+        const { data } = await authApi.googleLogin(tokenResponse.access_token, trustedDevice, signinLocation)
         if ('needs_profile' in data) {
           onNeedsProfile({ tmpToken: data.tmp_token, name: data.name, email: data.email })
         } else {
@@ -287,10 +304,13 @@ function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
     if (!phone.trim() || !region || !district) { setError('Phone, region and district are required.'); return }
     setLoading(true)
     try {
+      const trustedDevice = localStorage.getItem('majo_mfa_trusted_device')
+      const signinLocation = trustedDevice ? await getSigninLocation() : null
       const { data } = await authApi.completeGoogleProfile(
         tmpToken,
         { phone: phone.trim(), region, district, village: village.trim() },
-        localStorage.getItem('majo_mfa_trusted_device'),
+        trustedDevice,
+        signinLocation,
       )
       await onComplete(data)
     } catch (err: any) {

@@ -26,7 +26,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Majo Gadgets to include your approximate location in sign-in security alerts."
+        }
+      ]
     ]
   }
 }

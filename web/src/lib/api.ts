@@ -323,14 +323,14 @@ export const publicSellerApi = {
 }
 
 export const authApi = {
-  login: (email: string, password: string, trusted_device?: string | null) =>
-    api.post<LoginResponse>('/api/auth/login/', { email, password, trusted_device }),
-  googleLogin: (credential: string, trusted_device?: string | null) =>
-    api.post<LoginResponse | { needs_profile: true; tmp_token: string; name: string; email: string }>('/api/auth/login/google/', { credential, trusted_device }),
-  completeGoogleProfile: (tmp_token: string, payload: { phone: string; region: string; district: string; village: string }, trusted_device?: string | null) =>
-    api.post<LoginResponse>('/api/auth/login/google/complete/', { tmp_token, trusted_device, ...payload }),
-  verifyEmailMfa: (challenge_id: string, code: string) =>
-    api.post<MfaLoginSuccess>('/api/auth/login/email-code/verify/', { challenge_id, code, remember_device: true }),
+  login: (email: string, password: string, trusted_device?: string | null, signin_location?: SigninLocation | null) =>
+    api.post<LoginResponse>('/api/auth/login/', { email, password, trusted_device, signin_location }),
+  googleLogin: (credential: string, trusted_device?: string | null, signin_location?: SigninLocation | null) =>
+    api.post<LoginResponse | { needs_profile: true; tmp_token: string; name: string; email: string }>('/api/auth/login/google/', { credential, trusted_device, signin_location }),
+  completeGoogleProfile: (tmp_token: string, payload: { phone: string; region: string; district: string; village: string }, trusted_device?: string | null, signin_location?: SigninLocation | null) =>
+    api.post<LoginResponse>('/api/auth/login/google/complete/', { tmp_token, trusted_device, signin_location, ...payload }),
+  verifyEmailMfa: (challenge_id: string, code: string, signin_location?: SigninLocation | null) =>
+    api.post<MfaLoginSuccess>('/api/auth/login/email-code/verify/', { challenge_id, code, remember_device: true, signin_location }),
   resendEmailMfa: (challenge_id: string) =>
     api.post<{ detail: string }>('/api/auth/login/email-code/resend/', { challenge_id }),
   register: (payload: { name: string; email: string; phone: string; password: string; country: string; region: string; district: string; village: string }) => api.post<{ access: string; refresh: string }>('/api/auth/register/', payload),
@@ -351,6 +351,8 @@ export type MfaChallenge = {
   challenge_id: string
   email_hint: string
 }
+
+export type SigninLocation = { latitude: number; longitude: number }
 
 export type MfaLoginSuccess = {
   access: string
