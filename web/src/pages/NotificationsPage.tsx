@@ -44,7 +44,7 @@ export default function NotificationsPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <main className="pt-14 lg:pt-16 px-4 lg:px-8 py-8 max-w-5xl mx-auto">
+      <main className="pt-14 lg:pt-16 px-4 lg:px-8 py-8 w-full">
         <div className="flex items-center justify-between mb-6">
           {selecting ? (
             <>
@@ -87,7 +87,7 @@ export default function NotificationsPage() {
             <p className="text-[13px] text-[#64748B]">You'll see order updates, offers, and more here.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="w-full divide-y divide-[#E2E8F0] border-y border-[#E2E8F0] bg-white">
             {notifications.map(n => {
               const isSelected = selected.includes(n.id)
               return (
@@ -95,10 +95,10 @@ export default function NotificationsPage() {
                   key={n.id}
                   onClick={() => handleClick(n)}
                   onContextMenu={e => { e.preventDefault(); toggle(n.id) }}
-                  className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-colors
-                    ${!n.read ? 'border-green-300 bg-green-50' : 'border-[#E2E8F0] bg-white'}
-                    ${isSelected ? 'border-indigo-400 bg-indigo-50' : ''}
-                    hover:shadow-sm`}
+                  className={`flex items-start gap-3 px-4 py-5 cursor-pointer transition-colors sm:px-6
+                    ${!n.read ? 'bg-[#F0FDF4]' : 'bg-white'}
+                    ${isSelected ? 'bg-indigo-50' : ''}
+                    hover:bg-[#F8FAFC]`}
                 >
                   {selecting && (
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5
@@ -106,21 +106,27 @@ export default function NotificationsPage() {
                       {isSelected && <CheckCheck size={11} color="#fff" />}
                     </div>
                   )}
+                  {!selecting && (
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F1F5F9] text-[#64748B]">
+                      <Bell size={15} />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-[13px] font-bold text-[#071A2B] truncate">{n.title}</p>
                       <span className="text-[11px] text-[#94A3B8] shrink-0">{timeAgo(n.createdAt)}</span>
                     </div>
-                    <p className="text-[12px] text-[#64748B] mt-0.5 line-clamp-2">{n.body.split('|')[0]}</p>
+                    <p className="text-[12px] text-[#64748B] mt-1">{n.body.split('|')[0]}</p>
                   </div>
-                  <div className="flex flex-col items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
                     {!n.read && <div className="w-2 h-2 rounded-full bg-green-500" />}
                     {!selecting && (
                       <button
                         onClick={e => { e.stopPropagation(); deleteNotification(n.id) }}
+                        aria-label="Delete notification"
                         className="text-[#CBD5E1] hover:text-red-400"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </div>
