@@ -90,13 +90,13 @@ export default function AdminOrders() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] bg-white shrink-0">
+      <div className="flex flex-col gap-3 px-4 py-4 border-b border-[#E2E8F0] bg-white shrink-0 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
           <h1 className="text-[18px] font-extrabold text-[#071A2B]">Orders</h1>
           <p className="text-[12px] text-[#64748B]">{tab === 'returns' ? `${filteredReturns.length} return requests` : `${filtered.length} of ${orders.length} orders`}</p>
         </div>
         {/* Search */}
-        <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3 h-9 w-64">
+        <div className="flex h-9 w-full items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-3 sm:w-64">
           <Search size={13} className="text-[#94A3B8] shrink-0" />
           <input
             value={search}
@@ -108,7 +108,7 @@ export default function AdminOrders() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 px-6 py-3 border-b border-[#E2E8F0] bg-white shrink-0 overflow-x-auto scrollbar-none">
+      <div className="flex gap-1.5 px-4 py-3 border-b border-[#E2E8F0] bg-white shrink-0 overflow-x-auto scrollbar-none sm:px-6">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}

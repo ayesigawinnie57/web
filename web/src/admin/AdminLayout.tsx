@@ -101,7 +101,7 @@ export default function AdminLayout() {
     }`
 
   return (
-    <div className="flex flex-col h-screen bg-[#F8FAFC] overflow-hidden">
+    <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#F8FAFC]">
 
       {/* Top header */}
       <header className="flex items-center gap-3 px-4 h-14 bg-[#071A2B] border-b border-white/10 shrink-0 z-40">
@@ -186,7 +186,7 @@ export default function AdminLayout() {
       )}
 
       {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
 
         {/* Desktop sidebar */}
         <aside className="hidden md:flex w-56 bg-[#071A2B] flex-col shrink-0">
@@ -216,7 +216,7 @@ export default function AdminLayout() {
         </aside>
 
         {/* Main */}
-        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pb-16 md:pb-0">
           <Outlet />
         </main>
 

@@ -126,7 +126,7 @@ export default function AdminDashboard() {
 
       {/* Top stats */}
       <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest mb-3">Today</p>
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatCard label="Today's Revenue"  value={fmt(accounting?.today_revenue ?? 0)} />
         <StatCard label="Today's Orders"   value={String(accounting?.today_orders ?? 0)} />
         <StatCard label="Active Products"  value={String(activeProducts)} />
@@ -135,7 +135,7 @@ export default function AdminDashboard() {
       {/* P&L */}
       <div className="bg-[#071A2B] rounded-xl p-6 text-white mb-8">
         <p className="text-[11px] text-white/40 font-bold uppercase tracking-widest mb-4">Profit & Loss</p>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: 'Revenue',    value: fmt(accounting?.total_revenue ?? 0),  color: '#22C55E' },
             { label: 'Expenses',   value: fmt(accounting?.total_expenses ?? 0), color: '#ef4444' },
