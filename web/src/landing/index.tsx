@@ -11,12 +11,14 @@ import { productsApi, toProduct, type Product } from '../lib/api'
 
 export default function LandingPage() {
   const [products, setProducts] = useState<Product[]>([])
+  const [nextProductsPage, setNextProductsPage] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadProducts = () => {
-      productsApi.list('page_size=12').then(({ data }) => {
+      productsApi.list('page_size=24').then(({ data }) => {
         const raw: any[] = Array.isArray(data) ? data : (data as any).results ?? []
+        setNextProductsPage(Array.isArray(data) ? null : (data as any).next ?? null)
         setProducts(raw.map(toProduct))
       }).catch(() => undefined).finally(() => setLoading(false))
     }
@@ -37,7 +39,7 @@ export default function LandingPage() {
         <PromoBanners />
         <FlashDeals products={[]} />
         <ShopByCategory />
-        {!loading && <Recommended products={products} featuredIds={new Set(products.slice(0, 12).map(p => p.id))} />}
+        {!loading && <Recommended products={products} nextPage={nextProductsPage} featuredIds={new Set(products.slice(0, 12).map(p => p.id))} />}
       </div>
       <Footer />
     </div>

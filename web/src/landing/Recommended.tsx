@@ -24,12 +24,13 @@ function rankProducts(products: Product[], seenIds: Set<number>): Product[] {
     .map(x => x.p)
 }
 
-export default function Recommended({ products: initialProducts, featuredIds }: { products: Product[]; featuredIds: Set<number> }) {
+export default function Recommended({ products: initialProducts, nextPage, featuredIds }: { products: Product[]; nextPage: string | null; featuredIds: Set<number> }) {
   const [displayed, setDisplayed] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const [exhausted, setExhausted] = useState(false)
 
   const allProductsRef = useRef<Product[]>(initialProducts)
+  const nextPageRef = useRef<string | null>(nextPage)
   const seenIdsRef = useRef<Set<number>>(new Set(featuredIds))
   const sentinelRef = useRef<HTMLDivElement>(null)
   const loadingRef = useRef(false)
@@ -63,8 +64,17 @@ export default function Recommended({ products: initialProducts, featuredIds }: 
         // ── Guest: rank locally, fetch more from API if pool runs low ──
         let ranked = rankProducts(allProductsRef.current, seenIdsRef.current)
         if (!ranked.length) {
-          const { data } = await productsApi.list(`page=${apiPageRef.current}&page_size=24`)
+          if (!nextPageRef.current) {
+            exhaustedRef.current = true
+            setExhausted(true)
+            loadingRef.current = false
+            setLoading(false)
+            return
+          }
+          const params = new URL(nextPageRef.current, window.location.origin).searchParams.toString()
+          const { data } = await productsApi.list(params)
           const raw: any[] = Array.isArray(data) ? data : (data as any).results ?? []
+          nextPageRef.current = Array.isArray(data) ? null : (data as any).next ?? null
           if (!raw.length) {
             exhaustedRef.current = true
             setExhausted(true)
@@ -72,7 +82,6 @@ export default function Recommended({ products: initialProducts, featuredIds }: 
             setLoading(false)
             return
           }
-          apiPageRef.current += 1
           const existingIds = new Set(allProductsRef.current.map(p => p.id))
           const fresh = raw.map(toProduct).filter(p => !existingIds.has(p.id))
           allProductsRef.current = [...allProductsRef.current, ...fresh]
