@@ -39,12 +39,17 @@ export default function DesktopAdminInstallGate() {
           Install the Majo Gadgets web app on this desktop, then open it from your desktop or apps menu to access the portal.
         </p>
         {appInstalled ? (
-          <a
-            href="/admin"
-            className="mt-6 block rounded-lg border border-[#B7E4C7] bg-white px-4 py-3 text-sm font-semibold text-[#12824C] hover:bg-[#F3FBF6] hover:underline"
-          >
-            Majo Gadgets is installed. Open it from your desktop or apps menu to continue.
-          </a>
+          <>
+            <a
+              href="web+majo://admin"
+              className="mt-6 block rounded-lg border border-[#B7E4C7] bg-white px-4 py-3 text-sm font-semibold text-[#12824C] hover:bg-[#F3FBF6] hover:underline"
+            >
+              Majo Gadgets is installed. Click here to open the app.
+            </a>
+            <p className="mt-3 text-xs leading-5 text-[#64748B]">
+              If your browser asks, allow Majo Gadgets to open. If nothing happens, launch it from your desktop or apps menu.
+            </p>
+          </>
         ) : (
           <button
             onClick={installApp}

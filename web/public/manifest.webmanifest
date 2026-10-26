@@ -5,6 +5,12 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "protocol_handlers": [
+    {
+      "protocol": "web+majo",
+      "url": "/open?url=%s"
+    }
+  ],
   "background_color": "#FFFFFF",
   "theme_color": "#071A2B",
   "icons": [

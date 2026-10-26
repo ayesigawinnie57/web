@@ -168,6 +168,7 @@ export default function App() {
       <Suspense fallback={<div style={{ position: 'fixed', inset: 0, background: '#071A2B' }} />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/open" element={<Navigate to="/admin" replace />} />
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/categories" element={<CategoryPage />} />
           <Route path="/deals" element={<DealsPage />} />
