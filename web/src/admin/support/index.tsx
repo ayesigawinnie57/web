@@ -87,6 +87,15 @@ export default function AdminSupport() {
       return
     }
     let active = true
+    const updatePresence = (isViewing: boolean) => {
+      void supportChatApi.setAdminViewing(selectedId, isViewing).catch(cause => {
+        if (active && isViewing) {
+          setError(cause instanceof Error ? cause.message : 'Could not update support presence.')
+        }
+      })
+    }
+    updatePresence(true)
+    const presenceTimer = window.setInterval(() => updatePresence(true), 5000)
     const loadConversation = async () => {
       try {
         const [conversationResponse, keyResponse] = await Promise.all([
@@ -114,6 +123,8 @@ export default function AdminSupport() {
     return () => {
       active = false
       window.clearInterval(timer)
+      window.clearInterval(presenceTimer)
+      updatePresence(false)
     }
   }, [selectedId, selectedUserId, cryptoIdentity, ownKeyId])
 

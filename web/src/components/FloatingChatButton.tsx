@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { MessageCircleMore, Send, ShieldCheck, X } from 'lucide-react'
-import { authApi, supportChatApi, type SupportMessage } from '../lib/api'
+import { authApi, supportChatApi, type SupportMessage, type SupportPresence } from '../lib/api'
 import {
   createSupportEnvelope,
   getOrCreateSupportIdentity,
@@ -31,6 +31,7 @@ export default function FloatingChatButton() {
   const [sending, setSending] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [staffTyping, setStaffTyping] = useState(false)
+  const [supportPresence, setSupportPresence] = useState<SupportPresence>('waiting')
   const [conversationClosed, setConversationClosed] = useState(false)
   const [error, setError] = useState('')
   const [encryptionError, setEncryptionError] = useState('')
@@ -107,6 +108,7 @@ export default function FloatingChatButton() {
             body: messageBody(message, ownKeyId, identity, currentKeys),
           })))
           setConversationClosed(data.is_closed)
+          setSupportPresence(data.support_presence)
           setUnreadCount(data.unread_count)
           setStaffTyping(data.staff_typing)
           setError('')
@@ -193,6 +195,7 @@ export default function FloatingChatButton() {
         body: messageBody(message, ownKeyId, identity, currentKeys),
       })))
       setConversationClosed(data.is_closed)
+      setSupportPresence(data.support_presence)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Message could not be encrypted and sent. Please try again.')
     } finally {
@@ -252,6 +255,15 @@ export default function FloatingChatButton() {
                 <div className="mx-auto mb-4 max-w-[260px] rounded-xl bg-white px-3 py-2 text-center text-[11px] leading-5 text-[#64748B] shadow-sm">
                   Send us a message and our support team will reply here.
                 </div>
+                <p role="status" className="mx-auto max-w-[300px] rounded-xl bg-white px-3 py-2 text-center text-[11px] leading-5 text-[#475569] shadow-sm">
+                  {supportPresence === 'joined'
+                    ? 'Support has joined the chat.'
+                    : supportPresence === 'left'
+                      ? 'The support person has left the chat. You can continue sending messages.'
+                      : messages.length > 0
+                        ? 'Message sent. Waiting for support to join the chat.'
+                        : 'Waiting for support to join the chat.'}
+                </p>
                 {encryptionError && <p role="alert" className="mx-auto mb-3 max-w-[300px] rounded-lg bg-red-50 p-3 text-center text-[11px] leading-4 text-red-700">{encryptionError}</p>}
                 {encryptionReady && (
                   <div className="mx-auto mb-4 max-w-[300px] rounded-lg border border-[#BBF7D0] bg-white p-3 text-center">

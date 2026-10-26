@@ -954,8 +954,11 @@ export type SupportConversationSummary = {
   last_message: SupportMessage | null
 }
 
+export type SupportPresence = 'waiting' | 'joined' | 'left'
+
 export type SupportConversationDetail = Omit<SupportConversationSummary, 'updated_at' | 'unread_count' | 'last_message'> & {
   customer_typing: boolean
+  support_presence: SupportPresence
   messages: SupportMessage[]
 }
 
@@ -986,7 +989,7 @@ export const notificationsApi = {
 
 export const supportChatApi = {
   customerChat: (markRead = false) =>
-    api.get<{ conversation_id: number | null; messages: SupportMessage[]; unread_count: number; staff_typing: boolean; is_closed: boolean }>(
+    api.get<{ conversation_id: number | null; messages: SupportMessage[]; unread_count: number; staff_typing: boolean; is_closed: boolean; support_presence: SupportPresence }>(
       `/api/auth/support/chat/${markRead ? '?mark_read=true' : ''}`
     ),
   startCustomerChat: () => api.post<{ conversation_id: number; is_closed: boolean }>('/api/auth/support/chat/', { start: true }),
@@ -1004,6 +1007,8 @@ export const supportChatApi = {
   adminConversations: () => api.get<SupportConversationSummary[]>('/api/auth/admin/support/conversations/'),
   adminConversation: (id: number) => api.get<SupportConversationDetail>(`/api/auth/admin/support/conversations/${id}/`),
   setAdminTyping: (id: number, is_typing: boolean) => api.patch(`/api/auth/admin/support/conversations/${id}/`, { is_typing }),
+  setAdminViewing: (id: number, is_viewing: boolean) =>
+    api.patch<{ is_viewing: boolean }>(`/api/auth/admin/support/conversations/${id}/`, { is_viewing }),
   setAdminConversationClosed: (id: number, is_closed: boolean) =>
     api.patch<{ is_closed: boolean }>(`/api/auth/admin/support/conversations/${id}/`, { is_closed }),
   sendAdminReply: (id: number, envelope: SupportEncryptedEnvelope) =>
