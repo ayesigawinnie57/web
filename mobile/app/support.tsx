@@ -176,7 +176,8 @@ export default function SupportChatScreen() {
             <View style={styles.securityCard}>
               <ShieldCheck size={19} color={C.green} />
               <Text style={styles.securityTitle}>End-to-end encrypted</Text>
-              <Text style={styles.securityCopy}>Compare this code with Majo Support using a separate trusted channel before sharing sensitive information.</Text>
+              <Text style={styles.securityCopy}>This conversation is private and end-to-end encrypted. Only you and authorized Majo Support staff can read its messages. Encrypted copies are stored to preserve your chat history; people outside the support team cannot read them.</Text>
+              <Text style={styles.securityCopy}>Compare this code with Majo Support through a separate trusted channel before sharing sensitive information.</Text>
               <Text selectable style={styles.safetyCode}>{safetyCode}</Text>
               <Text style={styles.recoveryWarning}>On email-and-password sign-in, your chat key is backed up encrypted. Restoring needs your account password; a password reset cannot unlock the old backup.</Text>
               {!staffKeysReady && <Text style={styles.waiting}>You can write a draft now. Support is preparing its encryption key; sending will be available once the safety code is ready and verified.</Text>}

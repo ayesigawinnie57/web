@@ -241,7 +241,8 @@ export default function AdminSupportScreen() {
             <View style={styles.securityCard}>
               <ShieldCheck size={18} color={C.green} />
               <Text style={styles.securityTitle}>End-to-end encrypted</Text>
-              <Text style={styles.securityCopy}>Compare this code with the customer over a separate trusted channel before replying.</Text>
+              <Text style={styles.securityCopy}>This conversation is private and end-to-end encrypted. Only the customer and authorized Majo Support staff can read its messages. Encrypted copies are stored to preserve chat history; people outside the support team cannot read them.</Text>
+              <Text style={styles.securityCopy}>Compare this code with the customer through a separate trusted channel before replying.</Text>
               <Text style={styles.securityCopy}>Email-and-password sign-in keeps an encrypted key backup. A password reset cannot unlock the old backup.</Text>
               <Text selectable style={styles.safetyCode}>{safetyCode || 'Loading safety code…'}</Text>
               {!verified

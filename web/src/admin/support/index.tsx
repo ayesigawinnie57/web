@@ -263,7 +263,8 @@ export default function AdminSupport() {
               <div ref={messagesRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5" aria-live="polite">
                 <div className="mx-auto max-w-lg rounded-lg border border-[#BBF7D0] bg-white p-3 text-center">
                   <p className="flex items-center justify-center gap-1 text-[10px] font-bold text-[#166534]"><ShieldCheck size={13} /> End-to-end encrypted</p>
-                  <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Compare this safety code with the customer over a separate trusted channel before replying.</p>
+                  <p className="mt-1 text-[10px] leading-4 text-[#64748B]">This conversation is private and end-to-end encrypted. Only the customer and authorized Majo Support staff can read its messages. Encrypted copies are stored to preserve chat history; people outside the support team cannot read them.</p>
+                  <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Compare this safety code with the customer through a separate trusted channel before replying.</p>
                   <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Email-and-password sign-in keeps an encrypted key backup. A password reset cannot unlock the old backup.</p>
                   <p className="mt-2 select-all font-mono text-[11px] font-bold tracking-wider text-[#071A2B]">{safetyCode || 'Loading safety code…'}</p>
                   {!verified ? (

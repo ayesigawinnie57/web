@@ -264,7 +264,8 @@ export default function FloatingChatButton() {
                 {encryptionReady && (
                   <div className="mx-auto mb-4 max-w-[300px] rounded-lg border border-[#BBF7D0] bg-white p-3 text-center">
                     <p className="flex items-center justify-center gap-1 text-[10px] font-bold text-[#166534]"><ShieldCheck size={13} /> End-to-end encrypted</p>
-                    <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Compare this safety code with Majo Support using a separate trusted channel before sending sensitive information.</p>
+                    <p className="mt-1 text-[10px] leading-4 text-[#64748B]">This conversation is private and end-to-end encrypted. Only you and authorized Majo Support staff can read its messages. Encrypted copies are stored to preserve your chat history; people outside the support team cannot read them.</p>
+                    <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Compare this safety code with Majo Support through a separate trusted channel before sending sensitive information.</p>
                     <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Email-and-password sign-in keeps an encrypted key backup. A password reset cannot unlock the old backup.</p>
                     <p className="mt-2 select-all font-mono text-[11px] font-bold tracking-wider text-[#071A2B]">{safetyCode}</p>
                     {staffKeysReady && !verified ? (
