@@ -158,6 +158,9 @@ export default function FloatingChatButton() {
                 <div className="mx-auto mb-4 max-w-[260px] rounded-xl bg-white px-3 py-2 text-center text-[11px] leading-5 text-[#64748B] shadow-sm">
                   Send us a message and our support team will reply here.
                 </div>
+                <p className="mx-auto mb-4 max-w-[300px] text-center text-[10px] leading-4 text-[#64748B]">
+                  Messages are sent over HTTPS and can be read by authorized support staff. They are not end-to-end encrypted.
+                </p>
                 {loading && <p className="py-8 text-center text-[12px] text-[#64748B]">Loading conversation...</p>}
                 {!loading && messages.length === 0 && <p className="py-8 text-center text-[12px] text-[#64748B]">Your conversation starts with your first message.</p>}
                 {messages.map(message => (
