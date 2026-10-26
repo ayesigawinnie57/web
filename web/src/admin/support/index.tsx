@@ -6,7 +6,6 @@ import TypingIndicator from '../../components/TypingIndicator'
 import {
   createSupportEnvelope,
   getOrCreateSupportIdentity,
-  getSupportSafetyCode,
   tryDecryptSupportEnvelope,
 } from '../../lib/supportEncryption'
 import type { SupportDeviceIdentity, SupportPublicKey } from '../../../../shared/supportEncryption'
@@ -36,8 +35,6 @@ export default function AdminSupport() {
   const [error, setError] = useState('')
   const [cryptoIdentity, setCryptoIdentity] = useState<SupportDeviceIdentity | null>(null)
   const [ownKeyId, setOwnKeyId] = useState('')
-  const [safetyCode, setSafetyCode] = useState('')
-  const [verified, setVerified] = useState(false)
   const messagesRef = useRef<HTMLDivElement>(null)
   const typingHeartbeat = useRef<number | null>(null)
   const typingTimeout = useRef<number | null>(null)
@@ -96,17 +93,14 @@ export default function AdminSupport() {
           supportChatApi.encryptionKeys(selectedUserId),
         ])
         const keys = keyResponse.data.keys
-        const code = getSupportSafetyCode(keys)
         const ownKey = keys.find(key => key.key_id === ownKeyId && key.is_staff)
-        if (!ownKey) throw new Error('This support device key is missing from the verified recipient list.')
+        if (!ownKey) throw new Error('This support device key is missing from the recipient list.')
         if (!keys.some(key => !key.is_staff)) throw new Error('The customer has no registered encryption key on this device.')
         const messages = conversationResponse.data.messages.map((message: SupportConversationDetail['messages'][number]) => ({
           ...message,
           body: messageBody(message, ownKeyId, cryptoIdentity, keys),
         }))
         if (active) {
-          setSafetyCode(code)
-          setVerified(localStorage.getItem(`majo-support-key-verified:${conversationResponse.data.user_id}`) === code)
           setConversation({ ...conversationResponse.data, messages })
           setError('')
         }
@@ -137,16 +131,9 @@ export default function AdminSupport() {
       if (!conversation || !cryptoIdentity || !ownKeyId) throw new Error('Select a conversation and prepare the support encryption key before replying.')
       const { data: keyDirectory } = await supportChatApi.encryptionKeys(conversation.user_id)
       const currentKeys = keyDirectory.keys
-      const currentCode = getSupportSafetyCode(currentKeys)
       if (!currentKeys.some(key => key.key_id === ownKeyId && key.is_staff) || !currentKeys.some(key => !key.is_staff)) {
         throw new Error('The recipient-key roster is incomplete; the encrypted reply was not sent.')
       }
-      if (!verified || localStorage.getItem(`majo-support-key-verified:${conversation.user_id}`) !== currentCode) {
-        setSafetyCode(currentCode)
-        setVerified(false)
-        throw new Error('The encryption-key roster changed or is not verified. Compare the safety code before replying.')
-      }
-      setSafetyCode(currentCode)
       const envelope = createSupportEnvelope(body, ownKeyId, cryptoIdentity, currentKeys)
       await supportChatApi.sendAdminReply(selectedId, envelope)
       setDraft('')
@@ -203,12 +190,6 @@ export default function AdminSupport() {
     `${item.user_name} ${item.user_email}`.toLowerCase().includes(filter.trim().toLowerCase())
   )
 
-  const verifySafetyCode = () => {
-    if (!conversation) return
-    localStorage.setItem(`majo-support-key-verified:${conversation.user_id}`, safetyCode)
-    setVerified(true)
-  }
-
   return (
     <div className="flex h-full min-h-[520px] flex-col p-4 md:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -264,16 +245,6 @@ export default function AdminSupport() {
                 <div className="mx-auto max-w-lg rounded-lg border border-[#BBF7D0] bg-white p-3 text-center">
                   <p className="flex items-center justify-center gap-1 text-[10px] font-bold text-[#166534]"><ShieldCheck size={13} /> End-to-end encrypted</p>
                   <p className="mt-1 text-[10px] leading-4 text-[#64748B]">This conversation is private and end-to-end encrypted. Only the customer and authorized Majo Support staff can read its messages. Encrypted copies are stored to preserve chat history; people outside the support team cannot read them.</p>
-                  <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Compare this safety code with the customer through a separate trusted channel before replying.</p>
-                  <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Email-and-password sign-in keeps an encrypted key backup. A password reset cannot unlock the old backup.</p>
-                  <p className="mt-2 select-all font-mono text-[11px] font-bold tracking-wider text-[#071A2B]">{safetyCode || 'Loading safety code…'}</p>
-                  {!verified ? (
-                    <button type="button" onClick={verifySafetyCode} disabled={!safetyCode} className="mt-2 rounded-lg bg-[#166534] px-3 py-1.5 text-[10px] font-bold text-white hover:bg-[#14532D] disabled:opacity-50">
-                      I compared and verified the code
-                    </button>
-                  ) : (
-                    <p className="mt-2 text-[10px] font-bold text-[#166534]">Safety code verified on this device</p>
-                  )}
                 </div>
                 {conversation.messages.map(message => (
                   <div key={message.id} className={`flex ${message.is_staff ? 'justify-end' : 'justify-start'}`}>
@@ -289,13 +260,13 @@ export default function AdminSupport() {
 
               {error && <p role="alert" className="border-t border-red-100 bg-white px-4 py-2 text-[11px] text-red-600">{error}</p>}
               <form onSubmit={sendReply} className="flex items-end gap-2 border-t border-[#E2E8F0] bg-white p-3">
-                <textarea value={draft} disabled={!cryptoIdentity} onChange={event => handleDraftChange(event.target.value)} onBlur={stopTyping} onKeyDown={event => {
+                <textarea value={draft} onChange={event => handleDraftChange(event.target.value)} onBlur={stopTyping} onKeyDown={event => {
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault()
                     event.currentTarget.form?.requestSubmit()
                   }
-                }} maxLength={2000} rows={1} aria-label="Write a reply" placeholder={verified ? 'Write a reply...' : 'Write a draft; verify the safety code before sending'} className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#25D366]" />
-                <button type="submit" disabled={!draft.trim() || sending || !verified || !cryptoIdentity} aria-label="Send reply" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071A2B] text-white transition hover:bg-[#0F2B43] disabled:cursor-not-allowed disabled:opacity-50"><Send size={17} /></button>
+                }} maxLength={2000} rows={1} aria-label="Write a reply" placeholder="Write a reply..." className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#25D366]" />
+                <button type="submit" disabled={!draft.trim() || sending || !cryptoIdentity} aria-label="Send reply" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071A2B] text-white transition hover:bg-[#0F2B43] disabled:cursor-not-allowed disabled:opacity-50"><Send size={17} /></button>
               </form>
             </>
           )}
