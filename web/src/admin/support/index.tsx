@@ -288,12 +288,12 @@ export default function AdminSupport() {
 
               {error && <p role="alert" className="border-t border-red-100 bg-white px-4 py-2 text-[11px] text-red-600">{error}</p>}
               <form onSubmit={sendReply} className="flex items-end gap-2 border-t border-[#E2E8F0] bg-white p-3">
-                <textarea value={draft} disabled={!verified || !cryptoIdentity} onChange={event => handleDraftChange(event.target.value)} onBlur={stopTyping} onKeyDown={event => {
+                <textarea value={draft} disabled={!cryptoIdentity} onChange={event => handleDraftChange(event.target.value)} onBlur={stopTyping} onKeyDown={event => {
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault()
                     event.currentTarget.form?.requestSubmit()
                   }
-                }} maxLength={2000} rows={1} aria-label="Write a reply" placeholder="Write a reply..." className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#25D366]" />
+                }} maxLength={2000} rows={1} aria-label="Write a reply" placeholder={verified ? 'Write a reply...' : 'Write a draft; verify the safety code before sending'} className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#25D366]" />
                 <button type="submit" disabled={!draft.trim() || sending || !verified || !cryptoIdentity} aria-label="Send reply" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071A2B] text-white transition hover:bg-[#0F2B43] disabled:cursor-not-allowed disabled:opacity-50"><Send size={17} /></button>
               </form>
             </>

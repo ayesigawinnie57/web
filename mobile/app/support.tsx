@@ -36,6 +36,7 @@ export default function SupportChatScreen() {
   const [identity, setIdentity] = useState<SupportDeviceIdentity | null>(null)
   const [ownKeyId, setOwnKeyId] = useState('')
   const [keys, setKeys] = useState<SupportEncryptionKey[]>([])
+  const [staffKeysReady, setStaffKeysReady] = useState(false)
   const [safetyCode, setSafetyCode] = useState('')
   const [verified, setVerified] = useState(false)
   const [sending, setSending] = useState(false)
@@ -50,11 +51,12 @@ export default function SupportChatScreen() {
     const { data: keyDirectory } = await supportChatApi.encryptionKeys()
     const currentKeys = keyDirectory.keys
     if (!currentKeys.some(key => key.key_id === currentKeyId)) throw new Error('This device encryption key is missing from the roster.')
-    if (!currentKeys.some(key => key.is_staff)) throw new Error('Support encryption keys are not configured yet.')
-    const code = getSupportSafetyCode(currentKeys)
+    const staffReady = currentKeys.some(key => key.is_staff)
+    const code = staffReady ? getSupportSafetyCode(currentKeys) : ''
     setKeys(currentKeys)
+    setStaffKeysReady(staffReady)
     setSafetyCode(code)
-    setVerified(await getSupportVerification(userId) === code)
+    setVerified(staffReady && await getSupportVerification(userId) === code)
     const { data } = await supportChatApi.customerChat(true)
     setMessages(data.messages.map(message => ({
       ...message,
@@ -73,6 +75,7 @@ export default function SupportChatScreen() {
         if (!active) return
         setIdentity(deviceIdentity)
         setOwnKeyId(registered.key_id)
+        await supportChatApi.startCustomerChat()
         await refreshMessages(deviceIdentity, registered.key_id, user.id)
         if (!active) return
         timer = setInterval(() => {
@@ -110,7 +113,7 @@ export default function SupportChatScreen() {
   }
 
   const send = async () => {
-    if (!draft.trim() || sending || !user || !identity || !ownKeyId || !verified) return
+    if (!draft.trim() || sending || !user || !identity || !ownKeyId || !staffKeysReady || !verified) return
     setSending(true)
     setError('')
     try {
@@ -176,7 +179,8 @@ export default function SupportChatScreen() {
               <Text style={styles.securityCopy}>Compare this code with Majo Support using a separate trusted channel before sharing sensitive information.</Text>
               <Text selectable style={styles.safetyCode}>{safetyCode}</Text>
               <Text style={styles.recoveryWarning}>On email-and-password sign-in, your chat key is backed up encrypted. Restoring needs your account password; a password reset cannot unlock the old backup.</Text>
-              {!verified && <TouchableOpacity style={styles.button} onPress={markVerified}><Text style={styles.buttonText}>I compared and verified the code</Text></TouchableOpacity>}
+              {!staffKeysReady && <Text style={styles.waiting}>You can write a draft now. Support is preparing its encryption key; sending will be available once the safety code is ready and verified.</Text>}
+              {staffKeysReady && !verified && <TouchableOpacity style={styles.button} onPress={markVerified}><Text style={styles.buttonText}>I compared and verified the code</Text></TouchableOpacity>}
               {verified && <Text style={styles.verified}>Safety code verified on this device</Text>}
             </View>
             {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -192,14 +196,14 @@ export default function SupportChatScreen() {
             <TextInput
               value={draft}
               onChangeText={setDraft}
-              editable={verified && !!identity}
+              editable={!!identity}
               maxLength={2000}
               multiline
-              placeholder={verified ? 'Write a message…' : 'Verify the safety code to send'}
+              placeholder={verified ? 'Write a message…' : 'Write a draft; verify the safety code to send'}
               placeholderTextColor={C.mutedLight}
               style={styles.input}
             />
-            <TouchableOpacity disabled={!verified || !draft.trim() || sending} onPress={() => void send()} style={[styles.sendButton, (!verified || !draft.trim() || sending) && styles.disabled]}>
+            <TouchableOpacity disabled={!staffKeysReady || !verified || !draft.trim() || sending} onPress={() => void send()} style={[styles.sendButton, (!staffKeysReady || !verified || !draft.trim() || sending) && styles.disabled]}>
               {sending ? <ActivityIndicator color="#fff" /> : <Send size={18} color="#fff" />}
             </TouchableOpacity>
           </View>
@@ -232,6 +236,7 @@ const styles = StyleSheet.create({
   securityCopy: { color: C.muted, fontSize: 11, lineHeight: 16, textAlign: 'center' },
   safetyCode: { color: C.navy, fontSize: 13, fontWeight: '800', letterSpacing: 1, fontVariant: ['tabular-nums'] },
   recoveryWarning: { color: '#92400E', fontSize: 10, lineHeight: 15, textAlign: 'center' },
+  waiting: { color: '#92400E', fontSize: 10, lineHeight: 15, textAlign: 'center' },
   verified: { color: C.green, fontSize: 11, fontWeight: '700' },
   error: { color: '#B91C1C', fontSize: 12, lineHeight: 18, textAlign: 'center', padding: 8 },
   message: { maxWidth: '86%', borderRadius: 14, padding: 12 },

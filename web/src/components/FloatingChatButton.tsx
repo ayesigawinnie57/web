@@ -35,6 +35,7 @@ export default function FloatingChatButton() {
   const [error, setError] = useState('')
   const [encryptionError, setEncryptionError] = useState('')
   const [encryptionReady, setEncryptionReady] = useState(false)
+  const [staffKeysReady, setStaffKeysReady] = useState(false)
   const [identity, setIdentity] = useState<SupportDeviceIdentity | null>(null)
   const [encryptionUserId, setEncryptionUserId] = useState<number | null>(null)
   const [ownKeyId, setOwnKeyId] = useState('')
@@ -77,16 +78,15 @@ export default function FloatingChatButton() {
       if (!data.keys.some(key => key.key_id === registeredKey.key_id)) {
         throw new Error('This device encryption key was not returned by the server.')
       }
-      if (!data.keys.some(key => key.is_staff)) {
-        throw new Error('Support encryption keys are not configured yet. Please contact support.')
-      }
-      const code = getSupportSafetyCode(data.keys)
+      const staffReady = data.keys.some(key => key.is_staff)
+      const code = staffReady ? getSupportSafetyCode(data.keys) : ''
       if (!active) return
       setIdentity(deviceIdentity)
       setEncryptionUserId(user.id)
       setOwnKeyId(registeredKey.key_id)
+      setStaffKeysReady(staffReady)
       setSafetyCode(code)
-      setVerified(localStorage.getItem(`majo-support-key-verified:${user.id}`) === code)
+      setVerified(staffReady && localStorage.getItem(`majo-support-key-verified:${user.id}`) === code)
       setEncryptionReady(true)
     }
     void prepareEncryption().catch(cause => {
@@ -106,10 +106,11 @@ export default function FloatingChatButton() {
         const { data: keyDirectory } = await supportChatApi.encryptionKeys()
         const currentKeys = keyDirectory.keys
         if (!currentKeys.some(key => key.key_id === ownKeyId)) throw new Error('This device encryption key is missing from the roster.')
-        if (!currentKeys.some(key => key.is_staff)) throw new Error('Support encryption keys are not configured yet. Please contact support.')
-        const currentCode = getSupportSafetyCode(currentKeys)
+        const staffReady = currentKeys.some(key => key.is_staff)
+        const currentCode = staffReady ? getSupportSafetyCode(currentKeys) : ''
+        setStaffKeysReady(staffReady)
         setSafetyCode(currentCode)
-        setVerified(localStorage.getItem(`majo-support-key-verified:${encryptionUserId}`) === currentCode)
+        setVerified(staffReady && localStorage.getItem(`majo-support-key-verified:${encryptionUserId}`) === currentCode)
         const { data } = await supportChatApi.customerChat(open)
         if (active) {
           setMessages(data.messages.map(message => ({
@@ -182,7 +183,7 @@ export default function FloatingChatButton() {
     setSending(true)
     setError('')
     try {
-      if (!verified || !identity || !ownKeyId) throw new Error('Verify the support safety code before sending.')
+      if (!staffKeysReady || !verified || !identity || !ownKeyId) throw new Error('Wait for support to register its encryption key, then verify the safety code before sending.')
       const { data: keyDirectory } = await supportChatApi.encryptionKeys()
       const currentKeys = keyDirectory.keys
       const currentCode = getSupportSafetyCode(currentKeys)
@@ -266,12 +267,14 @@ export default function FloatingChatButton() {
                     <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Compare this safety code with Majo Support using a separate trusted channel before sending sensitive information.</p>
                     <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Email-and-password sign-in keeps an encrypted key backup. A password reset cannot unlock the old backup.</p>
                     <p className="mt-2 select-all font-mono text-[11px] font-bold tracking-wider text-[#071A2B]">{safetyCode}</p>
-                    {!verified ? (
+                    {staffKeysReady && !verified ? (
                       <button type="button" onClick={() => void verifySafetyCode()} className="mt-2 rounded-lg bg-[#166534] px-3 py-1.5 text-[10px] font-bold text-white hover:bg-[#14532D]">
                         I compared and verified the code
                       </button>
-                    ) : (
+                    ) : staffKeysReady && verified ? (
                       <p className="mt-2 text-[10px] font-bold text-[#166534]">Safety code verified on this device</p>
+                    ) : (
+                      <p className="mx-auto mt-2 max-w-[300px] rounded-lg bg-amber-50 p-3 text-center text-[11px] leading-4 text-amber-800">You can write a draft now. Support is preparing its encryption key; sending will be available after the safety code is ready and verified.</p>
                     )}
                   </div>
                 )}
@@ -305,10 +308,10 @@ export default function FloatingChatButton() {
                   rows={1}
                   placeholder="Write a message..."
                   aria-label="Write a message"
-                  disabled={!encryptionReady || !verified}
+                  disabled={!encryptionReady}
                   className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#C2410C] disabled:bg-[#F8FAFC]"
                 />
-                <button type="submit" disabled={!draft.trim() || sending || !encryptionReady || !verified} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#C2410C] text-white transition hover:bg-[#9A3412] disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="submit" disabled={!draft.trim() || sending || !encryptionReady || !staffKeysReady || !verified} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#C2410C] text-white transition hover:bg-[#9A3412] disabled:cursor-not-allowed disabled:opacity-50">
                   <Send size={17} />
                 </button>
               </form>
@@ -320,7 +323,14 @@ export default function FloatingChatButton() {
       {!open && (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setOpen(true)
+            if (authenticated) {
+              void supportChatApi.startCustomerChat().catch(cause => {
+                setError(cause instanceof Error ? cause.message : 'Could not open the support conversation.')
+              })
+            }
+          }}
           aria-label="Open support chat"
           aria-expanded={false}
           className="floating-chat-toggle group fixed bottom-20 right-5 z-[80] inline-flex h-14 w-14 items-center justify-center rounded-[50%] bg-[#C2410C] text-white shadow-[0_18px_40px_rgba(194,65,12,0.35)] transition duration-200 hover:-translate-y-1 hover:scale-105 sm:right-6 lg:bottom-5"

@@ -89,6 +89,7 @@ export const supportChatApi = {
     api.get<{ conversation_id: number | null; messages: SupportMessage[]; unread_count: number; staff_typing: boolean }>(
       `/api/auth/support/chat/${markRead ? '?mark_read=true' : ''}`,
     ),
+  startCustomerChat: () => api.post<{ conversation_id: number }>('/api/auth/support/chat/', { start: true }),
   sendCustomerMessage: (envelope: SupportEncryptedEnvelope) => api.post<SupportMessage>('/api/auth/support/chat/', { envelope }),
   adminConversations: () => api.get<any[]>('/api/auth/admin/support/conversations/'),
   adminConversation: (id: number) => api.get<any>(`/api/auth/admin/support/conversations/${id}/`),

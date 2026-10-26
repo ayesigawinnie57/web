@@ -261,10 +261,10 @@ export default function AdminSupportScreen() {
             <TextInput
               value={draft}
               onChangeText={setDraft}
-              editable={verified}
+              editable={!!identity}
               maxLength={2000}
               multiline
-              placeholder={verified ? 'Write an encrypted reply…' : 'Verify the safety code to reply'}
+              placeholder={verified ? 'Write an encrypted reply…' : 'Write a draft; verify the safety code to reply'}
               placeholderTextColor={C.mutedLight}
               style={styles.input}
             />
