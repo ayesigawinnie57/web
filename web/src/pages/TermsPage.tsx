@@ -42,25 +42,30 @@ const sections = [
   {
     title: '8. Account security',
     text:
-      'Users are responsible for safeguarding their account credentials. You agree to notify us immediately if you suspect unauthorized use of your account.',
+      'You are responsible for safeguarding your password and the email account used to access your Majo Gadgets account, and for notifying us promptly if you suspect unauthorized use. Administrators and approved traders are required to complete email-based two-factor authentication (2FA) when signing in on a device that is not recognized. Verification codes expire after 10 minutes and may only be used once. If you choose to remember a device, it may be recognized for up to seven days; your password is still required. We send an email alert after each successful administrator or approved-trader sign-in. You may optionally permit your device to share its location for inclusion in that alert; if you do not grant permission or location is unavailable, the alert will indicate that location is unavailable.',
   },
   {
-    title: '9. Intellectual property',
+    title: '9. Unauthorized sign-ins and password changes',
+    text:
+      'If you receive a sign-in alert for activity you do not recognize, use the password-reset option on our website and secure the email account associated with your Majo Gadgets account. Changing your password clears remembered-device credentials, and devices will need to complete sign-in verification again. Do not share verification codes with anyone. Email alerts and two-factor authentication are security measures, but they cannot guarantee that unauthorized access will never occur.',
+  },
+  {
+    title: '10. Intellectual property',
     text:
       'All content on Majo Gadgets, including text, product images, branding, and design, is protected by intellectual property laws and may not be copied, reproduced, distributed, or used without prior written permission.',
   },
   {
-    title: '10. Limitation of liability',
+    title: '11. Limitation of liability',
     text:
       'Majo Gadgets shall not be liable for indirect, incidental, or consequential damages arising from the use of the platform, including delays, losses, or issues caused by third-party delivery services, outages, or circumstances beyond our reasonable control.',
   },
   {
-    title: '11. Changes to terms',
+    title: '12. Changes to terms',
     text:
       'We may update these Terms and Conditions from time to time. Continued use of the platform after updates means you accept the revised terms.',
   },
   {
-    title: '12. Contact us',
+    title: '13. Contact us',
     text:
       'If you have questions about these Terms and Conditions, please contact us via WhatsApp at +256 779 122 222 or through the support channels available on the website.',
   },
@@ -82,6 +87,7 @@ export default function TermsPage() {
             <p className="mt-3 max-w-3xl text-[14px] md:text-[16px] text-slate-200">
               Please read these terms carefully before using Majo Gadgets products and services.
             </p>
+            <p className="mt-3 text-[12px] text-slate-300">Last updated: October 26, 2026</p>
           </section>
 
           <section className="mt-8 bg-white border border-[#E2E8F0] rounded-[28px] px-5 py-6 md:px-8 md:py-8">

@@ -7,50 +7,60 @@ const sections = [
   {
     title: '1. Information we collect',
     text:
-      'We may collect personal information such as your name, email address, phone number, delivery address, order details, payment information, account preferences, and browsing activity necessary to provide our services securely and efficiently.',
+      'We may collect personal information such as your name, email address, phone number, delivery address, order details, payment information, account preferences, and browsing activity necessary to provide our services securely and efficiently. For account security, we also process sign-in verification status, a device or browser description, and sign-in timestamps for administrator and approved trader accounts.',
   },
   {
     title: '2. How we use your information',
     text:
-      'We use your information to process orders, confirm payments, communicate with you about purchases, provide customer support, improve product recommendations, prevent fraud, and maintain the security of our platform.',
+      'We use your information to process orders, confirm payments, communicate with you about purchases, provide customer support, improve product recommendations, prevent fraud, and maintain the security of our platform. For administrators and approved traders, we use email-based two-factor authentication (2FA) to verify sign-ins and send an email alert after a successful sign-in.',
   },
   {
-    title: '3. Sharing of information',
+    title: '3. Two-factor authentication and sign-in alerts',
     text:
-      'We do not sell your personal information. We may share information with trusted service providers who help us operate the website, process payments, deliver products, send notifications, or provide technical support, as required to deliver our services.',
+      'Administrators and approved traders must enter a one-time code sent to their registered email when signing in on a device that is not recognized. The code expires after 10 minutes and may only be used once. If you choose to remember a device, its browser or app credential is retained for up to seven days; the credential is stored by our service as a hash. You must still enter your password when using a remembered device. After a successful sign-in, we email the account holder the device or browser description and sign-in time. These alerts help you identify activity you do not recognize.',
   },
   {
-    title: '4. Cookies and tracking',
+    title: '4. Optional location in sign-in alerts',
+    text:
+      'During sign-in verification, your browser or mobile device may ask for permission to share its location. If you grant permission and the device provides coordinates, we include rounded coordinates in the successful sign-in alert email. Location permission is optional: if you deny it or location is unavailable, the alert will say that location is unavailable. We do not use this feature to track your ongoing or background location, and we do not send your coordinates to a third-party geolocation service.',
+  },
+  {
+    title: '5. Sharing of information',
+    text:
+      'We do not sell your personal information. We may share information with trusted service providers who help us operate the website, process payments, deliver products, send notifications (including account security emails), or provide technical support, as required to deliver our services.',
+  },
+  {
+    title: '6. Cookies and tracking',
     text:
       'We may use cookies, analytics tools, and similar technologies to understand site usage, remember your preferences, and improve the performance and user experience of our platform. You can manage cookie preferences in your browser settings.',
   },
   {
-    title: '5. Data security',
+    title: '7. Data security',
     text:
-      'We take reasonable steps to protect personal data using secure systems, access controls, and trusted processing practices. However, no online service can guarantee absolute security, and we encourage users to keep their login details confidential.',
+      'We take reasonable steps to protect personal data using secure systems, access controls, and trusted processing practices. Two-factor authentication adds a verification step but does not guarantee that an account cannot be compromised. Never share sign-in codes, even with someone claiming to represent Majo Gadgets. If you do not recognize a sign-in alert, use the password-reset link on our website to change your password. Resetting your password removes remembered-device credentials, so those devices must complete verification again. No online service can guarantee absolute security.',
   },
   {
-    title: '6. Retention of information',
+    title: '8. Retention of information',
     text:
       'We keep your personal information only for as long as necessary to fulfill the purposes described in this policy, comply with legal obligations, resolve disputes, and enforce our terms and policies.',
   },
   {
-    title: '7. Your rights',
+    title: '9. Your rights',
     text:
       'You may have the right to access, correct, update, or request deletion of your personal data depending on applicable laws. If you would like to exercise any of these rights, please contact us through the support channels available on our website.',
   },
   {
-    title: '8. Third-party links',
+    title: '10. Third-party links',
     text:
       'Our platform may contain links to third-party websites or services. We are not responsible for the privacy practices or content of those external websites, and we encourage you to review their policies before providing any personal information.',
   },
   {
-    title: '9. Updates to this policy',
+    title: '11. Updates to this policy',
     text:
       'We may update this Privacy Policy from time to time to reflect changes in our practices, legal requirements, or platform improvements. Continued use of the platform after updates indicates your acceptance of the revised policy.',
   },
   {
-    title: '10. Contact us',
+    title: '12. Contact us',
     text:
       'If you have questions, concerns, or requests regarding this Privacy Policy, please contact us through WhatsApp at +256 779 122 222 or using the support channels available on the website.',
   },
@@ -72,6 +82,7 @@ export default function PrivacyPolicyPage() {
             <p className="mt-3 max-w-3xl text-[14px] md:text-[16px] text-slate-200">
               Please read this policy carefully to understand how we collect, use, and protect your personal information.
             </p>
+            <p className="mt-3 text-[12px] text-slate-300">Last updated: October 26, 2026</p>
           </section>
 
           <section className="mt-8 bg-white border border-[#E2E8F0] rounded-[28px] px-5 py-6 md:px-8 md:py-8">
