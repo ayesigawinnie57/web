@@ -23,7 +23,11 @@ export default function DesktopAdminInstallGate() {
     }
 
     const outcome = await promptToInstall()
-    if (outcome !== 'accepted') setShowInstallSteps(true)
+    if (outcome === 'accepted') {
+      window.location.assign('web+majo://admin')
+      return
+    }
+    setShowInstallSteps(true)
   }
 
   return (
