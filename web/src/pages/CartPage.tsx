@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
-import { cartApi, hasAccessToken, productsApi, type CartItem } from '../lib/api'
+import { cartApi, hasAccessToken, type CartQuote, type CartQuoteItem } from '../lib/api'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
 const money = (value: string) => Number(value).toLocaleString()
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>([])
+  const [quote, setQuote] = useState<CartQuote | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [deliveryFees, setDeliveryFees] = useState<Record<number, number>>({})
+  const items = quote?.items ?? []
   const reminderReadyRef = useRef(false)
   const reminderSentRef = useRef(false)
   const skipReminderRef = useRef(false)
@@ -22,23 +22,15 @@ export default function CartPage() {
     void cartApi.sendAbandonedReminder()
   }, [])
 
-  const loadCart = () => {
-    cartApi.list()
-      .then(async data => {
-        setItems(data)
-        setError(false)
-        const fees = await Promise.all(data.map(async item => {
-          try {
-            const response = await productsApi.bySlug(item.product_slug)
-            return [item.product_id, Number(response.data.delivery_fee ?? 0)] as const
-          } catch {
-            return [item.product_id, 0] as const
-          }
-        }))
-        setDeliveryFees(Object.fromEntries(fees))
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
+  const loadCart = async () => {
+    try {
+      setQuote(await cartApi.quote())
+      setError(false)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { loadCart() }, [])
@@ -73,32 +65,28 @@ export default function CartPage() {
     }
   }, [sendReminder])
 
-  const updateQuantity = async (item: CartItem, quantity: number) => {
+  const updateQuantity = async (item: CartQuoteItem, quantity: number) => {
     if (quantity < 1) return removeItem(item.product_id)
-    const previous = items
-    setItems(current => current.map(existing => existing.product_id === item.product_id ? { ...existing, quantity } : existing))
     try {
       await cartApi.update(item.product_id, quantity)
+      await loadCart()
     } catch {
-      setItems(previous)
+      setError(true)
     }
   }
 
   const removeItem = async (productId: number) => {
-    const previous = items
-    setItems(current => current.filter(item => item.product_id !== productId))
     try {
       await cartApi.remove(productId)
+      await loadCart()
     } catch {
-      setItems(previous)
+      setError(true)
     }
   }
 
-  const subtotal = items.reduce((total, item) => total + Number(item.product_price) * item.quantity, 0)
-  const delivery = hasAccessToken()
-    ? items.reduce((total, item) => total + (deliveryFees[item.product_id] ?? 0), 0)
-    : null
-  const total = subtotal + (delivery ?? 0)
+  const subtotal = Number(quote?.subtotal ?? 0)
+  const delivery = Number(quote?.delivery_fee ?? 0)
+  const total = Number(quote?.total ?? 0)
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -116,9 +104,9 @@ export default function CartPage() {
           <div className="py-20 text-center text-[#64748B]">Loading your cart...</div>
         ) : error ? (
           <div className="py-16 text-center">
-            <p className="text-[15px] font-bold text-[#071A2B]">Sign in to view your cart</p>
-            <p className="text-[13px] text-[#64748B] mt-2">Your cart is connected to your Majo Gadgets account.</p>
-            <Link to="/" className="inline-block mt-5 bg-[#1E3A8A] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold">Continue shopping</Link>
+            <p className="text-[15px] font-bold text-[#071A2B]">Unable to verify your cart</p>
+            <p className="text-[13px] text-[#64748B] mt-2">Refresh the page or remove products that may be unavailable.</p>
+            <button onClick={loadCart} className="inline-block mt-5 bg-[#1E3A8A] text-white px-5 py-2.5 rounded-xl text-[13px] font-bold">Try again</button>
           </div>
         ) : items.length === 0 ? (
           <div className="py-16 text-center">
@@ -140,7 +128,7 @@ export default function CartPage() {
                       <div className="flex items-center gap-x-3 gap-y-1 flex-wrap mt-1">
                         <Link to={`/shop/${item.product_slug}`} title={item.product_name} className="max-w-[180px] sm:max-w-[280px] text-[15px] font-extrabold text-[#071A2B] whitespace-nowrap overflow-hidden text-ellipsis">{item.product_name}</Link>
                         <span className="text-[14px] font-bold text-[#1E3A8A]">UGX {money(item.product_price)}</span>
-                        <span className="text-[12px] text-[#64748B]">Delivery: <span className="font-bold text-[#071A2B]">{hasAccessToken() ? (deliveryFees[item.product_id] ? `UGX ${deliveryFees[item.product_id].toLocaleString()}` : 'Free') : 'Not determined'}</span></span>
+                        <span className="text-[12px] text-[#64748B]">Delivery: <span className="font-bold text-[#071A2B]">{Number(item.delivery_fee) ? `UGX ${money(item.delivery_fee)}` : 'Free'}</span></span>
                         {!hasAccessToken() && <Link to="/login" className="text-[12px] font-bold text-[#1E3A8A] hover:text-blue-700">Sign in</Link>}
                       </div>
                     </div>
@@ -165,12 +153,11 @@ export default function CartPage() {
               <div className="flex justify-between items-center gap-3 text-[13px] text-[#64748B] mt-3">
                 <span>Delivery</span>
                 <span className="font-bold text-right text-[#071A2B]">
-                  {delivery === null ? (
-                    <><span>Not yet determined</span> <Link to="/login" className="text-[#1E3A8A] hover:text-blue-700">Sign in</Link></>
-                  ) : delivery > 0 ? `UGX ${delivery.toLocaleString()}` : <span className="text-green-600">Free</span>}
+                  {delivery > 0 ? `UGX ${delivery.toLocaleString()}` : <span className="text-green-600">Free</span>}
                 </span>
               </div>
-              <div className="flex justify-between items-center gap-3 border-t border-[#E2E8F0] mt-5 pt-5"><span className="text-[15px] font-extrabold text-[#071A2B]">Total</span><span className="text-[16px] font-extrabold text-[#1E3A8A] text-right">{delivery === null ? <>UGX {subtotal.toLocaleString()} <span className="text-[12px] font-bold text-[#64748B]">+ delivery fee</span></> : `UGX ${total.toLocaleString()}`}</span></div>
+              <p className="mt-2 text-[11px] text-[#94A3B8]">Final delivery fee is confirmed for your district at checkout.</p>
+              <div className="flex justify-between items-center gap-3 border-t border-[#E2E8F0] mt-5 pt-5"><span className="text-[15px] font-extrabold text-[#071A2B]">Estimated total</span><span className="text-[16px] font-extrabold text-[#1E3A8A] text-right">UGX {total.toLocaleString()}</span></div>
               <Link to="/checkout" onClick={() => { skipReminderRef.current = true }} className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold flex items-center justify-center">Proceed to checkout</Link>
             </aside>
           </div>

@@ -1,16 +1,56 @@
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image } from 'react-native'
+import { useEffect, useState } from 'react'
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react-native'
 import { useCart } from './lib/CartContext'
+import api from './lib/api'
 import { C } from './theme'
 
-const DELIVERY_FEE = 5000
+type CartQuote = {
+  items: {
+    id: number
+    product_id: number
+    product_name: string
+    product_price: string
+    product_image: string | null
+    quantity: number
+    line_total: string
+  }[]
+  subtotal: string
+  delivery_fee: string
+  total: string
+}
+
 export default function CartScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const { items, totalPrice, totalItems, updateQuantity, removeFromCart, clearCart } = useCart()
-  const grandTotal = totalPrice + (items.length > 0 ? DELIVERY_FEE : 0)
+  const { items, totalItems, updateQuantity, removeFromCart, clearCart } = useCart()
+  const [quote, setQuote] = useState<CartQuote | null>(null)
+  const [quoteError, setQuoteError] = useState('')
+
+  useEffect(() => {
+    if (!items.length) {
+      setQuote(null)
+      setQuoteError('')
+      return
+    }
+    let cancelled = false
+    api.post<CartQuote>('/api/orders/quote/', {
+      items: items.map(item => ({ product_id: item.id, quantity: item.quantity })),
+    }).then(({ data }) => {
+      if (!cancelled) {
+        setQuote(data)
+        setQuoteError('')
+      }
+    }).catch(error => {
+      if (!cancelled) {
+        setQuote(null)
+        setQuoteError(error?.response?.data?.detail ?? 'Unable to verify prices and stock.')
+      }
+    })
+    return () => { cancelled = true }
+  }, [items])
 
   if (items.length === 0) {
     return (
@@ -51,13 +91,13 @@ export default function CartScreen() {
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <View style={styles.row}>
-            {item.image
-              ? <Image source={{ uri: item.image }} style={styles.thumb} resizeMode="cover" />
+            {(quote?.items.find(quoted => quoted.product_id === item.id)?.product_image ?? item.image)
+            ? <Image source={{ uri: quote?.items.find(quoted => quoted.product_id === item.id)?.product_image ?? item.image }} style={styles.thumb} resizeMode="cover" />
               : <View style={[styles.thumb, styles.thumbPlaceholder]} />
             }
             <View style={styles.info}>
-              <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
-              <Text style={styles.price}>UGX {item.price.toLocaleString()}</Text>
+            <Text style={styles.name} numberOfLines={2}>{quote?.items.find(quoted => quoted.product_id === item.id)?.product_name ?? item.name}</Text>
+            <Text style={styles.price}>{quote ? `UGX ${Number(quote.items.find(quoted => quoted.product_id === item.id)?.product_price ?? 0).toLocaleString()}` : 'Verifying price...'}</Text>
               {item.originalPrice && (
                 <Text style={styles.original}>UGX {item.originalPrice.toLocaleString()}</Text>
               )}
@@ -72,7 +112,7 @@ export default function CartScreen() {
               </View>
             </View>
             <View style={styles.rightCol}>
-              <Text style={styles.subtotal}>UGX {(item.price * item.quantity).toLocaleString()}</Text>
+              <Text style={styles.subtotal}>{quote ? `UGX ${Number(quote.items.find(quoted => quoted.product_id === item.id)?.line_total ?? 0).toLocaleString()}` : '—'}</Text>
               <TouchableOpacity style={styles.deleteBtn} onPress={() => removeFromCart(item.id)}>
                 <Trash2 size={16} color="#ef4444" />
               </TouchableOpacity>
@@ -81,17 +121,20 @@ export default function CartScreen() {
         )}
         ListFooterComponent={
           <View style={[styles.summary, { paddingBottom: insets.bottom + 76 }]}> 
+            {quoteError ? <Text style={styles.summaryLabel}>{quoteError}</Text> : null}
+            {!quote && !quoteError ? <ActivityIndicator color={C.green} /> : null}
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>UGX {totalPrice.toLocaleString()}</Text>
+              <Text style={styles.summaryValue}>{quote ? `UGX ${Number(quote.subtotal).toLocaleString()}` : '—'}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Delivery</Text>
-              <Text style={styles.summaryValue}>UGX {DELIVERY_FEE.toLocaleString()}</Text>
+              <Text style={styles.summaryLabel}>Delivery estimate</Text>
+              <Text style={styles.summaryValue}>{quote ? `UGX ${Number(quote.delivery_fee).toLocaleString()}` : '—'}</Text>
             </View>
+            <Text style={styles.summaryLabel}>Final district delivery is confirmed at checkout.</Text>
             <View style={[styles.summaryRow, styles.totalRow]}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>UGX {grandTotal.toLocaleString()}</Text>
+              <Text style={styles.totalLabel}>Estimated total</Text>
+              <Text style={styles.totalValue}>{quote ? `UGX ${Number(quote.total).toLocaleString()}` : '—'}</Text>
             </View>
             <View style={styles.btnRow}>
               <TouchableOpacity style={styles.continueBtn} onPress={() => router.push('/shop' as any)}>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle, ChevronDown, CreditCard, MapPin, PackageCheck, Pencil, ShieldCheck, Truck } from 'lucide-react'
-import { authApi, BASE_URL, cartApi, hasAccessToken, ordersApi, type ApiOrder, type CartItem } from '../lib/api'
+import { authApi, BASE_URL, cartApi, hasAccessToken, ordersApi, type ApiOrder, type CartQuote } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -19,7 +19,7 @@ type District = { id: number; name: string; price: string; region: string }
 type DeliveryForm = { region: string; district: string; village: string; note: string }
 
 export default function CheckoutPage() {
-  const [items, setItems] = useState<CartItem[]>([])
+  const [quote, setQuote] = useState<CartQuote | null>(null)
   const [districts, setDistricts] = useState<District[]>([])
   const [profile, setProfile] = useState<{ name: string; phone: string } | null>(null)
   const [form, setForm] = useState<DeliveryForm>({ region: '', district: '', village: '', note: '' })
@@ -37,13 +37,13 @@ export default function CheckoutPage() {
     const cached = (() => { try { return JSON.parse(localStorage.getItem('majo_user') ?? 'null') } catch { return null } })()
 
     Promise.all([
-      cartApi.list(),
+      cartApi.quote(),
       fetch(`${BASE_URL}/api/settings/districts/`)
         .then(r => r.ok ? r.json() : [])
         .then(d => Array.isArray(d) ? d : (d.results ?? [])),
       hasAccessToken() ? authApi.profile().then(r => r.data) : Promise.resolve(null),
-    ]).then(([cartItems, districtList, profileData]) => {
-      setItems(cartItems)
+    ]).then(([cartQuote, districtList, profileData]) => {
+      setQuote(cartQuote)
       setDistricts(districtList)
 
       // Merge: backend profile takes priority, fallback to localStorage cache
@@ -70,13 +70,31 @@ export default function CheckoutPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const items = quote?.items ?? []
   const set = (key: keyof DeliveryForm, value: string) => setForm(f => ({ ...f, [key]: value }))
-  const subtotal = items.reduce((t, i) => t + Number(i.product_price) * i.quantity, 0)
+  const subtotal = Number(quote?.subtotal ?? 0)
   const regionDistricts = useMemo(() => districts.filter(d => d.region === form.region), [districts, form.region])
   const selectedDistrict = useMemo(() => regionDistricts.find(d => d.name === form.district), [regionDistricts, form.district])
-  const districtFee = Number(selectedDistrict?.price ?? 0)
+  const districtFee = Number(quote?.delivery_fee ?? 0)
 
-  const handleRegionChange = (value: string) => { set('region', value); set('district', '') }
+  useEffect(() => {
+    if (!selectedDistrict || loading) return
+    let cancelled = false
+    cartApi.quote(selectedDistrict.id)
+      .then(nextQuote => { if (!cancelled) setQuote(nextQuote) })
+      .catch(() => { if (!cancelled) setError('Unable to calculate your order. Please try again.') })
+    return () => { cancelled = true }
+  }, [loading, selectedDistrict?.id])
+
+  const handleRegionChange = (value: string) => {
+    setQuote(null)
+    set('region', value)
+    set('district', '')
+  }
+  const handleDistrictChange = (value: string) => {
+    setQuote(null)
+    set('district', value)
+  }
 
   const handlePay = async (code: string) => {
     setPaying(true)
@@ -107,21 +125,19 @@ export default function CheckoutPage() {
     setError('')
     if (!hasAccessToken()) { setError('Please sign in before placing your order.'); return }
     if (!items.length) { setError('Your cart is empty.'); return }
-    if (!form.region || !form.district) { setError('Please select your region and district.'); return }
+    if (!selectedDistrict) { setError('Please select your region and district.'); return }
+    if (!quote) { setError('Your order total is still being calculated. Please try again.'); return }
 
     setPlacing(true)
     try {
       const response = await ordersApi.create({
-        delivery_address: [form.region, form.district, form.village].filter(Boolean).join(', ') || 'Uganda',
+        district_id: selectedDistrict.id,
+        village: form.village.trim(),
         phone: profile?.phone ?? '',
         note: form.note.trim(),
-        guest_name: profile?.name ?? '',
-        delivery_fee: districtFee,
-        items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
       })
       setOrder(response.data)
       refreshNotifications()
-      await Promise.all(items.map(i => cartApi.remove(i.product_id)))
     } catch (err: any) {
       const d = err?.response?.data
       setError(d?.detail ?? d?.non_field_errors?.[0] ?? 'Failed to place order. Please try again.')
@@ -219,7 +235,10 @@ export default function CheckoutPage() {
               <span>Delivery</span>
               <span className="font-bold text-[#071A2B]">{selectedDistrict ? `UGX ${money(districtFee)}` : 'Select district'}</span>
             </div>
-            <button type="submit" disabled={placing || !items.length || !hasAccessToken()}
+            <div className="flex justify-between mt-3 pt-3 border-t border-[#E2E8F0] text-[14px] font-extrabold text-[#071A2B]">
+              <span>Total</span><span>UGX {money(quote?.total ?? 0)}</span>
+            </div>
+            <button type="submit" disabled={placing || !items.length || !quote || !selectedDistrict || !hasAccessToken()}
               className="w-full h-12 mt-4 bg-[#1E3A8A] text-white text-[14px] font-bold rounded-xl disabled:opacity-40">
               {placing ? 'Placing order...' : 'Place Order'}
             </button>
@@ -286,7 +305,7 @@ export default function CheckoutPage() {
                       <label className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">District</label>
                       <div className="relative mt-2">
                         <select value={form.district} disabled={!form.region || regionDistricts.length === 0}
-                          onChange={e => set('district', e.target.value)}
+                          onChange={e => handleDistrictChange(e.target.value)}
                           className="appearance-none w-full px-3 py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none disabled:opacity-50 focus:border-[#1E3A8A]">
                           <option value="">{form.region ? 'Select district' : 'Choose a region first'}</option>
                           {regionDistricts.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
@@ -366,8 +385,11 @@ export default function CheckoutPage() {
               <span>Delivery</span>
               <span className="font-bold text-[#071A2B]">{selectedDistrict ? `UGX ${money(districtFee)}` : 'Select district'}</span>
             </div>
+            <div className="flex justify-between mt-3 pt-3 border-t border-[#E2E8F0] text-[14px] font-extrabold text-[#071A2B]">
+              <span>Total</span><span>UGX {money(quote?.total ?? 0)}</span>
+            </div>
             <p className="text-[11px] text-[#94A3B8] mt-3">District delivery fee applies at checkout.</p>
-            <button type="submit" disabled={placing || !items.length || !hasAccessToken()}
+            <button type="submit" disabled={placing || !items.length || !quote || !selectedDistrict || !hasAccessToken()}
               className="w-full h-11 mt-6 bg-[#1E3A8A] text-white text-[13px] font-bold disabled:opacity-40">
               {placing ? 'Placing order...' : 'Place Order'}
             </button>

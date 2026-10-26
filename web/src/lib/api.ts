@@ -254,6 +254,18 @@ export type CartItem = {
   added_at: string
 }
 
+export type CartQuoteItem = Omit<CartItem, 'added_at'> & {
+  delivery_fee: string
+  line_total: string
+}
+
+export type CartQuote = {
+  items: CartQuoteItem[]
+  subtotal: string
+  delivery_fee: string
+  total: string
+}
+
 export type ApiOrder = {
   id: number
   code: string
@@ -405,6 +417,16 @@ export const wishlistApi = {
 }
 
 export const cartApi = {
+  quote: async (districtId?: number) => {
+    const guestItems = hasAccessToken()
+      ? []
+      : getGuestCart().map(item => ({ product_id: item.product_id, quantity: item.quantity }))
+    const { data } = await api.post<CartQuote>('/api/orders/quote/', {
+      items: guestItems,
+      ...(districtId ? { district_id: districtId } : {}),
+    })
+    return data
+  },
   list: async () => hasAccessToken()
     ? (await api.get<CartItem[]>('/api/auth/cart/')).data
     : getGuestCart(),
@@ -521,7 +543,7 @@ export type AdminReturnRequest = ReturnRequest & {
 }
 
 export const ordersApi = {
-  create: (payload: { delivery_address: string; phone: string; note: string; guest_name: string; delivery_fee?: number; items: { product_id: number; quantity: number }[] }) => api.post<ApiOrder>('/api/orders/', payload),
+  create: (payload: { district_id: number; village: string; phone: string; note: string }) => api.post<ApiOrder>('/api/orders/', payload),
   list: () => api.get<ApiOrderDetail[]>('/api/orders/'),
   get: (code: string) => api.get<ApiOrderDetail>(`/api/orders/${code}/`),
   cancel: (code: string) => api.post<ApiOrderDetail>(`/api/orders/${code}/cancel/`),

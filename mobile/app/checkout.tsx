@@ -20,6 +20,19 @@ const BOTTOM_NAV_HEIGHT = 60
 
 type Form = { name: string; phone: string; note: string; country: string; region: string; district: string; village: string }
 type District = { id: number; name: string; price: string; region: string }
+type ServerQuote = {
+  items: {
+    id: number
+    product_id: number
+    product_name: string
+    product_price: string
+    product_image: string | null
+    quantity: number
+  }[]
+  subtotal: string
+  delivery_fee: string
+  total: string
+}
 
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets()
@@ -29,6 +42,7 @@ export default function CheckoutScreen() {
   const [districtOpen, setDistrictOpen] = useState(false)
   const [form, setForm] = useState<Form>({ name: '', phone: '', note: '', country: 'Uganda', region: '', district: '', village: '' })
   const [districts, setDistricts] = useState<District[]>([])
+  const [quote, setQuote] = useState<ServerQuote | null>(null)
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
   const [paying, setPaying] = useState(false)
@@ -67,11 +81,32 @@ export default function CheckoutScreen() {
 
   const regionDistricts = districts.filter(d => d.region === form.region)
   const selectedDistrict = regionDistricts.find(d => d.name === form.district)
-  const districtFee = Number(selectedDistrict?.price ?? 0)
-  const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0)
-  const estimatedTotal = subtotal + districtFee
+  const pricedItems = quote?.items ?? []
+  const districtFee = Number(quote?.delivery_fee ?? 0)
+  const subtotal = Number(quote?.subtotal ?? 0)
+  const estimatedTotal = Number(quote?.total ?? 0)
 
-  const handleRegionChange = (region: string) => setForm(f => ({ ...f, region, district: '' }))
+  useEffect(() => {
+    let cancelled = false
+    const selected = districts.find(d => d.region === form.region && d.name === form.district)
+    api.post<ServerQuote>('/api/orders/quote/', {
+      district_id: selected?.id,
+      items: items.map(item => ({ product_id: item.id, quantity: item.quantity })),
+    }).then(({ data }) => {
+      if (!cancelled) setQuote(data)
+    }).catch(error => {
+      if (!cancelled) {
+        setQuote(null)
+        console.error('Unable to calculate checkout total', error?.response?.data ?? error?.message ?? error)
+      }
+    })
+    return () => { cancelled = true }
+  }, [districts, form.district, form.region, items])
+
+  const handleRegionChange = (region: string) => {
+    setQuote(null)
+    setForm(f => ({ ...f, region, district: '' }))
+  }
 
   const startPayment = async (code: string) => {
     setPaying(true)
@@ -123,15 +158,18 @@ export default function CheckoutScreen() {
       Alert.alert('Empty Cart', 'Add items to your cart before checking out.')
       return
     }
+    if (!selectedDistrict || !quote) {
+      setOrderError('Please select a district and wait for the total to be calculated.')
+      Alert.alert('Delivery location required', 'Please select a district and wait for the total to be calculated.')
+      return
+    }
     setLoading(true)
     try {
       const { data } = await api.post<ApiOrder>('/api/orders/', {
-        delivery_address: [form.region, form.district, form.village].filter(Boolean).join(', ') || 'Uganda',
+        district_id: selectedDistrict.id,
+        village: form.village.trim(),
         phone: form.phone.trim(),
         note: form.note.trim(),
-        delivery_fee: districtFee,
-        // Only send product_id + quantity — price is always resolved server-side
-        items: items.map(i => ({ product_id: i.id, quantity: i.quantity })),
       })
       clearCart()
       setPlacedOrder(data)
@@ -270,27 +308,27 @@ export default function CheckoutScreen() {
           <Field label="Order Note" value={form.note} onChangeText={set('note')} placeholder="Add delivery instructions (optional)" multiline last />
         </View>
 
-        {/* Order items — prices shown from cart for preview only */}
+        {/* Item prices and the checkout total come from the server quote. */}
         <View style={styles.sectionHeading}>
           <View style={styles.sectionIcon}><PackageCheck size={17} color={C.green} /></View>
           <View><Text style={styles.sectionTitle}>Your order</Text><Text style={styles.sectionSub}>{items.length} item{items.length === 1 ? '' : 's'}</Text></View>
         </View>
         <View style={styles.card}>
-          {items.map(item => (
-            <View key={item.id} style={styles.itemRow}>
-              {item.image
-                ? <Image source={{ uri: item.image }} style={styles.itemThumb} resizeMode="cover" />
+          {pricedItems.map(item => (
+            <View key={item.product_id} style={styles.itemRow}>
+              {item.product_image
+                ? <Image source={{ uri: item.product_image }} style={styles.itemThumb} resizeMode="cover" />
                 : <View style={[styles.itemThumb, { backgroundColor: C.bg }]} />
               }
               <View style={styles.itemInfo}>
-                <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.itemName} numberOfLines={1}>{item.product_name}</Text>
                 <Text style={styles.itemQty}>Qty: {item.quantity}</Text>
               </View>
-              <Text style={styles.itemPrice}>UGX {(item.price * item.quantity).toLocaleString()}</Text>
+              <Text style={styles.itemPrice}>UGX {(Number(item.product_price) * item.quantity).toLocaleString()}</Text>
             </View>
           ))}
-          {items.length === 0 && <Text style={styles.emptyCart}>Your cart is empty.</Text>}
-          {items.length > 0 && <View style={styles.totals}><View style={styles.summaryRow}><Text style={styles.summaryLabel}>Subtotal</Text><Text style={styles.summaryValue}>UGX {subtotal.toLocaleString()}</Text></View><View style={styles.summaryRow}><Text style={styles.summaryLabel}>Delivery</Text><Text style={styles.summaryValue}>{selectedDistrict ? `UGX ${districtFee.toLocaleString()}` : 'Select district'}</Text></View><View style={[styles.summaryRow, styles.summaryTotal]}><Text style={styles.summaryTotalLabel}>Total</Text><Text style={styles.summaryTotalValue}>UGX {estimatedTotal.toLocaleString()}</Text></View></View>}
+          {pricedItems.length === 0 && <Text style={styles.emptyCart}>Your cart is empty.</Text>}
+          {pricedItems.length > 0 && <View style={styles.totals}><View style={styles.summaryRow}><Text style={styles.summaryLabel}>Subtotal</Text><Text style={styles.summaryValue}>UGX {subtotal.toLocaleString()}</Text></View><View style={styles.summaryRow}><Text style={styles.summaryLabel}>Delivery</Text><Text style={styles.summaryValue}>{selectedDistrict ? `UGX ${districtFee.toLocaleString()}` : 'Select district'}</Text></View><View style={[styles.summaryRow, styles.summaryTotal]}><Text style={styles.summaryTotalLabel}>Total</Text><Text style={styles.summaryTotalValue}>UGX {estimatedTotal.toLocaleString()}</Text></View></View>}
         </View>
 
         {/* Payment note — no hardcoded amounts shown before order is placed */}
