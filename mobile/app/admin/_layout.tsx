@@ -1,7 +1,7 @@
 import { Tabs, usePathname, useRouter } from 'expo-router'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Bell, Settings } from 'lucide-react-native'
+import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Bell, Settings, MessageCircle } from 'lucide-react-native'
 import { C } from '../theme'
 
 function AdminTabBar() {
@@ -11,6 +11,7 @@ function AdminTabBar() {
   const tabs = [
     { label: 'Home', icon: LayoutDashboard, route: '/admin' },
     { label: 'Orders', icon: ShoppingBag, route: '/admin/orders' },
+    { label: 'Support', icon: MessageCircle, route: '/admin/support' },
     { label: 'Notifications', icon: Bell, route: '/admin/notifications' },
     { label: 'Settings', icon: Settings, route: '/admin/settings' },
   ]
@@ -79,6 +80,7 @@ export default function AdminLayout() {
       />
       <Tabs.Screen name="traders/index" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="support" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="products/add" options={{ href: null }} />
       <Tabs.Screen name="products/[id]" options={{ href: null }} />

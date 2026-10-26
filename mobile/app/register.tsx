@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Eye, EyeOff, ChevronDown, Check } from 'lucide-react-native'
 import { C, LOGO } from './theme'
 import { authApi, tokenStore } from './lib/auth'
+import { initializeSupportEncryptionBackup } from '../lib/supportEncryption'
 import { pushNotification } from './lib/NotificationContext'
 
 const REGIONS = ['Central Uganda', 'Eastern Uganda', 'Northern Uganda', 'Western Uganda']
@@ -45,6 +46,15 @@ export default function RegisterScreen() {
       })
       const { data } = await authApi.login(form.email.trim(), form.password)
       await tokenStore.save(data.access, data.refresh)
+      try {
+        const { data: profile } = await authApi.profile(data.access)
+        await initializeSupportEncryptionBackup(profile.id, form.password)
+      } catch {
+        Alert.alert(
+          'Chat backup unavailable',
+          'Your account was created, but the encrypted chat-key backup could not be initialized. Sign in again later to retry.',
+        )
+      }
       pushNotification({
         type: 'welcome',
         title: 'Welcome to Majo Gadgets',

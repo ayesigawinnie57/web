@@ -4,6 +4,7 @@ import { Eye, EyeOff, ChevronDown } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, fetchAllDistricts, type DistrictRecord } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
+import { initializeSupportEncryptionBackup } from '../lib/supportEncryption'
 import { Helmet } from 'react-helmet-async'
 
 export default function LoginPage() {
@@ -18,18 +19,27 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [pendingProfile, setPendingProfile] = useState<{ tmpToken: string; name: string; email: string } | null>(null)
 
-  const afterLogin = async (access: string, refresh: string) => {
+  const afterLogin = async (access: string, refresh: string, password?: string) => {
     authApi.saveTokens(access, refresh)
     let isStaff = false
+    let userId: number | null = null
     try {
       const payload = JSON.parse(atob(access.split('.')[1]))
       isStaff = !!payload.is_staff
     } catch { /* ignore */ }
     try {
       const { data: p } = await authApi.profile()
+      userId = p.id
       authApi.saveProfile(p.name, p.email, p.is_staff)
       isStaff = !!p.is_staff
     } catch { /* ignore */ }
+    if (password && userId !== null) {
+      try {
+        await initializeSupportEncryptionBackup(userId, password)
+      } catch {
+        window.alert('You are signed in, but your encrypted chat-key backup could not be updated or restored. Existing chat remains on this device. A password reset cannot unlock an older backup.')
+      }
+    }
     try {
       const guestCart = JSON.parse(localStorage.getItem('majo_guest_cart') ?? '[]')
       if (guestCart.length > 0) {
@@ -60,7 +70,7 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const { data } = await authApi.login(email.trim(), password)
-      await afterLogin(data.access, data.refresh)
+      await afterLogin(data.access, data.refresh, password)
     } catch (requestError: any) {
       setError(requestError?.response?.data?.detail ?? 'Invalid email or password.')
     } finally { setLoading(false) }

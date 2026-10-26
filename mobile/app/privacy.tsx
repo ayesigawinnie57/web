@@ -6,11 +6,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C } from './theme'
 import { useAuth } from './lib/AuthContext'
 import { authApi, tokenStore } from './lib/auth'
+import { initializeSupportEncryptionBackup } from '../lib/supportEncryption'
 
 export default function PrivacyScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
@@ -34,10 +35,17 @@ export default function PrivacyScreen() {
       const token = await tokenStore.getAccess()
       if (!token) throw new Error('Please sign in again.')
       await authApi.updateProfile(token, { current_password: currentPassword, new_password: newPassword, password_confirm: passwordConfirm })
+      let backupNotice = ''
+      try {
+        if (!user) throw new Error('User profile is unavailable.')
+        await initializeSupportEncryptionBackup(user.id, newPassword, currentPassword)
+      } catch {
+        backupNotice = ' Your encrypted chat-key backup could not be updated, so keep this device and sign in again with the new password to retry.'
+      }
       setCurrentPassword('')
       setNewPassword('')
       setPasswordConfirm('')
-      Alert.alert('Password changed', 'Please sign in again with your new password.', [{ text: 'OK', onPress: () => logout() }])
+      Alert.alert('Password changed', `Please sign in again with your new password.${backupNotice}`, [{ text: 'OK', onPress: () => logout() }])
     } catch (error: any) {
       const data = error?.response?.data
       const message = data?.current_password?.[0] ?? data?.new_password?.[0] ?? data?.password_confirm?.[0] ?? data?.detail ?? error?.message ?? 'Could not change your password.'

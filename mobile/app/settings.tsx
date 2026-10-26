@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
-import { ArrowLeft, Bell, Grid2X2, Heart, Home, LockKeyhole, ShoppingBag, ShoppingCart, Store, UserRound } from 'lucide-react-native'
+import { ArrowLeft, Bell, Grid2X2, Heart, Home, LockKeyhole, MessageCircle, ShoppingBag, ShoppingCart, Store, UserRound } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { C } from './theme'
 
@@ -54,6 +54,10 @@ export default function SettingsScreen() {
         <TouchableOpacity style={styles.row} onPress={() => router.push('/privacy' as any)}>
           <LockKeyhole size={20} color={C.navy} />
           <Text style={styles.rowText}>Privacy and security</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.row} onPress={() => router.push('/support' as any)}>
+          <MessageCircle size={20} color={C.green} />
+          <Text style={styles.rowText}>Secure support chat</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.row} onPress={() => router.push('/become-a-trader' as any)}>
           <Store size={20} color="#22C55E" />

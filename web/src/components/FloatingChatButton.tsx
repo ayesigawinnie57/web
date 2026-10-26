@@ -1,9 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { MessageCircleMore, Send, X } from 'lucide-react'
-import { supportChatApi, type SupportMessage } from '../lib/api'
+import { MessageCircleMore, Send, ShieldCheck, X } from 'lucide-react'
+import { authApi, supportChatApi, type SupportMessage } from '../lib/api'
+import {
+  createSupportEnvelope,
+  getOrCreateSupportIdentity,
+  getSupportSafetyCode,
+  tryDecryptSupportEnvelope,
+} from '../lib/supportEncryption'
+import type { SupportDeviceIdentity, SupportPublicKey } from '../../../shared/supportEncryption'
 import TypingIndicator from './TypingIndicator'
+
+const messageBody = (
+  message: SupportMessage,
+  recipientKeyId: string,
+  identity: SupportDeviceIdentity,
+  keys: SupportPublicKey[],
+) => {
+  if (message.encryption_version !== 1) return `[Legacy message — not end-to-end encrypted]\n${message.body}`
+  const decrypted = tryDecryptSupportEnvelope(message.body, recipientKeyId, identity, keys)
+  return decrypted.ok ? decrypted.plaintext : `[Unable to decrypt on this device: ${decrypted.reason}]`
+}
 
 export default function FloatingChatButton() {
   const location = useLocation()
@@ -15,6 +33,13 @@ export default function FloatingChatButton() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [staffTyping, setStaffTyping] = useState(false)
   const [error, setError] = useState('')
+  const [encryptionError, setEncryptionError] = useState('')
+  const [encryptionReady, setEncryptionReady] = useState(false)
+  const [identity, setIdentity] = useState<SupportDeviceIdentity | null>(null)
+  const [encryptionUserId, setEncryptionUserId] = useState<number | null>(null)
+  const [ownKeyId, setOwnKeyId] = useState('')
+  const [safetyCode, setSafetyCode] = useState('')
+  const [verified, setVerified] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const typingHeartbeat = useRef<number | null>(null)
   const typingTimeout = useRef<number | null>(null)
@@ -32,20 +57,71 @@ export default function FloatingChatButton() {
   }, [])
 
   useEffect(() => {
+    if (!authenticated || location.pathname.startsWith('/admin') || location.pathname.startsWith('/trader')) {
+      setEncryptionReady(false)
+      setIdentity(null)
+      setEncryptionUserId(null)
+      return
+    }
+    let active = true
+    setEncryptionError('')
+    setEncryptionReady(false)
+    const prepareEncryption = async () => {
+      const { data: user } = await authApi.profile()
+      const deviceIdentity = await getOrCreateSupportIdentity(user.id)
+      const { data: registeredKey } = await supportChatApi.registerEncryptionKey(
+        deviceIdentity.deviceId,
+        deviceIdentity.publicKey,
+      )
+      const { data } = await supportChatApi.encryptionKeys()
+      if (!data.keys.some(key => key.key_id === registeredKey.key_id)) {
+        throw new Error('This device encryption key was not returned by the server.')
+      }
+      if (!data.keys.some(key => key.is_staff)) {
+        throw new Error('Support encryption keys are not configured yet. Please contact support.')
+      }
+      const code = getSupportSafetyCode(data.keys)
+      if (!active) return
+      setIdentity(deviceIdentity)
+      setEncryptionUserId(user.id)
+      setOwnKeyId(registeredKey.key_id)
+      setSafetyCode(code)
+      setVerified(localStorage.getItem(`majo-support-key-verified:${user.id}`) === code)
+      setEncryptionReady(true)
+    }
+    void prepareEncryption().catch(cause => {
+      if (active) {
+        setEncryptionError(cause instanceof Error ? cause.message : 'Could not prepare encrypted chat.')
+      }
+    })
+    return () => { active = false }
+  }, [authenticated, location.pathname])
+
+  useEffect(() => {
     const isPortal = location.pathname.startsWith('/admin') || location.pathname.startsWith('/trader')
-    if (!authenticated || isPortal) return
+    if (!authenticated || isPortal || !encryptionReady || !identity || !ownKeyId) return
     let active = true
     const loadMessages = async () => {
       try {
+        const { data: keyDirectory } = await supportChatApi.encryptionKeys()
+        const currentKeys = keyDirectory.keys
+        if (!currentKeys.some(key => key.key_id === ownKeyId)) throw new Error('This device encryption key is missing from the roster.')
+        if (!currentKeys.some(key => key.is_staff)) throw new Error('Support encryption keys are not configured yet. Please contact support.')
+        const currentCode = getSupportSafetyCode(currentKeys)
+        setSafetyCode(currentCode)
+        setVerified(localStorage.getItem(`majo-support-key-verified:${encryptionUserId}`) === currentCode)
         const { data } = await supportChatApi.customerChat(open)
         if (active) {
-          setMessages(data.messages)
+          setMessages(data.messages.map(message => ({
+            ...message,
+            body: messageBody(message, ownKeyId, identity, currentKeys),
+          })))
           setUnreadCount(data.unread_count)
           setStaffTyping(data.staff_typing)
           setError('')
         }
-      } catch {
-        if (active) setError('Could not load the conversation. Please try again.')
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : 'Could not load the encrypted conversation. Please try again.')
       } finally {
         if (active) setLoading(false)
       }
@@ -58,7 +134,7 @@ export default function FloatingChatButton() {
       active = false
       window.clearInterval(timer)
     }
-  }, [open, authenticated, location.pathname])
+  }, [open, authenticated, location.pathname, encryptionReady, identity, ownKeyId, encryptionUserId])
 
   useEffect(() => {
     if (open) listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
@@ -106,14 +182,39 @@ export default function FloatingChatButton() {
     setSending(true)
     setError('')
     try {
-      await supportChatApi.sendCustomerMessage(body)
+      if (!verified || !identity || !ownKeyId) throw new Error('Verify the support safety code before sending.')
+      const { data: keyDirectory } = await supportChatApi.encryptionKeys()
+      const currentKeys = keyDirectory.keys
+      const currentCode = getSupportSafetyCode(currentKeys)
+      if (!encryptionUserId || localStorage.getItem(`majo-support-key-verified:${encryptionUserId}`) !== currentCode) {
+        setSafetyCode(currentCode)
+        setVerified(false)
+        throw new Error('The encryption-key roster changed. Compare the new safety code before sending.')
+      }
+      setSafetyCode(currentCode)
+      const envelope = createSupportEnvelope(body, ownKeyId, identity, currentKeys)
+      await supportChatApi.sendCustomerMessage(envelope)
       setDraft('')
       const { data } = await supportChatApi.customerChat(true)
-      setMessages(data.messages)
-    } catch {
-      setError('Message could not be sent. Please try again.')
+      setMessages(data.messages.map(message => ({
+        ...message,
+        body: messageBody(message, ownKeyId, identity, currentKeys),
+      })))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Message could not be encrypted and sent. Please try again.')
     } finally {
       setSending(false)
+    }
+
+  }
+
+  const verifySafetyCode = async () => {
+    try {
+      const { data: user } = await authApi.profile()
+      localStorage.setItem(`majo-support-key-verified:${user.id}`, safetyCode)
+      setVerified(true)
+    } catch {
+      setError('Could not save the safety-code verification on this device.')
     }
   }
 
@@ -158,9 +259,23 @@ export default function FloatingChatButton() {
                 <div className="mx-auto mb-4 max-w-[260px] rounded-xl bg-white px-3 py-2 text-center text-[11px] leading-5 text-[#64748B] shadow-sm">
                   Send us a message and our support team will reply here.
                 </div>
-                <p className="mx-auto mb-4 max-w-[300px] text-center text-[10px] leading-4 text-[#64748B]">
-                  Messages are sent over HTTPS and can be read by authorized support staff. They are not end-to-end encrypted.
-                </p>
+                {encryptionError && <p role="alert" className="mx-auto mb-3 max-w-[300px] rounded-lg bg-red-50 p-3 text-center text-[11px] leading-4 text-red-700">{encryptionError}</p>}
+                {encryptionReady && (
+                  <div className="mx-auto mb-4 max-w-[300px] rounded-lg border border-[#BBF7D0] bg-white p-3 text-center">
+                    <p className="flex items-center justify-center gap-1 text-[10px] font-bold text-[#166534]"><ShieldCheck size={13} /> End-to-end encrypted</p>
+                    <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Compare this safety code with Majo Support using a separate trusted channel before sending sensitive information.</p>
+                    <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Email-and-password sign-in keeps an encrypted key backup. A password reset cannot unlock the old backup.</p>
+                    <p className="mt-2 select-all font-mono text-[11px] font-bold tracking-wider text-[#071A2B]">{safetyCode}</p>
+                    {!verified ? (
+                      <button type="button" onClick={() => void verifySafetyCode()} className="mt-2 rounded-lg bg-[#166534] px-3 py-1.5 text-[10px] font-bold text-white hover:bg-[#14532D]">
+                        I compared and verified the code
+                      </button>
+                    ) : (
+                      <p className="mt-2 text-[10px] font-bold text-[#166534]">Safety code verified on this device</p>
+                    )}
+                  </div>
+                )}
+                {!encryptionReady && !encryptionError && <p className="py-5 text-center text-[12px] text-[#64748B]">Preparing secure chat…</p>}
                 {loading && <p className="py-8 text-center text-[12px] text-[#64748B]">Loading conversation...</p>}
                 {!loading && messages.length === 0 && <p className="py-8 text-center text-[12px] text-[#64748B]">Your conversation starts with your first message.</p>}
                 {messages.map(message => (
@@ -190,9 +305,10 @@ export default function FloatingChatButton() {
                   rows={1}
                   placeholder="Write a message..."
                   aria-label="Write a message"
-                  className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#C2410C]"
+                  disabled={!encryptionReady || !verified}
+                  className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#C2410C] disabled:bg-[#F8FAFC]"
                 />
-                <button type="submit" disabled={!draft.trim() || sending} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#C2410C] text-white transition hover:bg-[#9A3412] disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="submit" disabled={!draft.trim() || sending || !encryptionReady || !verified} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#C2410C] text-white transition hover:bg-[#9A3412] disabled:cursor-not-allowed disabled:opacity-50">
                   <Send size={17} />
                 </button>
               </form>

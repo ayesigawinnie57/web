@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Eye, EyeOff } from 'lucide-react-native'
 import { C, LOGO } from './theme'
 import { authApi, tokenStore } from './lib/auth'
+import { initializeSupportEncryptionBackup } from '../lib/supportEncryption'
 import { pushNotification } from './lib/NotificationContext'
 
 export default function LoginScreen() {
@@ -24,6 +25,15 @@ export default function LoginScreen() {
     try {
       const { data } = await authApi.login(email.trim(), password)
       await tokenStore.save(data.access, data.refresh)
+      try {
+        const { data: profile } = await authApi.profile(data.access)
+        await initializeSupportEncryptionBackup(profile.id, password)
+      } catch {
+        Alert.alert(
+          'Chat backup unavailable',
+          'You are signed in, but your encrypted chat-key backup could not be updated or restored. Existing chat remains on this device. A password reset cannot unlock an older backup.',
+        )
+      }
       pushNotification({
         type: 'welcome',
         title: 'Welcome back',

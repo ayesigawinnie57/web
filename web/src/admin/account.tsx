@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BASE_URL } from '../lib/api'
+import { authApi, BASE_URL } from '../lib/api'
 import { parseError } from './ErrorBanner'
+import { initializeSupportEncryptionBackup } from '../lib/supportEncryption'
 
 type Toast = { message: string; type: 'success' | 'error' }
 
@@ -119,8 +120,19 @@ export default function AdminAccount() {
       }
       if (!Object.keys(payload).length) { showToast('No changes to save.', 'error'); return }
       const updated = await patchProfile(payload)
+      let successMessage = 'Saved successfully.'
+      let successType: Toast['type'] = 'success'
+      if (editing === 'password') {
+        try {
+          const { data: user } = await authApi.profile()
+          await initializeSupportEncryptionBackup(user.id, form.newPassword, form.currentPassword)
+        } catch {
+          successMessage = 'Password changed, but the encrypted chat-key backup could not be updated. Keep this device and sign in again with the new password to retry.'
+          successType = 'error'
+        }
+      }
       localStorage.setItem('majo_user', JSON.stringify({ name: updated.name, email: updated.email, isAdmin: updated.is_staff }))
-      showToast('Saved successfully.')
+      showToast(successMessage, successType)
       setEditing(null)
       setForm(f => ({ ...f, currentPassword: '', newPassword: '', passwordConfirm: '' }))
     } catch (err) {

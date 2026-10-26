@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Image, Modal, Pressable, Alert, ActivityIndicator, ScrollView, useWindowDimensions } from 'react-native'
 import { useRouter, usePathname } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { X, Search, UserRound, ShoppingCart, Heart, Home, Grid2X2, Bell, Menu, Users, Package, ShoppingBag, LayoutDashboard, Zap, PackageCheck, Store, Boxes, DollarSign, Database, Settings, ArrowLeftRight, CreditCard, ShieldCheck } from 'lucide-react-native'
+import { X, Search, UserRound, ShoppingCart, Heart, Home, Grid2X2, Bell, Menu, Users, Package, ShoppingBag, LayoutDashboard, Zap, PackageCheck, Store, Boxes, DollarSign, Database, Settings, ArrowLeftRight, CreditCard, ShieldCheck, MessageCircle } from 'lucide-react-native'
 import { C, LOGO } from '../theme'
 import { tokenStore } from '../lib/auth'
 import { useAuth } from '../lib/AuthContext'
@@ -20,6 +20,7 @@ const ADMIN_NAV = [
   { label: 'Flash Sales', icon: Zap, route: '/admin/flashsales' },
   { label: 'Categories', icon: Grid2X2, route: '/admin/categories' },
   { label: 'Orders', icon: ShoppingBag, route: '/admin/orders' },
+  { label: 'Support Inbox', icon: MessageCircle, route: '/admin/support' },
   { label: 'Pickup Desk', icon: PackageCheck, route: '/admin/pickup' },
   { label: 'Users', icon: Users, route: '/admin/users' },
   { label: 'Payments', icon: CreditCard, route: '/admin/payments' },

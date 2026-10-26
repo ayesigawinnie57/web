@@ -47,3 +47,58 @@ api.interceptors.response.use(
 )
 
 export default api
+
+export type SupportMessage = {
+  id: number
+  conversation_id: number
+  sender_id: number
+  sender_name: string
+  is_staff: boolean
+  body: string
+  encryption_version: number | null
+  is_read: boolean
+  created_at: string
+}
+
+export type SupportEncryptionKey = {
+  key_id: string
+  device_id: string
+  user_id: number
+  is_staff: boolean
+  public_key: string
+  created_at: string
+}
+
+export type SupportEncryptedEnvelope = {
+  version: 1
+  sender_key_id: string
+  recipients: { key_id: string; nonce: string; ciphertext: string }[]
+}
+
+export type SupportKeyBackup = {
+  version: 1
+  kdf: 'PBKDF2-SHA256'
+  iterations: 600000
+  device_id: string
+  salt: string
+  ciphertext: string
+}
+
+export const supportChatApi = {
+  customerChat: (markRead = false) =>
+    api.get<{ conversation_id: number | null; messages: SupportMessage[]; unread_count: number; staff_typing: boolean }>(
+      `/api/auth/support/chat/${markRead ? '?mark_read=true' : ''}`,
+    ),
+  sendCustomerMessage: (envelope: SupportEncryptedEnvelope) => api.post<SupportMessage>('/api/auth/support/chat/', { envelope }),
+  adminConversations: () => api.get<any[]>('/api/auth/admin/support/conversations/'),
+  adminConversation: (id: number) => api.get<any>(`/api/auth/admin/support/conversations/${id}/`),
+  sendAdminReply: (id: number, envelope: SupportEncryptedEnvelope) => api.post<SupportMessage>(`/api/auth/admin/support/conversations/${id}/`, { envelope }),
+  encryptionKeys: (userId?: number) =>
+    api.get<{ keys: SupportEncryptionKey[] }>(`/api/auth/support/encryption-keys/${userId ? `?user_id=${userId}` : ''}`),
+  registerEncryptionKey: (device_id: string, public_key: string) =>
+    api.post<SupportEncryptionKey>('/api/auth/support/encryption-keys/', { device_id, public_key }),
+  revokeEncryptionKey: (device_id: string) =>
+    api.delete('/api/auth/support/encryption-keys/', { data: { device_id } }),
+  getKeyBackup: () => api.get<{ backup: SupportKeyBackup | null }>('/api/auth/support/encryption-backup/'),
+  saveKeyBackup: (backup: SupportKeyBackup) => api.put('/api/auth/support/encryption-backup/', { backup }),
+}

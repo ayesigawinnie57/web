@@ -1,24 +1,64 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { ArrowLeft, MessageCircle, RefreshCw, Send } from 'lucide-react'
-import { supportChatApi, type SupportConversationDetail, type SupportConversationSummary } from '../../lib/api'
+import { ArrowLeft, MessageCircle, RefreshCw, Send, ShieldCheck } from 'lucide-react'
+import { authApi, supportChatApi, type SupportConversationDetail, type SupportConversationSummary, type SupportMessage } from '../../lib/api'
 import TypingIndicator from '../../components/TypingIndicator'
+import {
+  createSupportEnvelope,
+  getOrCreateSupportIdentity,
+  getSupportSafetyCode,
+  tryDecryptSupportEnvelope,
+} from '../../lib/supportEncryption'
+import type { SupportDeviceIdentity, SupportPublicKey } from '../../../../shared/supportEncryption'
 
 const formatTime = (value: string) => new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+
+const messageBody = (
+  message: SupportMessage,
+  recipientKeyId: string,
+  identity: SupportDeviceIdentity,
+  keys: SupportPublicKey[],
+) => {
+  if (message.encryption_version !== 1) return `[Legacy message — not end-to-end encrypted]\n${message.body}`
+  const decrypted = tryDecryptSupportEnvelope(message.body, recipientKeyId, identity, keys)
+  return decrypted.ok ? decrypted.plaintext : `[Unable to decrypt on this device: ${decrypted.reason}]`
+}
 
 export default function AdminSupport() {
   const [conversations, setConversations] = useState<SupportConversationSummary[]>([])
   const [conversation, setConversation] = useState<SupportConversationDetail | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [filter, setFilter] = useState('')
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [cryptoIdentity, setCryptoIdentity] = useState<SupportDeviceIdentity | null>(null)
+  const [ownKeyId, setOwnKeyId] = useState('')
+  const [safetyCode, setSafetyCode] = useState('')
+  const [verified, setVerified] = useState(false)
   const messagesRef = useRef<HTMLDivElement>(null)
   const typingHeartbeat = useRef<number | null>(null)
   const typingTimeout = useRef<number | null>(null)
   const typingActive = useRef(false)
+
+  useEffect(() => {
+    let active = true
+    const prepareStaffKey = async () => {
+      const { data: user } = await authApi.profile()
+      const identity = await getOrCreateSupportIdentity(user.id)
+      const { data: key } = await supportChatApi.registerEncryptionKey(identity.deviceId, identity.publicKey)
+      if (active) {
+        setCryptoIdentity(identity)
+        setOwnKeyId(key.key_id)
+      }
+    }
+    void prepareStaffKey().catch(cause => {
+      if (active) setError(cause instanceof Error ? cause.message : 'Could not prepare the support encryption key.')
+    })
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -44,20 +84,34 @@ export default function AdminSupport() {
   }, [])
 
   useEffect(() => {
-    if (selectedId === null) {
+    if (selectedId === null || selectedUserId === null || !cryptoIdentity || !ownKeyId) {
       setConversation(null)
       return
     }
     let active = true
     const loadConversation = async () => {
       try {
-        const { data } = await supportChatApi.adminConversation(selectedId)
+        const [conversationResponse, keyResponse] = await Promise.all([
+          supportChatApi.adminConversation(selectedId),
+          supportChatApi.encryptionKeys(selectedUserId),
+        ])
+        const keys = keyResponse.data.keys
+        const code = getSupportSafetyCode(keys)
+        const ownKey = keys.find(key => key.key_id === ownKeyId && key.is_staff)
+        if (!ownKey) throw new Error('This support device key is missing from the verified recipient list.')
+        if (!keys.some(key => !key.is_staff)) throw new Error('The customer has no registered encryption key on this device.')
+        const messages = conversationResponse.data.messages.map((message: SupportConversationDetail['messages'][number]) => ({
+          ...message,
+          body: messageBody(message, ownKeyId, cryptoIdentity, keys),
+        }))
         if (active) {
-          setConversation(data)
+          setSafetyCode(code)
+          setVerified(localStorage.getItem(`majo-support-key-verified:${conversationResponse.data.user_id}`) === code)
+          setConversation({ ...conversationResponse.data, messages })
           setError('')
         }
-      } catch {
-        if (active) setError('Could not load this conversation.')
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : 'Could not load the encrypted conversation.')
       }
     }
     void loadConversation()
@@ -66,7 +120,7 @@ export default function AdminSupport() {
       active = false
       window.clearInterval(timer)
     }
-  }, [selectedId])
+  }, [selectedId, selectedUserId, cryptoIdentity, ownKeyId])
 
   useEffect(() => {
     messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' })
@@ -80,14 +134,32 @@ export default function AdminSupport() {
     setSending(true)
     setError('')
     try {
-      await supportChatApi.sendAdminReply(selectedId, body)
+      if (!conversation || !cryptoIdentity || !ownKeyId) throw new Error('Select a conversation and prepare the support encryption key before replying.')
+      const { data: keyDirectory } = await supportChatApi.encryptionKeys(conversation.user_id)
+      const currentKeys = keyDirectory.keys
+      const currentCode = getSupportSafetyCode(currentKeys)
+      if (!currentKeys.some(key => key.key_id === ownKeyId && key.is_staff) || !currentKeys.some(key => !key.is_staff)) {
+        throw new Error('The recipient-key roster is incomplete; the encrypted reply was not sent.')
+      }
+      if (!verified || localStorage.getItem(`majo-support-key-verified:${conversation.user_id}`) !== currentCode) {
+        setSafetyCode(currentCode)
+        setVerified(false)
+        throw new Error('The encryption-key roster changed or is not verified. Compare the safety code before replying.')
+      }
+      setSafetyCode(currentCode)
+      const envelope = createSupportEnvelope(body, ownKeyId, cryptoIdentity, currentKeys)
+      await supportChatApi.sendAdminReply(selectedId, envelope)
       setDraft('')
       const { data } = await supportChatApi.adminConversation(selectedId)
-      setConversation(data)
+      const messages = data.messages.map((message: SupportConversationDetail['messages'][number]) => ({
+        ...message,
+        body: messageBody(message, ownKeyId, cryptoIdentity, currentKeys),
+      }))
+      setConversation({ ...data, messages })
       const inbox = await supportChatApi.adminConversations()
       setConversations(inbox.data)
-    } catch {
-      setError('Reply could not be sent. Please try again.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Reply could not be encrypted and sent. Please try again.')
     } finally {
       setSending(false)
     }
@@ -128,8 +200,14 @@ export default function AdminSupport() {
   }, [selectedId])
 
   const visibleConversations = conversations.filter(item =>
-    `${item.user_name} ${item.user_email} ${item.last_message?.body ?? ''}`.toLowerCase().includes(filter.trim().toLowerCase())
+    `${item.user_name} ${item.user_email}`.toLowerCase().includes(filter.trim().toLowerCase())
   )
+
+  const verifySafetyCode = () => {
+    if (!conversation) return
+    localStorage.setItem(`majo-support-key-verified:${conversation.user_id}`, safetyCode)
+    setVerified(true)
+  }
 
   return (
     <div className="flex h-full min-h-[520px] flex-col p-4 md:p-6">
@@ -152,13 +230,13 @@ export default function AdminSupport() {
             {loading && <p className="p-5 text-center text-[12px] text-[#64748B]">Loading inbox...</p>}
             {!loading && visibleConversations.length === 0 && <div className="px-5 py-12 text-center"><MessageCircle size={24} className="mx-auto text-[#94A3B8]" /><p className="mt-3 text-[13px] font-semibold text-[#334155]">No conversations yet</p></div>}
             {visibleConversations.map(item => (
-              <button key={item.id} type="button" onClick={() => setSelectedId(item.id)} className={`w-full border-b border-[#F1F5F9] px-4 py-3 text-left transition hover:bg-[#F8FAFC] ${selectedId === item.id ? 'bg-[#EFF8F2]' : ''}`}>
+              <button key={item.id} type="button" onClick={() => { setSelectedId(item.id); setSelectedUserId(item.user_id) }} className={`w-full border-b border-[#F1F5F9] px-4 py-3 text-left transition hover:bg-[#F8FAFC] ${selectedId === item.id ? 'bg-[#EFF8F2]' : ''}`}>
                 <span className="flex items-center justify-between gap-2">
                   <span className="truncate text-[13px] font-bold text-[#071A2B]">{item.user_name}</span>
                   {item.unread_count > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#25D366] px-1.5 text-[10px] font-bold text-white">{item.unread_count}</span>}
                 </span>
                 <span className="mt-0.5 block truncate text-[10px] text-[#64748B]">{item.user_email}</span>
-                <span className="mt-2 block truncate text-[11px] text-[#475569]">{item.last_message?.body ?? 'No messages yet'}</span>
+                <span className="mt-2 block truncate text-[11px] text-[#475569]">{item.last_message?.encryption_version === 1 ? 'End-to-end encrypted message' : item.last_message?.body ?? 'No messages yet'}</span>
                 <span className="mt-1 block text-[9px] text-[#94A3B8]">{formatTime(item.updated_at)}</span>
               </button>
             ))}
@@ -174,7 +252,7 @@ export default function AdminSupport() {
           ) : (
             <>
               <header className="flex items-center gap-3 border-b border-[#E2E8F0] bg-white px-4 py-3">
-                <button type="button" onClick={() => setSelectedId(null)} aria-label="Back to conversations" className="rounded-lg p-2 text-[#475569] hover:bg-[#F1F5F9] md:hidden"><ArrowLeft size={18} /></button>
+                <button type="button" onClick={() => { setSelectedId(null); setSelectedUserId(null) }} aria-label="Back to conversations" className="rounded-lg p-2 text-[#475569] hover:bg-[#F1F5F9] md:hidden"><ArrowLeft size={18} /></button>
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#DDF5E6] text-[12px] font-extrabold text-[#168348]">{conversation.user_name.slice(0, 1).toUpperCase()}</div>
                 <div className="min-w-0">
                   <p className="truncate text-[13px] font-bold text-[#071A2B]">{conversation.user_name}</p>
@@ -183,6 +261,19 @@ export default function AdminSupport() {
               </header>
 
               <div ref={messagesRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5" aria-live="polite">
+                <div className="mx-auto max-w-lg rounded-lg border border-[#BBF7D0] bg-white p-3 text-center">
+                  <p className="flex items-center justify-center gap-1 text-[10px] font-bold text-[#166534]"><ShieldCheck size={13} /> End-to-end encrypted</p>
+                  <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Compare this safety code with the customer over a separate trusted channel before replying.</p>
+                  <p className="mt-1 text-[10px] leading-4 text-[#64748B]">Email-and-password sign-in keeps an encrypted key backup. A password reset cannot unlock the old backup.</p>
+                  <p className="mt-2 select-all font-mono text-[11px] font-bold tracking-wider text-[#071A2B]">{safetyCode || 'Loading safety code…'}</p>
+                  {!verified ? (
+                    <button type="button" onClick={verifySafetyCode} disabled={!safetyCode} className="mt-2 rounded-lg bg-[#166534] px-3 py-1.5 text-[10px] font-bold text-white hover:bg-[#14532D] disabled:opacity-50">
+                      I compared and verified the code
+                    </button>
+                  ) : (
+                    <p className="mt-2 text-[10px] font-bold text-[#166534]">Safety code verified on this device</p>
+                  )}
+                </div>
                 {conversation.messages.map(message => (
                   <div key={message.id} className={`flex ${message.is_staff ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 ${message.is_staff ? 'rounded-br-sm bg-[#DDF5E6] text-[#071A2B]' : 'rounded-bl-sm bg-white text-[#071A2B] shadow-sm'}`}>
@@ -197,13 +288,13 @@ export default function AdminSupport() {
 
               {error && <p role="alert" className="border-t border-red-100 bg-white px-4 py-2 text-[11px] text-red-600">{error}</p>}
               <form onSubmit={sendReply} className="flex items-end gap-2 border-t border-[#E2E8F0] bg-white p-3">
-                <textarea value={draft} onChange={event => handleDraftChange(event.target.value)} onBlur={stopTyping} onKeyDown={event => {
+                <textarea value={draft} disabled={!verified || !cryptoIdentity} onChange={event => handleDraftChange(event.target.value)} onBlur={stopTyping} onKeyDown={event => {
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault()
                     event.currentTarget.form?.requestSubmit()
                   }
                 }} maxLength={2000} rows={1} aria-label="Write a reply" placeholder="Write a reply..." className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#25D366]" />
-                <button type="submit" disabled={!draft.trim() || sending} aria-label="Send reply" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071A2B] text-white transition hover:bg-[#0F2B43] disabled:cursor-not-allowed disabled:opacity-50"><Send size={17} /></button>
+                <button type="submit" disabled={!draft.trim() || sending || !verified || !cryptoIdentity} aria-label="Send reply" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071A2B] text-white transition hover:bg-[#0F2B43] disabled:cursor-not-allowed disabled:opacity-50"><Send size={17} /></button>
               </form>
             </>
           )}
