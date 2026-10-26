@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { ArrowLeft, MessageCircle, RefreshCw, Send, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, MessageCircle, RefreshCw, RotateCcw, Send, ShieldCheck } from 'lucide-react'
 import { authApi, supportChatApi, type SupportConversationDetail, type SupportConversationSummary, type SupportMessage } from '../../lib/api'
 import TypingIndicator from '../../components/TypingIndicator'
 import {
@@ -29,6 +29,7 @@ export default function AdminSupport() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [filter, setFilter] = useState('')
+  const [showClosed, setShowClosed] = useState(false)
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -180,6 +181,27 @@ export default function AdminSupport() {
     typingTimeout.current = window.setTimeout(stopTyping, 4500)
   }
 
+  const updateConversationClosed = async (isClosed: boolean) => {
+    if (!conversation) return
+    setError('')
+    try {
+      await supportChatApi.setAdminConversationClosed(conversation.id, isClosed)
+      const inbox = await supportChatApi.adminConversations()
+      setConversations(inbox.data)
+      if (isClosed) {
+        stopTyping()
+        setSelectedId(null)
+        setSelectedUserId(null)
+        setConversation(null)
+        setDraft('')
+      } else {
+        setConversation({ ...conversation, is_closed: false })
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not update the conversation status.')
+    }
+  }
+
   useEffect(() => () => {
     if (typingHeartbeat.current !== null) window.clearInterval(typingHeartbeat.current)
     if (typingTimeout.current !== null) window.clearTimeout(typingTimeout.current)
@@ -187,8 +209,10 @@ export default function AdminSupport() {
   }, [selectedId])
 
   const visibleConversations = conversations.filter(item =>
-    `${item.user_name} ${item.user_email}`.toLowerCase().includes(filter.trim().toLowerCase())
+    item.is_closed === showClosed
+    && `${item.user_name} ${item.user_email}`.toLowerCase().includes(filter.trim().toLowerCase())
   )
+  const closedConversationCount = conversations.filter(item => item.is_closed).length
 
   return (
     <div className="flex h-full min-h-[520px] flex-col p-4 md:p-6">
@@ -206,16 +230,20 @@ export default function AdminSupport() {
         <aside className={`${selectedId !== null ? 'hidden md:flex' : 'flex'} min-h-0 flex-col border-r border-[#E2E8F0]`}>
           <div className="border-b border-[#E2E8F0] p-3">
             <input value={filter} onChange={event => setFilter(event.target.value)} placeholder="Search conversations" aria-label="Search conversations" className="w-full rounded-lg border border-[#DCE5EB] px-3 py-2.5 text-[12px] outline-none focus:border-[#25D366]" />
+            <button type="button" onClick={() => setShowClosed(!showClosed)} className="mt-2 w-full rounded-lg border border-[#DCE5EB] px-3 py-2 text-left text-[11px] font-bold text-[#475569] hover:bg-[#F8FAFC]">
+              {showClosed ? 'Show open conversations' : `Closed conversations (${closedConversationCount})`}
+            </button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading && <p className="p-5 text-center text-[12px] text-[#64748B]">Loading inbox...</p>}
-            {!loading && visibleConversations.length === 0 && <div className="px-5 py-12 text-center"><MessageCircle size={24} className="mx-auto text-[#94A3B8]" /><p className="mt-3 text-[13px] font-semibold text-[#334155]">No conversations yet</p></div>}
+            {!loading && visibleConversations.length === 0 && <div className="px-5 py-12 text-center"><MessageCircle size={24} className="mx-auto text-[#94A3B8]" /><p className="mt-3 text-[13px] font-semibold text-[#334155]">{showClosed ? 'No closed conversations' : 'No conversations yet'}</p></div>}
             {visibleConversations.map(item => (
               <button key={item.id} type="button" onClick={() => { setSelectedId(item.id); setSelectedUserId(item.user_id) }} className={`w-full border-b border-[#F1F5F9] px-4 py-3 text-left transition hover:bg-[#F8FAFC] ${selectedId === item.id ? 'bg-[#EFF8F2]' : ''}`}>
                 <span className="flex items-center justify-between gap-2">
                   <span className="truncate text-[13px] font-bold text-[#071A2B]">{item.user_name}</span>
                   {item.unread_count > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#25D366] px-1.5 text-[10px] font-bold text-white">{item.unread_count}</span>}
                 </span>
+                {item.is_closed && <span className="mt-1 inline-block rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[9px] font-bold text-[#64748B]">Closed</span>}
                 <span className="mt-0.5 block truncate text-[10px] text-[#64748B]">{item.user_email}</span>
                 <span className="mt-2 block truncate text-[11px] text-[#475569]">{item.last_message?.encryption_version === 1 ? 'End-to-end encrypted message' : item.last_message?.body ?? 'No messages yet'}</span>
                 <span className="mt-1 block text-[9px] text-[#94A3B8]">{formatTime(item.updated_at)}</span>
@@ -239,6 +267,16 @@ export default function AdminSupport() {
                   <p className="truncate text-[13px] font-bold text-[#071A2B]">{conversation.user_name}</p>
                   <p className="truncate text-[10px] text-[#64748B]">{conversation.user_email}</p>
                 </div>
+                {conversation.is_closed && <span className="rounded-full bg-[#F1F5F9] px-2 py-1 text-[10px] font-bold text-[#64748B]">Closed</span>}
+                <button
+                  type="button"
+                  onClick={() => void updateConversationClosed(!conversation.is_closed)}
+                  aria-label={conversation.is_closed ? 'Reopen conversation' : 'Close conversation'}
+                  title={conversation.is_closed ? 'Reopen conversation' : 'Close conversation'}
+                  className="ml-auto rounded-lg p-2 text-[#475569] transition hover:bg-[#F1F5F9] hover:text-[#071A2B]"
+                >
+                  {conversation.is_closed ? <RotateCcw size={17} /> : <CheckCircle2 size={18} />}
+                </button>
               </header>
 
               <div ref={messagesRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5" aria-live="polite">
@@ -259,7 +297,9 @@ export default function AdminSupport() {
               </div>
 
               {error && <p role="alert" className="border-t border-red-100 bg-white px-4 py-2 text-[11px] text-red-600">{error}</p>}
-              <form onSubmit={sendReply} className="flex items-end gap-2 border-t border-[#E2E8F0] bg-white p-3">
+              {conversation.is_closed ? (
+                <p className="border-t border-[#E2E8F0] bg-white px-4 py-3 text-center text-[12px] text-[#64748B]">This conversation is closed. Reopen it to send another reply.</p>
+              ) : <form onSubmit={sendReply} className="flex items-end gap-2 border-t border-[#E2E8F0] bg-white p-3">
                 <textarea value={draft} onChange={event => handleDraftChange(event.target.value)} onBlur={stopTyping} onKeyDown={event => {
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault()
@@ -267,7 +307,7 @@ export default function AdminSupport() {
                   }
                 }} maxLength={2000} rows={1} aria-label="Write a reply" placeholder="Write a reply..." className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#25D366]" />
                 <button type="submit" disabled={!draft.trim() || sending || !cryptoIdentity} aria-label="Send reply" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071A2B] text-white transition hover:bg-[#0F2B43] disabled:cursor-not-allowed disabled:opacity-50"><Send size={17} /></button>
-              </form>
+              </form>}
             </>
           )}
         </section>

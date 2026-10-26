@@ -949,6 +949,7 @@ export type SupportConversationSummary = {
   user_name: string
   user_email: string
   updated_at: string
+  is_closed: boolean
   unread_count: number
   last_message: SupportMessage | null
 }
@@ -985,10 +986,11 @@ export const notificationsApi = {
 
 export const supportChatApi = {
   customerChat: (markRead = false) =>
-    api.get<{ conversation_id: number | null; messages: SupportMessage[]; unread_count: number; staff_typing: boolean }>(
+    api.get<{ conversation_id: number | null; messages: SupportMessage[]; unread_count: number; staff_typing: boolean; is_closed: boolean }>(
       `/api/auth/support/chat/${markRead ? '?mark_read=true' : ''}`
     ),
-  startCustomerChat: () => api.post<{ conversation_id: number }>('/api/auth/support/chat/', { start: true }),
+  startCustomerChat: () => api.post<{ conversation_id: number; is_closed: boolean }>('/api/auth/support/chat/', { start: true }),
+  reopenCustomerChat: () => api.post<{ conversation_id: number; is_closed: boolean }>('/api/auth/support/chat/', { reopen: true }),
   sendCustomerMessage: (envelope: SupportEncryptedEnvelope) => api.post<SupportMessage>('/api/auth/support/chat/', { envelope }),
   encryptionKeys: (userId?: number) =>
     api.get<{ keys: SupportEncryptionKey[] }>(`/api/auth/support/encryption-keys/${userId ? `?user_id=${userId}` : ''}`),
@@ -1002,6 +1004,8 @@ export const supportChatApi = {
   adminConversations: () => api.get<SupportConversationSummary[]>('/api/auth/admin/support/conversations/'),
   adminConversation: (id: number) => api.get<SupportConversationDetail>(`/api/auth/admin/support/conversations/${id}/`),
   setAdminTyping: (id: number, is_typing: boolean) => api.patch(`/api/auth/admin/support/conversations/${id}/`, { is_typing }),
+  setAdminConversationClosed: (id: number, is_closed: boolean) =>
+    api.patch<{ is_closed: boolean }>(`/api/auth/admin/support/conversations/${id}/`, { is_closed }),
   sendAdminReply: (id: number, envelope: SupportEncryptedEnvelope) =>
     api.post<SupportMessage>(`/api/auth/admin/support/conversations/${id}/`, { envelope }),
 }

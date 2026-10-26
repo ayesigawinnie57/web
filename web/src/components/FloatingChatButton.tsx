@@ -31,6 +31,7 @@ export default function FloatingChatButton() {
   const [sending, setSending] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [staffTyping, setStaffTyping] = useState(false)
+  const [conversationClosed, setConversationClosed] = useState(false)
   const [error, setError] = useState('')
   const [encryptionError, setEncryptionError] = useState('')
   const [encryptionReady, setEncryptionReady] = useState(false)
@@ -105,6 +106,7 @@ export default function FloatingChatButton() {
             ...message,
             body: messageBody(message, ownKeyId, identity, currentKeys),
           })))
+          setConversationClosed(data.is_closed)
           setUnreadCount(data.unread_count)
           setStaffTyping(data.staff_typing)
           setError('')
@@ -140,6 +142,10 @@ export default function FloatingChatButton() {
     }
   }
 
+  useEffect(() => {
+    if (conversationClosed) stopTyping()
+  }, [conversationClosed])
+
   const handleDraftChange = (value: string) => {
     setDraft(value)
     if (!value.trim()) {
@@ -166,7 +172,7 @@ export default function FloatingChatButton() {
   const sendMessage = async (event: FormEvent) => {
     event.preventDefault()
     const body = draft.trim()
-    if (!body || sending) return
+    if (!body || sending || conversationClosed) return
     stopTyping()
     setSending(true)
     setError('')
@@ -186,12 +192,23 @@ export default function FloatingChatButton() {
         ...message,
         body: messageBody(message, ownKeyId, identity, currentKeys),
       })))
+      setConversationClosed(data.is_closed)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Message could not be encrypted and sent. Please try again.')
     } finally {
       setSending(false)
     }
 
+  }
+
+  const reopenConversation = async () => {
+    setError('')
+    try {
+      await supportChatApi.reopenCustomerChat()
+      setConversationClosed(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not reopen the support conversation.')
+    }
   }
 
   const loginNext = `${location.pathname}${location.search}`
@@ -258,9 +275,18 @@ export default function FloatingChatButton() {
                   </div>
                 ))}
                 {staffTyping && <TypingIndicator label="Support is typing" />}
+                {conversationClosed && (
+                  <div className="mx-auto max-w-[300px] rounded-xl border border-[#DCE5EB] bg-white p-4 text-center">
+                    <p className="text-[12px] font-bold text-[#071A2B]">This conversation has been closed by support.</p>
+                    <p className="mt-1 text-[11px] leading-4 text-[#64748B]">If you need more help, reopen the conversation to continue.</p>
+                    <button type="button" onClick={() => void reopenConversation()} className="mt-3 rounded-lg bg-[#071A2B] px-3 py-2 text-[11px] font-bold text-white hover:bg-[#0F2B43]">
+                      Reopen conversation
+                    </button>
+                  </div>
+                )}
               </div>
               {error && <p role="alert" className="px-4 py-2 text-[11px] text-red-600">{error}</p>}
-              <form onSubmit={sendMessage} className="flex items-end gap-2 border-t border-[#E2E8F0] bg-white p-3">
+              {!conversationClosed && <form onSubmit={sendMessage} className="flex items-end gap-2 border-t border-[#E2E8F0] bg-white p-3">
                 <textarea
                   value={draft}
                   onChange={event => handleDraftChange(event.target.value)}
@@ -280,7 +306,7 @@ export default function FloatingChatButton() {
                 <button type="submit" disabled={!draft.trim() || sending || !encryptionReady || !staffKeysReady} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#C2410C] text-white transition hover:bg-[#9A3412] disabled:cursor-not-allowed disabled:opacity-50">
                   <Send size={17} />
                 </button>
-              </form>
+              </form>}
             </>
           )}
         </section>
@@ -292,9 +318,9 @@ export default function FloatingChatButton() {
           onClick={() => {
             setOpen(true)
             if (authenticated) {
-              void supportChatApi.startCustomerChat().catch(cause => {
-                setError(cause instanceof Error ? cause.message : 'Could not open the support conversation.')
-              })
+              void supportChatApi.startCustomerChat()
+                .then(({ data }) => setConversationClosed(data.is_closed))
+                .catch(cause => setError(cause instanceof Error ? cause.message : 'Could not open the support conversation.'))
             }
           }}
           aria-label="Open support chat"
