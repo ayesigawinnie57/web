@@ -464,6 +464,23 @@ export const cartApi = {
     saveGuestCart(getGuestCart().filter(item => item.product_id !== productId))
     notifyCartUpdated()
   },
+  sendAbandonedReminder: async () => {
+    const token = localStorage.getItem('access_token')
+    if (!token) return
+
+    try {
+      const response = await fetch(`${BASE_URL}/api/auth/cart/reminder/`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        keepalive: true,
+      })
+      if (!response.ok) {
+        console.error(`Cart reminder request failed with status ${response.status}`)
+      }
+    } catch (error) {
+      console.error('Cart reminder request failed', error)
+    }
+  },
 }
 
 export type ApiOrderDetail = {

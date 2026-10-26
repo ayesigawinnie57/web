@@ -32,6 +32,7 @@ const sections: {
       { label: '', text: 'Create and manage your account and provide access to our platform.' },
       { label: '', text: 'Process orders, verify payments, arrange deliveries, and manage cancellations, returns, and refunds.' },
       { label: '', text: 'Send order confirmations, delivery updates, account notifications, and other important service-related communications.' },
+      { label: '', text: 'Send a cart reminder to signed-in customers when they leave products in their cart after becoming inactive or leaving the cart page. A reminder may include product images and names, quantities, delivery fees, and the cart total.' },
       { label: '', text: 'Respond to enquiries and provide customer support.' },
       { label: '', text: 'Personalize your shopping experience and improve product recommendations where appropriate.' },
       { label: '', text: 'Monitor platform performance, improve our services, and develop new features.' },

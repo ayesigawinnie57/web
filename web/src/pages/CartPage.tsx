@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
 import { cartApi, hasAccessToken, productsApi, type CartItem } from '../lib/api'
@@ -12,9 +12,17 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [deliveryFees, setDeliveryFees] = useState<Record<number, number>>({})
+  const reminderReadyRef = useRef(false)
+  const reminderSentRef = useRef(false)
+  const skipReminderRef = useRef(false)
+
+  const sendReminder = useCallback(() => {
+    if (!reminderReadyRef.current || reminderSentRef.current || skipReminderRef.current) return
+    reminderSentRef.current = true
+    void cartApi.sendAbandonedReminder()
+  }, [])
 
   const loadCart = () => {
-    setLoading(true)
     cartApi.list()
       .then(async data => {
         setItems(data)
@@ -34,6 +42,36 @@ export default function CartPage() {
   }
 
   useEffect(() => { loadCart() }, [])
+
+  useEffect(() => {
+    reminderReadyRef.current = !loading && !error && items.length > 0 && hasAccessToken()
+    if (!reminderReadyRef.current) return
+
+    let timeout = window.setTimeout(sendReminder, 60_000)
+    const resetInactivityTimer = () => {
+      window.clearTimeout(timeout)
+      timeout = window.setTimeout(sendReminder, 60_000)
+    }
+    const activityEvents = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart']
+    activityEvents.forEach(event => window.addEventListener(event, resetInactivityTimer, { passive: true }))
+
+    return () => {
+      window.clearTimeout(timeout)
+      activityEvents.forEach(event => window.removeEventListener(event, resetInactivityTimer))
+    }
+  }, [error, items.length, loading, sendReminder])
+
+  useEffect(() => {
+    const handlePageExit = () => sendReminder()
+    window.addEventListener('pagehide', handlePageExit)
+    window.addEventListener('beforeunload', handlePageExit)
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageExit)
+      window.removeEventListener('beforeunload', handlePageExit)
+      sendReminder()
+    }
+  }, [sendReminder])
 
   const updateQuantity = async (item: CartItem, quantity: number) => {
     if (quantity < 1) return removeItem(item.product_id)
@@ -133,7 +171,7 @@ export default function CartPage() {
                 </span>
               </div>
               <div className="flex justify-between items-center gap-3 border-t border-[#E2E8F0] mt-5 pt-5"><span className="text-[15px] font-extrabold text-[#071A2B]">Total</span><span className="text-[16px] font-extrabold text-[#1E3A8A] text-right">{delivery === null ? <>UGX {subtotal.toLocaleString()} <span className="text-[12px] font-bold text-[#64748B]">+ delivery fee</span></> : `UGX ${total.toLocaleString()}`}</span></div>
-              <Link to="/checkout" className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold flex items-center justify-center">Proceed to checkout</Link>
+              <Link to="/checkout" onClick={() => { skipReminderRef.current = true }} className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold flex items-center justify-center">Proceed to checkout</Link>
             </aside>
           </div>
         )}
