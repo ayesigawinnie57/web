@@ -255,15 +255,6 @@ export default function FloatingChatButton() {
                 <div className="mx-auto mb-4 max-w-[260px] rounded-xl bg-white px-3 py-2 text-center text-[11px] leading-5 text-[#64748B] shadow-sm">
                   Send us a message and our support team will reply here.
                 </div>
-                <p role="status" className="mx-auto max-w-[300px] rounded-xl bg-white px-3 py-2 text-center text-[11px] leading-5 text-[#475569] shadow-sm">
-                  {supportPresence === 'joined'
-                    ? 'Support has joined the chat.'
-                    : supportPresence === 'left'
-                      ? 'The support person has left the chat. You can continue sending messages.'
-                      : messages.length > 0
-                        ? 'Message sent. Waiting for support to join the chat.'
-                        : 'Waiting for support to join the chat.'}
-                </p>
                 {encryptionError && <p role="alert" className="mx-auto mb-3 max-w-[300px] rounded-lg bg-red-50 p-3 text-center text-[11px] leading-4 text-red-700">{encryptionError}</p>}
                 {encryptionReady && (
                   <div className="mx-auto mb-4 max-w-[300px] rounded-lg border border-[#BBF7D0] bg-white p-3 text-center">
@@ -286,6 +277,15 @@ export default function FloatingChatButton() {
                     </div>
                   </div>
                 ))}
+                <p role="status" className="mx-auto max-w-[300px] rounded-xl bg-white px-3 py-2 text-center text-[11px] leading-5 text-[#475569] shadow-sm">
+                  {supportPresence === 'joined'
+                    ? 'Support has joined the chat.'
+                    : supportPresence === 'left'
+                      ? 'The support person has left the chat. You can continue sending messages.'
+                      : messages.length > 0
+                        ? 'Message sent. Waiting for support to join the chat.'
+                        : 'Waiting for support to join the chat.'}
+                </p>
                 {staffTyping && <TypingIndicator label="Support is typing" />}
                 {conversationClosed && (
                   <div className="mx-auto max-w-[300px] rounded-xl border border-[#DCE5EB] bg-white p-4 text-center">
