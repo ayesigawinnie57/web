@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const DEFAULT_BACKEND_URL = 'https://web-production-b3675.up.railway.app'
+const DEFAULT_BACKEND_URL = 'https://api.majogadgets.com'
 
 const resolveApiBaseUrl = () => {
   const configured = import.meta.env.VITE_API_URL
