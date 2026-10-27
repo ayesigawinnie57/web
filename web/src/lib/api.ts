@@ -6,13 +6,6 @@ const resolveApiBaseUrl = () => {
   const configured = import.meta.env.VITE_API_URL
   if (configured && configured.trim()) return configured.trim().replace(/\/+$/, '')
 
-  if (typeof window !== 'undefined') {
-    const { hostname, protocol, port } = window.location
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '0.0.0.0') {
-      return `${protocol}//${hostname}${port ? `:${port}` : ''}`
-    }
-  }
-
   return DEFAULT_BACKEND_URL
 }
 
