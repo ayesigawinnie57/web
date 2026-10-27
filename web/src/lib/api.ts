@@ -4,6 +4,7 @@ const DEFAULT_BACKEND_URL = 'https://api.majogadgets.com'
 
 const resolveApiBaseUrl = () => {
   const configured = import.meta.env.VITE_API_URL
+  if (import.meta.env.PROD) return DEFAULT_BACKEND_URL
   if (configured && configured.trim()) return configured.trim().replace(/\/+$/, '')
 
   return DEFAULT_BACKEND_URL
