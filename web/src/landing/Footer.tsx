@@ -47,12 +47,12 @@ export default function Footer() {
             </div>
 
             <div className="mt-6 flex items-center gap-4 text-slate-300">
-              <a href="https://www.tiktok.com" target="_blank" rel="noreferrer" aria-label="TikTok" className="transition hover:text-cyan-300">
+              <a href="https://www.tiktok.com/@majogadgets" target="_blank" rel="noreferrer" aria-label="TikTok" className="transition hover:text-cyan-300">
                 <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
                   <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-3.77V2h-3.45v13.67a2.89 2.89 0 1 1-2.89-2.89c.3 0 .59.05.86.13V9.38a6.34 6.34 0 0 0-.86-.06A6.34 6.34 0 1 0 15.82 15V8.49a8.16 8.16 0 0 0 4.77 1.52V6.56a4.82 4.82 0 0 1-1-.21v.34Z" />
                 </svg>
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram" className="transition hover:text-cyan-300">
+              <a href="https://www.instagram.com/majogadgets/" target="_blank" rel="noreferrer" aria-label="Instagram" className="transition hover:text-cyan-300">
                 <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
                   <path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 3.5A5.5 5.5 0 1 1 6.5 13 5.5 5.5 0 0 1 12 7.5Zm0 2A3.5 3.5 0 1 0 15.5 13 3.5 3.5 0 0 0 12 9.5Zm5.25-3.25a1.25 1.25 0 1 1-1.25 1.25Z" />
                 </svg>
