@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
-import { cartApi, hasAccessToken, type CartQuote, type CartQuoteItem } from '../lib/api'
+import { cartApi, hasAccessToken, type CartItem, type CartQuote, type CartQuoteItem } from '../lib/api'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
@@ -9,9 +9,10 @@ const money = (value: string) => Number(value).toLocaleString()
 
 export default function CartPage() {
   const [quote, setQuote] = useState<CartQuote | null>(null)
+  const [items, setItems] = useState<CartQuoteItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const items = quote?.items ?? []
+  const [quoteUnavailable, setQuoteUnavailable] = useState(false)
   const reminderReadyRef = useRef(false)
   const reminderSentRef = useRef(false)
   const skipReminderRef = useRef(false)
@@ -22,21 +23,34 @@ export default function CartPage() {
     void cartApi.sendAbandonedReminder()
   }, [])
 
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
+    setLoading(true)
     try {
-      setQuote(await cartApi.quote())
+      const nextQuote = await cartApi.quote()
+      setQuote(nextQuote)
+      setItems(nextQuote.items)
+      setQuoteUnavailable(false)
       setError(false)
     } catch {
-      setError(true)
+      setQuote(null)
+      setQuoteUnavailable(true)
+      try {
+        const cartItems: CartItem[] = await cartApi.list()
+        setItems(cartItems.map(item => ({ ...item, delivery_fee: '0', line_total: '0' })))
+        setError(false)
+      } catch {
+        setItems([])
+        setError(true)
+      }
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { loadCart() }, [])
+  useEffect(() => { void loadCart() }, [loadCart])
 
   useEffect(() => {
-    reminderReadyRef.current = !loading && !error && items.length > 0 && hasAccessToken()
+    reminderReadyRef.current = !loading && !error && !quoteUnavailable && items.length > 0 && hasAccessToken()
     if (!reminderReadyRef.current) return
 
     let timeout = window.setTimeout(sendReminder, 60_000)
@@ -51,7 +65,19 @@ export default function CartPage() {
       window.clearTimeout(timeout)
       activityEvents.forEach(event => window.removeEventListener(event, resetInactivityTimer))
     }
-  }, [error, items.length, loading, sendReminder])
+  }, [error, items.length, loading, quoteUnavailable, sendReminder])
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void loadCart()
+    }
+    window.addEventListener('focus', refreshWhenVisible)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [loadCart])
 
   useEffect(() => {
     const handlePageExit = () => sendReminder()
@@ -65,7 +91,7 @@ export default function CartPage() {
     }
   }, [sendReminder])
 
-  const updateQuantity = async (item: CartQuoteItem, quantity: number) => {
+  const updateQuantity = async (item: Pick<CartItem, 'product_id'>, quantity: number) => {
     if (quantity < 1) return removeItem(item.product_id)
     try {
       await cartApi.update(item.product_id, quantity)
@@ -127,16 +153,22 @@ export default function CartPage() {
                       <p className="text-[11px] font-bold uppercase tracking-wider text-[#1E3A8A]">{item.product_category}</p>
                       <div className="flex items-center gap-x-3 gap-y-1 flex-wrap mt-1">
                         <Link to={`/shop/${item.product_slug}`} title={item.product_name} className="max-w-[180px] sm:max-w-[280px] text-[15px] font-extrabold text-[#071A2B] whitespace-nowrap overflow-hidden text-ellipsis">{item.product_name}</Link>
-                        <span className="text-[14px] font-bold text-[#1E3A8A]">UGX {money(item.product_price)}</span>
-                        <span className="text-[12px] text-[#64748B]">Delivery: <span className="font-bold text-[#071A2B]">{Number(item.delivery_fee) ? `UGX ${money(item.delivery_fee)}` : 'Free'}</span></span>
+                        {quoteUnavailable ? (
+                          <span className="text-[12px] font-bold text-amber-700">Price unavailable</span>
+                        ) : (
+                          <>
+                            <span className="text-[14px] font-bold text-[#1E3A8A]">UGX {money(item.product_price)}</span>
+                            <span className="text-[12px] text-[#64748B]">Delivery: <span className="font-bold text-[#071A2B]">{Number(item.delivery_fee) ? `UGX ${money(item.delivery_fee)}` : 'Free'}</span></span>
+                          </>
+                        )}
                         {!hasAccessToken() && <Link to="/login" className="text-[12px] font-bold text-[#1E3A8A] hover:text-blue-700">Sign in</Link>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="flex items-center border border-[#E2E8F0] bg-white">
-                        <button onClick={() => updateQuantity(item, item.quantity - 1)} className="w-8 h-8 text-[#071A2B]">-</button>
+                        <button onClick={() => updateQuantity(item, item.quantity - 1)} disabled={quoteUnavailable} className="w-8 h-8 text-[#071A2B] disabled:opacity-40">-</button>
                         <span className="w-8 text-center text-[13px] font-bold">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item, item.quantity + 1)} className="w-8 h-8 text-[#071A2B]">+</button>
+                        <button onClick={() => updateQuantity(item, item.quantity + 1)} disabled={quoteUnavailable} className="w-8 h-8 text-[#071A2B] disabled:opacity-40">+</button>
                       </div>
                       <button onClick={() => removeItem(item.product_id)} aria-label={`Delete ${item.product_name}`} title="Delete item" className="p-1 text-red-500 hover:text-red-700 transition-colors">
                         <Trash2 className="w-4 h-4" strokeWidth={2} />
@@ -149,16 +181,21 @@ export default function CartPage() {
 
             <aside className="bg-white p-5 border border-[#E2E8F0]">
               <h2 className="text-[18px] font-extrabold text-[#071A2B]">Cart summary</h2>
-              <div className="flex justify-between text-[13px] text-[#64748B] mt-5"><span>Subtotal</span><span>UGX {subtotal.toLocaleString()}</span></div>
+              {quoteUnavailable && <p role="alert" className="mt-3 text-[12px] text-amber-700">Prices could not be verified. Remove unavailable items or try again before checkout.</p>}
+              <div className="flex justify-between text-[13px] text-[#64748B] mt-5"><span>Subtotal</span><span>{quote ? `UGX ${subtotal.toLocaleString()}` : 'Unavailable'}</span></div>
               <div className="flex justify-between items-center gap-3 text-[13px] text-[#64748B] mt-3">
                 <span>Delivery</span>
                 <span className="font-bold text-right text-[#071A2B]">
-                  {delivery > 0 ? `UGX ${delivery.toLocaleString()}` : <span className="text-green-600">Free</span>}
+                  {!quote ? 'Unavailable' : delivery > 0 ? `UGX ${delivery.toLocaleString()}` : <span className="text-green-600">Free</span>}
                 </span>
               </div>
               <p className="mt-2 text-[11px] text-[#94A3B8]">Final delivery fee is confirmed for your district at checkout.</p>
-              <div className="flex justify-between items-center gap-3 border-t border-[#E2E8F0] mt-5 pt-5"><span className="text-[15px] font-extrabold text-[#071A2B]">Estimated total</span><span className="text-[16px] font-extrabold text-[#1E3A8A] text-right">UGX {total.toLocaleString()}</span></div>
-              <Link to="/checkout" onClick={() => { skipReminderRef.current = true }} className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold flex items-center justify-center">Proceed to checkout</Link>
+              <div className="flex justify-between items-center gap-3 border-t border-[#E2E8F0] mt-5 pt-5"><span className="text-[15px] font-extrabold text-[#071A2B]">Estimated total</span><span className="text-[16px] font-extrabold text-[#1E3A8A] text-right">{quote ? `UGX ${total.toLocaleString()}` : 'Unavailable'}</span></div>
+              {quote ? (
+                <Link to="/checkout" onClick={() => { skipReminderRef.current = true }} className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold flex items-center justify-center">Proceed to checkout</Link>
+              ) : (
+                <button onClick={loadCart} className="w-full h-11 mt-6 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-bold">Try again</button>
+              )}
             </aside>
           </div>
         )}
