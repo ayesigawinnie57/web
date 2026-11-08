@@ -150,9 +150,9 @@ export default function TraderProducts() {
       fd.append('short_description', form.short_description)
       fd.append('long_description', form.long_description)
       fd.append('category_id', form.category_id)
-      fd.append('is_active', String(form.is_active))
-      fd.append('is_featured', String(form.is_featured))
-      fd.append('is_new_deal', String(form.is_new_deal))
+      fd.append('is_active', form.is_active ? 'true' : 'false')
+      fd.append('is_featured', form.is_featured ? 'true' : 'false')
+      fd.append('is_new_deal', form.is_new_deal ? 'true' : 'false')
       if (images[0]) fd.append('image', images[0])
 
       if (view === 'add') {
@@ -267,6 +267,7 @@ export default function TraderProducts() {
             )}
 
             <div className="flex gap-4 flex-wrap">
+              <Toggle label="Active" value={form.is_active} onChange={v => set('is_active')(v)} />
               <Toggle label="Featured" value={form.is_featured} onChange={v => set('is_featured')(v)} />
               <Toggle label="New Deal" value={form.is_new_deal} onChange={v => set('is_new_deal')(v)} />
             </div>
