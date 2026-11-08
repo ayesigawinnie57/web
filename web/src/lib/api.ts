@@ -833,6 +833,7 @@ export type ApiTraderEarning = {
   commission_amount: string
   available_at: string
   status: 'active' | 'reversed'
+  return_request_status: 'pending' | 'processing' | 'approved' | 'refunded' | 'rejected' | 'refund_failed' | null
   created_at: string
 }
 

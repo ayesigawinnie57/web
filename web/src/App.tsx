@@ -75,6 +75,7 @@ const TraderFlashSales = lazy(() => import('./trader/TraderFlashSales'))
 const TraderInventory  = lazy(() => import('./trader/TraderInventory'))
 const TraderSales      = lazy(() => import('./trader/TraderSales'))
 const TraderAccounting = lazy(() => import('./trader/TraderAccounting'))
+const TraderPayments   = lazy(() => import('./trader/TraderPayments'))
 
 function ProductRedirect() {
   const { slug } = useParams()
@@ -210,6 +211,7 @@ export default function App() {
               <Route path="inventory" element={<TraderInventory />} />
               <Route path="sales" element={<TraderSales />} />
               <Route path="accounting" element={<TraderAccounting />} />
+              <Route path="payments" element={<TraderPayments />} />
             </Route>
           </Route>
           <Route element={<AdminGuard />}>

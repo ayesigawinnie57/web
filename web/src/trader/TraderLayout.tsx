@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
-import { Store, Menu, X, Settings, ArrowLeftRight, LayoutDashboard, Package, ShoppingBag, TrendingUp, DollarSign } from 'lucide-react'
+import { Store, Menu, X, Settings, ArrowLeftRight, LayoutDashboard, Package, ShoppingBag, TrendingUp, DollarSign, CreditCard } from 'lucide-react'
 import { LOGO, sessionApi } from '../lib/api'
 import { useSwitchPortal } from '../lib/SwitchContext'
 
@@ -12,6 +12,7 @@ const NAV: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
   { to: 'orders',     label: 'Orders',     icon: ShoppingBag },
   { to: 'sales',      label: 'Sales',      icon: TrendingUp },
   { to: 'accounting', label: 'Accounting', icon: DollarSign },
+  { to: 'payments',   label: 'Payments',   icon: CreditCard },
 ]
 
 const TRADER_EXTRA: { to: string; label: string }[] = [
@@ -138,9 +139,9 @@ export default function TraderLayout() {
         {/* Desktop sidebar */}
         <aside className="hidden md:flex w-56 bg-[#071A2B] flex-col shrink-0">
           <nav className="flex-1 py-4">
-            {NAV.map(({ to, label, end }) => (
+            {NAV.map(({ to, label, icon: Icon, end }) => (
               <NavLink key={label} to={href(to)} end={end} className={sideNavClass}>
-                {label}
+                <Icon size={16} />{label}
               </NavLink>
             ))}
             <div className="mx-5 my-2 border-t border-white/10" />

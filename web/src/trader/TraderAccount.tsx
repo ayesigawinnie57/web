@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { tradersApi } from '../lib/api'
 import { Camera, Eye, EyeOff, AlertTriangle, Trash2, LogOut, Store, X } from 'lucide-react'
+import { MOBILE_MONEY_PROVIDERS, UGANDA_BANKS } from './payoutOptions'
 
 type Profile = {
   business_name: string
@@ -170,6 +171,7 @@ export default function TraderAccount() {
   if (!profile) return <div className="p-8 text-[13px] text-[#64748B]">Loading…</div>
 
   const logoSrc = logoPreview ?? profile.logo_url
+  const payoutProviders: readonly string[] = form.payout_method === 'bank' ? UGANDA_BANKS : MOBILE_MONEY_PROVIDERS
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
@@ -282,7 +284,7 @@ export default function TraderAccount() {
             Method
             <select
               value={form.payout_method}
-              onChange={e => setForm(f => ({ ...f, payout_method: e.target.value as typeof f.payout_method }))}
+              onChange={e => setForm(f => ({ ...f, payout_method: e.target.value as typeof f.payout_method, payout_provider: '' }))}
               className="mt-1 w-full border border-[#E2E8F0] px-3 py-2.5 text-[13px] normal-case text-[#071A2B]"
             >
               <option value="">Select payout method</option>
@@ -290,15 +292,24 @@ export default function TraderAccount() {
               <option value="bank">Bank</option>
             </select>
           </label>
-          <label className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
-            {form.payout_method === 'bank' ? 'Bank name' : 'Mobile Money network'}
-            <input
-              value={form.payout_provider}
-              onChange={e => setForm(f => ({ ...f, payout_provider: e.target.value }))}
-              placeholder={form.payout_method === 'bank' ? 'Bank name' : 'Network name'}
-              className="mt-1 w-full border border-[#E2E8F0] px-3 py-2.5 text-[13px] normal-case text-[#071A2B]"
-            />
-          </label>
+          {form.payout_method && (
+            <label className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
+              {form.payout_method === 'bank' ? 'Bank name' : 'Mobile Money network'}
+              <select
+                value={form.payout_provider}
+                onChange={e => setForm(f => ({ ...f, payout_provider: e.target.value }))}
+                className="mt-1 w-full border border-[#E2E8F0] px-3 py-2.5 text-[13px] normal-case text-[#071A2B]"
+              >
+                <option value="">Choose {form.payout_method === 'bank' ? 'a bank' : 'a network'}</option>
+                {form.payout_provider && !payoutProviders.includes(form.payout_provider) && (
+                  <option value={form.payout_provider}>{form.payout_provider} (current)</option>
+                )}
+                {payoutProviders.map(provider => (
+                  <option key={provider} value={provider}>{provider}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
             Account holder name
             <input value={form.payout_account_name} onChange={e => setForm(f => ({ ...f, payout_account_name: e.target.value }))} className="mt-1 w-full border border-[#E2E8F0] px-3 py-2.5 text-[13px] normal-case text-[#071A2B]" />
