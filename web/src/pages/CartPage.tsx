@@ -161,14 +161,13 @@ export default function CartPage() {
                             <span className="text-[12px] text-[#64748B]">Delivery: <span className="font-bold text-[#071A2B]">{Number(item.delivery_fee) ? `UGX ${money(item.delivery_fee)}` : 'Free'}</span></span>
                           </>
                         )}
-                        {!hasAccessToken() && <Link to="/login" className="text-[12px] font-bold text-[#1E3A8A] hover:text-blue-700">Sign in</Link>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="flex items-center border border-[#E2E8F0] bg-white">
-                        <button onClick={() => updateQuantity(item, item.quantity - 1)} disabled={quoteUnavailable} className="w-8 h-8 text-[#071A2B] disabled:opacity-40">-</button>
+                        <button onClick={() => updateQuantity(item, item.quantity - 1)} className="w-8 h-8 text-[#071A2B]">-</button>
                         <span className="w-8 text-center text-[13px] font-bold">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item, item.quantity + 1)} disabled={quoteUnavailable} className="w-8 h-8 text-[#071A2B] disabled:opacity-40">+</button>
+                        <button onClick={() => updateQuantity(item, item.quantity + 1)} className="w-8 h-8 text-[#071A2B]">+</button>
                       </div>
                       <button onClick={() => removeItem(item.product_id)} aria-label={`Delete ${item.product_name}`} title="Delete item" className="p-1 text-red-500 hover:text-red-700 transition-colors">
                         <Trash2 className="w-4 h-4" strokeWidth={2} />

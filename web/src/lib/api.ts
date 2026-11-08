@@ -131,7 +131,7 @@ api.interceptors.response.use(
       localStorage.removeItem('refresh_token')
       if (hadToken) {
         const { pathname } = window.location
-        const onAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password')
+        const onAuthPage = pathname === '/cart' || pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password')
         if (!onAuthPage) {
           window.location.replace(pathname.startsWith('/admin') ? '/login' : `/login?next=${encodeURIComponent(pathname + window.location.search)}`)
         }
