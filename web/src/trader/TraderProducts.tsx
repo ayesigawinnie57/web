@@ -144,12 +144,12 @@ export default function TraderProducts() {
       const fd = new FormData()
       fd.append('name', form.name.trim())
       fd.append('price', form.price)
-      if (form.original_price) fd.append('original_price', form.original_price)
-      if (form.delivery_fee) fd.append('delivery_fee', form.delivery_fee)
+      fd.append('original_price', form.original_price)
+      fd.append('delivery_fee', form.delivery_fee || '0')
       fd.append('stock', form.stock || '0')
-      if (form.short_description) fd.append('short_description', form.short_description)
-      if (form.long_description) fd.append('long_description', form.long_description)
-      if (form.category_id) fd.append('category_id', form.category_id)
+      fd.append('short_description', form.short_description)
+      fd.append('long_description', form.long_description)
+      fd.append('category_id', form.category_id)
       fd.append('is_active', String(form.is_active))
       fd.append('is_featured', String(form.is_featured))
       fd.append('is_new_deal', String(form.is_new_deal))
@@ -182,9 +182,22 @@ export default function TraderProducts() {
 
   const handleDelete = async (uuid: string) => {
     setDeleting(uuid)
+    setError('')
     try {
       await tradersApi.deleteProduct(traderUuid!, uuid)
       setProducts(p => p.filter(x => x.uuid !== uuid))
+    } catch (cause) {
+      try {
+        const { data } = await tradersApi.products(traderUuid!)
+        setProducts(data)
+      } catch {
+        setError('Delete failed and the product list could not be refreshed.')
+        return
+      }
+
+      const detail = axios.isAxiosError(cause) && cause.response?.data?.detail
+      const status = axios.isAxiosError(cause) ? cause.response?.status : undefined
+      setError(typeof detail === 'string' ? detail : status ? `Failed to delete product (server returned ${status}).` : 'Failed to delete product.')
     } finally { setDeleting(null) }
   }
 
@@ -337,6 +350,12 @@ export default function TraderProducts() {
           <Plus size={16} /> Add
         </button>
       </div>
+
+      {error && (
+        <div role="alert" className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600">
+          {error}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 bg-white border border-[#E2E8F0] rounded-lg px-3 h-10 mb-5">
         <Search size={14} className="text-[#94A3B8] shrink-0" />
