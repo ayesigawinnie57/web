@@ -289,11 +289,11 @@ const getGuestCart = (): CartItem[] => {
 const saveGuestCart = (items: CartItem[]) => localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items))
 
 export const productsApi = {
-  list: (params?: string) => cachedRequest(`products:list:${params ?? ''}`, () => api.get<{ results: ApiProduct[]; next: string | null }>(`/api/products/${params ? '?' + params : ''}`)),
-  bySlug: (slug: string) => cachedRequest(`products:slug:${slug}`, () => api.get<ApiProduct>(`/api/products/${slug}/`)),
-  byCategory: (categorySlug: string) => cachedRequest(`products:category:${categorySlug}`, () => api.get<{ results: ApiProduct[] }>(`/api/products/?category=${categorySlug}`)),
+  list: (params?: string) => api.get<{ results: ApiProduct[]; next: string | null }>(`/api/products/${params ? '?' + params : ''}`),
+  bySlug: (slug: string) => api.get<ApiProduct>(`/api/products/${slug}/`),
+  byCategory: (categorySlug: string) => api.get<{ results: ApiProduct[] }>(`/api/products/?category=${categorySlug}`),
   categories: () => cachedRequest('products:categories:v2', () => api.get<ApiCategory[]>('/api/products/categories/')),
-  flashSales: () => cachedRequest('products:flash-sales', () => api.get<ApiFlashSale[]>('/api/products/flash-sales/?active=1')),
+  flashSales: () => api.get<ApiFlashSale[]>('/api/products/flash-sales/?active=1'),
   reviews: (slug: string) => api.get<ApiReview[]>(`/api/products/${slug}/reviews/`),
   ratingSummary: (slug: string) => api.get<{ average: number; total: number; breakdown: Record<string, number>; with_photos: number }>(`/api/products/${slug}/reviews/summary/`),
   checkEligibility: (slug: string, orderCode?: string) => api.get<{ eligible: boolean; reason?: string; order_id?: number; order_item_id?: number; order_code?: string; existing_review_id?: number | null }>(`/api/products/${slug}/reviews/eligibility/`, { params: orderCode ? { order_code: orderCode } : undefined }),
