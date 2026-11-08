@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { Flame, Timer } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
-import { productsApi, toFlashSale, type FlashSale } from '../lib/api'
+import { productsApi, toFlashSale, watchPageResume, type FlashSale } from '../lib/api'
 
 function Countdown({ endsAt }: { endsAt: Date }) {
   const [remaining, setRemaining] = useState(() => Math.max(0, endsAt.getTime() - Date.now()))
@@ -27,14 +27,29 @@ export default function DealsPage() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    productsApi.flashSales()
-      .then(({ data }) => {
-        const raw = Array.isArray(data) ? data : (data as any).results ?? []
-        setSales(raw.map(toFlashSale))
-        setError(false)
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
+    let active = true
+    const loadSales = () => {
+      productsApi.flashSales()
+        .then(({ data }) => {
+          const raw = Array.isArray(data) ? data : (data as any).results ?? []
+          if (active) {
+            setSales(raw.map(toFlashSale))
+            setError(false)
+          }
+        })
+        .catch(() => {
+          if (active) setError(true)
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    }
+    loadSales()
+    const stopWatching = watchPageResume(loadSales)
+    return () => {
+      active = false
+      stopWatching()
+    }
   }, [])
 
   return (

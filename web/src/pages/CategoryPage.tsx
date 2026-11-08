@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { BookOpen, Grid2X2, Home, ShoppingBag, Sparkles, Trophy } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
-import { productsApi, type ApiCategory, type ApiProduct } from '../lib/api'
+import { productsApi, watchPageResume, type ApiCategory, type ApiProduct } from '../lib/api'
 
 type Category = ApiCategory & { count: number }
 const icons = [Grid2X2, ShoppingBag, Sparkles, BookOpen, Home, Trophy]
@@ -17,16 +17,32 @@ export default function CategoryPage() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    Promise.all([productsApi.categories(), productsApi.list()]).then(([categoryResponse, productResponse]) => {
-      const rawCategories = Array.isArray(categoryResponse.data) ? categoryResponse.data : (categoryResponse.data as any).results ?? []
-      const rawProducts: ApiProduct[] = Array.isArray(productResponse.data) ? productResponse.data : (productResponse.data as any).results ?? []
-      const counts = rawProducts.reduce<Record<string, number>>((result, product) => {
-        const slug = product.category?.slug
-        if (slug) result[slug] = (result[slug] ?? 0) + 1
-        return result
-      }, {})
-      setCategories(rawCategories.map((category: ApiCategory) => ({ ...category, count: counts[category.slug] ?? 0 })))
-    }).catch(() => setError(true)).finally(() => setLoading(false))
+    let active = true
+    const loadCategories = () => {
+      Promise.all([productsApi.categories(), productsApi.list()]).then(([categoryResponse, productResponse]) => {
+        const rawCategories = Array.isArray(categoryResponse.data) ? categoryResponse.data : (categoryResponse.data as any).results ?? []
+        const rawProducts: ApiProduct[] = Array.isArray(productResponse.data) ? productResponse.data : (productResponse.data as any).results ?? []
+        const counts = rawProducts.reduce<Record<string, number>>((result, product) => {
+          const slug = product.category?.slug
+          if (slug) result[slug] = (result[slug] ?? 0) + 1
+          return result
+        }, {})
+        if (active) {
+          setCategories(rawCategories.map((category: ApiCategory) => ({ ...category, count: counts[category.slug] ?? 0 })))
+          setError(false)
+        }
+      }).catch(() => {
+        if (active) setError(true)
+      }).finally(() => {
+        if (active) setLoading(false)
+      })
+    }
+    loadCategories()
+    const stopWatching = watchPageResume(loadCategories)
+    return () => {
+      active = false
+      stopWatching()
+    }
   }, [])
 
   return (

@@ -84,6 +84,24 @@ function cachedRequest<T>(key: string, request: () => Promise<{ data: T }>): Pro
   return requestPromise
 }
 
+export function watchPageResume(callback: () => void) {
+  let timeout: number | undefined
+  const refresh = () => {
+    if (document.visibilityState !== 'visible') return
+    window.clearTimeout(timeout)
+    timeout = window.setTimeout(callback, 150)
+  }
+
+  window.addEventListener('focus', refresh)
+  document.addEventListener('visibilitychange', refresh)
+
+  return () => {
+    window.removeEventListener('focus', refresh)
+    document.removeEventListener('visibilitychange', refresh)
+    window.clearTimeout(timeout)
+  }
+}
+
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('access_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -292,13 +310,19 @@ const getGuestCart = (): CartItem[] => {
 const saveGuestCart = (items: CartItem[]) => localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items))
 
 export const productsApi = {
-  list: (params?: string) => api.get<{ results: ApiProduct[]; next: string | null }>(`/api/products/${params ? '?' + params : ''}`),
+  list: (params?: string) => {
+    const query = new URLSearchParams(params)
+    query.set('_refresh', Date.now().toString())
+    return api.get<{ results: ApiProduct[]; next: string | null }>(`/api/products/?${query}`)
+  },
   bySlug: (slug: string) => api.get<ApiProduct>(`/api/products/${slug}/`, {
     params: { _refresh: Date.now() },
   }),
-  byCategory: (categorySlug: string) => api.get<{ results: ApiProduct[] }>(`/api/products/?category=${categorySlug}`),
+  byCategory: (categorySlug: string) => productsApi.list(`category=${encodeURIComponent(categorySlug)}`),
   categories: () => cachedRequest('products:categories:v2', () => api.get<ApiCategory[]>('/api/products/categories/')),
-  flashSales: () => api.get<ApiFlashSale[]>('/api/products/flash-sales/?active=1'),
+  flashSales: () => api.get<ApiFlashSale[]>('/api/products/flash-sales/', {
+    params: { active: 1, _refresh: Date.now() },
+  }),
   reviews: (slug: string) => api.get<ApiReview[]>(`/api/products/${slug}/reviews/`),
   ratingSummary: (slug: string) => api.get<{ average: number; total: number; breakdown: Record<string, number>; with_photos: number }>(`/api/products/${slug}/reviews/summary/`),
   checkEligibility: (slug: string, orderCode?: string) => api.get<{ eligible: boolean; reason?: string; order_id?: number; order_item_id?: number; order_code?: string; existing_review_id?: number | null }>(`/api/products/${slug}/reviews/eligibility/`, { params: orderCode ? { order_code: orderCode } : undefined }),

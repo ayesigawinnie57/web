@@ -7,7 +7,7 @@ import FlashDeals from './FlashDeals'
 import ShopByCategory from './ShopByCategory'
 import Recommended from './Recommended'
 import Footer from './Footer'
-import { productsApi, toProduct, type Product } from '../lib/api'
+import { productsApi, toProduct, watchPageResume, type Product } from '../lib/api'
 
 export default function LandingPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -15,19 +15,33 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let active = true
     const loadProducts = () => {
       productsApi.list('page_size=24').then(({ data }) => {
         const raw: any[] = Array.isArray(data) ? data : (data as any).results ?? []
-        setNextProductsPage(Array.isArray(data) ? null : (data as any).next ?? null)
-        setProducts(raw.map(toProduct))
-      }).catch(() => undefined).finally(() => setLoading(false))
+        if (active) {
+          setNextProductsPage(Array.isArray(data) ? null : (data as any).next ?? null)
+          setProducts(raw.map(toProduct))
+        }
+      }).catch(() => undefined).finally(() => {
+        if (active) setLoading(false)
+      })
     }
+    const stopWatching = watchPageResume(loadProducts)
     if (typeof window.requestIdleCallback === 'function') {
       const idleId = window.requestIdleCallback(loadProducts, { timeout: 1500 })
-      return () => window.cancelIdleCallback(idleId)
+      return () => {
+        active = false
+        stopWatching()
+        window.cancelIdleCallback(idleId)
+      }
     }
     const timeoutId = window.setTimeout(loadProducts, 250)
-    return () => window.clearTimeout(timeoutId)
+    return () => {
+      active = false
+      stopWatching()
+      window.clearTimeout(timeoutId)
+    }
   }, [])
 
   return (

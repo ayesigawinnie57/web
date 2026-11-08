@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
-import { productsApi, toProduct, type ApiCategory, type Product } from '../lib/api'
+import { productsApi, toProduct, watchPageResume, type ApiCategory, type Product } from '../lib/api'
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -27,28 +27,43 @@ export default function ShopPage() {
     if (category) params.set('category', category)
     if (topBought) params.set('top_bought', 'true')
 
-    Promise.all([
-      productsApi.list(params.toString()),
-      productsApi.categories(),
-    ]).then(async ([productResponse, categoryResponse]) => {
-      const raw = Array.isArray(productResponse.data) ? productResponse.data : (productResponse.data as any).results ?? []
-      let available = raw.map(toProduct)
-      if (saleOnly) available = available.filter((p: Product) => p.originalPrice && p.originalPrice > p.price)
+    let active = true
+    const loadProducts = () => {
+      Promise.all([
+        productsApi.list(params.toString()),
+        productsApi.categories(),
+      ]).then(async ([productResponse, categoryResponse]) => {
+        const raw = Array.isArray(productResponse.data) ? productResponse.data : (productResponse.data as any).results ?? []
+        let available = raw.map(toProduct)
+        if (saleOnly) available = available.filter((p: Product) => p.originalPrice && p.originalPrice > p.price)
 
-      const rawCategories = Array.isArray(categoryResponse.data) ? categoryResponse.data : (categoryResponse.data as any).results ?? []
-      setCategories(rawCategories)
-      setProducts(available)
+        const rawCategories = Array.isArray(categoryResponse.data) ? categoryResponse.data : (categoryResponse.data as any).results ?? []
+        if (active) {
+          setCategories(rawCategories)
+          setProducts(available)
+          setRelated([])
+        }
 
-      // If filtering by category and no products found, load related from other categories
-      if (category && available.length === 0) {
-        const { data } = await productsApi.list('')
-        const all = Array.isArray(data) ? data : (data as any).results ?? []
-        const mixed = all.map(toProduct).filter((p: Product) => p.category !== category)
-        setRelated(mixed.slice(0, 12))
-      }
+        if (category && available.length === 0) {
+          const { data } = await productsApi.list('')
+          const all = Array.isArray(data) ? data : (data as any).results ?? []
+          const mixed = all.map(toProduct).filter((p: Product) => p.category !== category)
+          if (active) setRelated(mixed.slice(0, 12))
+        }
 
-      setError(false)
-    }).catch(() => setError(true)).finally(() => setLoading(false))
+        if (active) setError(false)
+      }).catch(() => {
+        if (active) setError(true)
+      }).finally(() => {
+        if (active) setLoading(false)
+      })
+    }
+    loadProducts()
+    const stopWatching = watchPageResume(loadProducts)
+    return () => {
+      active = false
+      stopWatching()
+    }
   }, [query, category, saleOnly, topBought])
 
   const updateFilter = (key: string, value: string) => {

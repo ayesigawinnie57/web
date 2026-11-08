@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flame, ShoppingCart, Timer } from 'lucide-react'
-import { cartApi, productsApi, toFlashSale, type FlashSale } from '../lib/api'
+import { cartApi, productsApi, toFlashSale, watchPageResume, type FlashSale } from '../lib/api'
 import { Link as RouterLink } from 'react-router-dom'
 
 function useCountdown(endsAt: Date) {
@@ -105,10 +105,19 @@ export default function FlashDeals({ products: _ }: { products: unknown[] }) {
   const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
-    productsApi.flashSales().then(({ data }) => {
-      const raw = Array.isArray(data) ? data : (data as any).results ?? []
-      setSales(raw.map(toFlashSale))
-    }).catch(() => undefined)
+    let active = true
+    const loadSales = () => {
+      productsApi.flashSales().then(({ data }) => {
+        const raw = Array.isArray(data) ? data : (data as any).results ?? []
+        if (active) setSales(raw.map(toFlashSale))
+      }).catch(() => undefined)
+    }
+    loadSales()
+    const stopWatching = watchPageResume(loadSales)
+    return () => {
+      active = false
+      stopWatching()
+    }
   }, [])
 
   if (!sales.length) return null
