@@ -41,6 +41,7 @@ export default function WishlistPage() {
       delivery_fee: '0',
       short_description: '',
       long_description: '',
+      is_active: true,
       is_featured: false,
       images: [],
       category: { id: 0, name: item.product_category, slug: item.product_category },

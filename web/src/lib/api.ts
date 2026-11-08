@@ -138,6 +138,7 @@ export type ApiProduct = {
   delivery_fee: string
   short_description: string
   long_description: string
+  is_active: boolean
   is_featured: boolean
   is_new_deal?: boolean
   images: { id: number; url: string; order: number }[]
