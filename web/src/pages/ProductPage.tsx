@@ -156,6 +156,36 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (!slug) return
+
+    let active = true
+    let refreshing = false
+    const refreshProduct = () => {
+      if (document.visibilityState !== 'visible' || refreshing) return
+      refreshing = true
+      productsApi.bySlug(slug)
+        .then(({ data }) => {
+          if (active) setProduct(toProduct(data))
+        })
+        .catch(error => {
+          if (active) console.error('Failed to refresh product details.', error)
+        })
+        .finally(() => { refreshing = false })
+    }
+
+    window.addEventListener('focus', refreshProduct)
+    document.addEventListener('visibilitychange', refreshProduct)
+    const refreshInterval = window.setInterval(refreshProduct, 30_000)
+
+    return () => {
+      active = false
+      window.removeEventListener('focus', refreshProduct)
+      document.removeEventListener('visibilitychange', refreshProduct)
+      window.clearInterval(refreshInterval)
+    }
+  }, [slug])
+
+  useEffect(() => {
+    if (!slug) return
     setLoading(true)
     setActiveImg(0)
     setQty(1)
