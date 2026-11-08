@@ -70,6 +70,7 @@ export default function TraderDashboard() {
         <SummaryCard title="Products" route={`/trader/${uuid}/products`}><View style={styles.metricRow}><Metric label="Total" value={String(dashboard?.total_products ?? 0)} /><Metric label="Active" value={String(dashboard?.active_products ?? 0)} color="#22C55E" /></View><Text style={styles.muted}>{(dashboard?.total_products ?? 0) - (dashboard?.active_products ?? 0)} inactive products</Text></SummaryCard>
         <SummaryCard title="Inventory" route={`/trader/${uuid}/inventory`}><View style={styles.metricRow}><Metric label="Items" value={String(inventory.length)} /><Metric label="Value" value={`UGX ${shortMoney(inventoryValue)}`} color="#6366F1" /></View><Text style={styles.muted}>{outOfStock} out of stock · {lowStock} low stock</Text></SummaryCard>
         <SummaryCard title="Accounting" route={`/trader/${uuid}/accounting`}><View style={styles.metricRow}><Metric label="Revenue" value={`UGX ${shortMoney(dashboard?.total_revenue ?? 0)}`} color="#22C55E" /><Metric label="Expenses" value={`UGX ${shortMoney(dashboard?.total_expenses ?? 0)}`} color="#ef4444" /></View><Text style={styles.muted}>Net {money(dashboard?.net_profit ?? 0)}</Text></SummaryCard>
+        <SummaryCard title="Payments" route={`/trader/${uuid}/payments`}><Text style={styles.muted}>Track locked earnings, set a payout account, and request a withdrawal.</Text></SummaryCard>
       </View>
     </>}
   </ScrollView>

@@ -1,7 +1,7 @@
 import { Tabs, usePathname, useRouter } from 'expo-router'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { LayoutDashboard, Package, ShoppingBag, TrendingUp, DollarSign, Menu, X, Zap, Boxes, Settings, ArrowLeftRight } from 'lucide-react-native'
+import { LayoutDashboard, Package, ShoppingBag, TrendingUp, DollarSign, Menu, X, Zap, Boxes, Settings, ArrowLeftRight, CreditCard } from 'lucide-react-native'
 import { useState } from 'react'
 import { C, LOGO } from '../../theme'
 import { Image } from 'react-native'
@@ -14,6 +14,7 @@ const NAV = [
   { label: 'Orders', icon: ShoppingBag, segment: 'orders' },
   { label: 'Sales', icon: TrendingUp, segment: 'sales' },
   { label: 'Accounting', icon: DollarSign, segment: 'accounting' },
+  { label: 'Payments', icon: CreditCard, segment: 'payments' },
 ]
 
 const EXTRA = [
@@ -51,6 +52,7 @@ export default function TraderLayout() {
         <Tabs.Screen name="orders" />
         <Tabs.Screen name="sales" />
         <Tabs.Screen name="accounting" />
+        <Tabs.Screen name="payments" />
         <Tabs.Screen name="flashsales" />
         <Tabs.Screen name="inventory" />
         <Tabs.Screen name="account" />
