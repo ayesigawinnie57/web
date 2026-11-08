@@ -15,6 +15,11 @@ type Profile = {
   logo_url: string | null
   full_name: string
   email: string
+  payout_method: '' | 'mobile_money' | 'bank'
+  payout_provider: string
+  payout_account_name: string
+  payout_account_number: string
+  payout_branch: string
 }
 
 type ModalProps = {
@@ -70,7 +75,11 @@ export default function TraderAccount() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [form, setForm] = useState({ business_name: '', bio: '', phone: '', location: '', district: '', website: '' })
+  const [form, setForm] = useState({
+    business_name: '', bio: '', phone: '', location: '', district: '', website: '',
+    payout_method: '' as '' | 'mobile_money' | 'bank',
+    payout_provider: '', payout_account_name: '', payout_account_number: '', payout_branch: '',
+  })
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
@@ -91,6 +100,11 @@ export default function TraderAccount() {
         location: (data as any).location ?? '',
         district: (data as any).district ?? '',
         website: (data as any).website ?? '',
+        payout_method: (data as any).payout_method ?? '',
+        payout_provider: (data as any).payout_provider ?? '',
+        payout_account_name: (data as any).payout_account_name ?? '',
+        payout_account_number: (data as any).payout_account_number ?? '',
+        payout_branch: (data as any).payout_branch ?? '',
       })
     })
   }, [traderUuid])
@@ -256,6 +270,51 @@ export default function TraderAccount() {
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
+      </section>
+
+      <section className="bg-white rounded-2xl border border-[#E2E8F0] p-6 space-y-4">
+        <div>
+          <h2 className="text-[14px] font-bold text-[#071A2B]">Payout Account</h2>
+          <p className="mt-1 text-[12px] text-[#64748B]">Choose where approved withdrawals should be sent. Keep these details accurate.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
+            Method
+            <select
+              value={form.payout_method}
+              onChange={e => setForm(f => ({ ...f, payout_method: e.target.value as typeof f.payout_method }))}
+              className="mt-1 w-full border border-[#E2E8F0] px-3 py-2.5 text-[13px] normal-case text-[#071A2B]"
+            >
+              <option value="">Select payout method</option>
+              <option value="mobile_money">Mobile Money</option>
+              <option value="bank">Bank</option>
+            </select>
+          </label>
+          <label className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
+            {form.payout_method === 'bank' ? 'Bank name' : 'Mobile Money network'}
+            <input
+              value={form.payout_provider}
+              onChange={e => setForm(f => ({ ...f, payout_provider: e.target.value }))}
+              placeholder={form.payout_method === 'bank' ? 'Bank name' : 'Network name'}
+              className="mt-1 w-full border border-[#E2E8F0] px-3 py-2.5 text-[13px] normal-case text-[#071A2B]"
+            />
+          </label>
+          <label className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
+            Account holder name
+            <input value={form.payout_account_name} onChange={e => setForm(f => ({ ...f, payout_account_name: e.target.value }))} className="mt-1 w-full border border-[#E2E8F0] px-3 py-2.5 text-[13px] normal-case text-[#071A2B]" />
+          </label>
+          <label className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
+            {form.payout_method === 'bank' ? 'Account number' : 'Mobile money number'}
+            <input value={form.payout_account_number} onChange={e => setForm(f => ({ ...f, payout_account_number: e.target.value }))} className="mt-1 w-full border border-[#E2E8F0] px-3 py-2.5 text-[13px] normal-case text-[#071A2B]" />
+          </label>
+          {form.payout_method === 'bank' && (
+            <label className="text-[11px] font-bold uppercase tracking-wide text-[#64748B]">
+              Branch (optional)
+              <input value={form.payout_branch} onChange={e => setForm(f => ({ ...f, payout_branch: e.target.value }))} className="mt-1 w-full border border-[#E2E8F0] px-3 py-2.5 text-[13px] normal-case text-[#071A2B]" />
+            </label>
+          )}
+        </div>
+        <p className="text-[11px] text-[#94A3B8]">Payout account details are saved when you click Save Changes above.</p>
       </section>
 
       {/* Visibility */}

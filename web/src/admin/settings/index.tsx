@@ -40,6 +40,7 @@ type PlatformSettings = {
   commission: string
   withdrawal_minimum: string
   withdrawal_fee: string
+  payout_hold_days: string
   vat: string
   free_delivery_threshold: string
 }
@@ -49,6 +50,7 @@ const CHARGE_FIELDS: { key: keyof PlatformSettings; label: string; desc: string;
   { key: 'commission',              label: 'Commission',               desc: 'Percentage cut taken from each sale.',                  suffix: '%'   },
   { key: 'withdrawal_minimum',      label: 'Withdrawal Minimum',       desc: 'Minimum amount a trader can withdraw.',                 suffix: 'UGX' },
   { key: 'withdrawal_fee',          label: 'Withdrawal Fee',           desc: 'Flat fee charged per withdrawal request.',             suffix: 'UGX' },
+  { key: 'payout_hold_days',        label: 'Payout Hold',              desc: 'Days earnings remain locked after payment.',           suffix: 'days' },
   { key: 'vat',                     label: 'VAT',                      desc: 'Tax percentage applied to transactions.',               suffix: '%'   },
   { key: 'free_delivery_threshold', label: 'Free Delivery Threshold',  desc: 'Order amount above which delivery is free.',           suffix: 'UGX' },
 ]
@@ -155,7 +157,7 @@ function PlatformTab({ showToast }: { showToast: (m: string, t?: Toast['type']) 
   const [settings, setSettings] = useState<PlatformSettings>({
     ui_active: false, allow_selling: false,
     initial_charge: '', commission: '', withdrawal_minimum: '',
-    withdrawal_fee: '', vat: '', free_delivery_threshold: '',
+    withdrawal_fee: '', payout_hold_days: '5', vat: '', free_delivery_threshold: '',
   })
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState<string | null>(null)

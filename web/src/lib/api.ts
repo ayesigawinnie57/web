@@ -764,6 +764,11 @@ export type ApiTraderApplication = {
   ura_certificate_document?: string | null
   business_location_proof?: string | null
   business_name: string
+  payout_method: '' | 'mobile_money' | 'bank'
+  payout_provider: string
+  payout_account_name: string
+  payout_account_number: string
+  payout_branch: string
   business_type: string
   business_reg_no: string
   tin: string
@@ -815,6 +820,62 @@ export type ApiTraderDashboard = {
   total_products: number
   active_products: number
   total_sales: number
+}
+
+export type ApiTraderEarning = {
+  id: number
+  order_code: string
+  product_name: string
+  quantity: number
+  listed_unit_price: string
+  seller_amount: string
+  commission_pct: string
+  commission_amount: string
+  available_at: string
+  status: 'active' | 'reversed'
+  created_at: string
+}
+
+export type ApiTraderWithdrawal = {
+  id: number
+  amount: string
+  fee: string
+  payout_amount: string
+  payout_method: 'mobile_money' | 'bank'
+  payout_provider: string
+  payout_account_name: string
+  payout_account_number: string
+  payout_branch: string
+  status: 'requested' | 'processing' | 'paid' | 'rejected'
+  transfer_reference: string
+  admin_note: string
+  processed_at: string | null
+  created_at: string
+  trader_name?: string
+  trader_email?: string
+}
+
+export type ApiTraderWallet = {
+  total_earned: string
+  locked_balance: string
+  pending_withdrawal: string
+  available_balance: string
+  next_release_at: string | null
+  payout_minimum: string
+  withdrawal_fee: string
+  payout_hold_days: number
+  payout_account: { method: string; provider: string; account_name: string; account_number: string; branch: string }
+  earnings: ApiTraderEarning[]
+  withdrawals: ApiTraderWithdrawal[]
+}
+
+export type ApiTraderFinance = {
+  total_commission: string
+  commission_this_month: string
+  trader_earnings: string
+  locked_balance: string
+  available_balance: string
+  withdrawals: ApiTraderWithdrawal[]
 }
 
 export type ApiTraderProduct = {
@@ -900,6 +961,9 @@ export const tradersApi = {
   apply: (data: FormData) => api.post<ApiTraderApplication>('/api/traders/apply/', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   me: () => api.get<{ id: number; uuid: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; email: string; full_name: string; agreement_required: boolean; agreement_signed_at: string | null } | null>('/api/traders/me/').catch(() => ({ data: null })),
   adminList: (status?: string) => api.get<ApiTraderApplication[]>(`/api/traders/admin/${status ? `?status=${status}` : ''}`),
+  adminFinance: () => api.get<ApiTraderFinance>('/api/traders/admin/finance/'),
+  updateWithdrawal: (id: number, data: { status: 'processing' | 'paid' | 'rejected'; transfer_reference?: string; admin_note?: string }) =>
+    api.post<ApiTraderWithdrawal>(`/api/traders/admin/withdrawals/${id}/`, data),
   adminGet: (id: number) => api.get<ApiTraderApplication>(`/api/traders/admin/${id}/`),
   adminDocument: (id: number, documentType: 'national-id' | 'ura-certificate' | 'business-location') =>
     api.get<Blob>(`/api/traders/admin/${id}/documents/${documentType}/`, { responseType: 'blob' }),
@@ -922,6 +986,9 @@ export const tradersApi = {
   updateOrderItem: (uuid: string, id: number, data: { status: string; note?: string }) => api.patch<ApiTraderOrderItem>(`/api/traders/${uuid}/orders/${id}/`, data),
   account: (uuid: string) => api.get<ApiTraderApplication & { logo_url: string | null; bio: string; is_visible: boolean; is_closed: boolean }>(`/api/traders/${uuid}/account/`),
   updateAccount: (uuid: string, data: FormData) => api.patch<ApiTraderApplication & { logo_url: string | null; bio: string; is_visible: boolean; is_closed: boolean }>(`/api/traders/${uuid}/account/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  wallet: (uuid: string) => api.get<ApiTraderWallet>(`/api/traders/${uuid}/wallet/`),
+  requestWithdrawal: (uuid: string, amount: string) =>
+    api.post<ApiTraderWithdrawal>(`/api/traders/${uuid}/wallet/`, { amount }),
   deleteShop: (uuid: string) => api.delete(`/api/traders/${uuid}/account/`, { data: { confirm: 'DELETE' } }),
   inventory: (uuid: string) => api.get<ApiTraderInventoryItem[]>(`/api/traders/${uuid}/inventory/`),
   addInventoryItem: (uuid: string, data: object) => api.post<ApiTraderInventoryItem>(`/api/traders/${uuid}/inventory/`, data),

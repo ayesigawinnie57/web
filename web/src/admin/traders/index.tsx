@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Store, CheckCircle, XCircle, Clock, RefreshCw, ChevronRight, X } from 'lucide-react'
-import { tradersApi, type ApiTraderApplication } from '../../lib/api'
+import { tradersApi, type ApiTraderApplication, type ApiTraderFinance } from '../../lib/api'
 
 const FILTERS = ['all', 'pending', 'approved', 'rejected'] as const
 type Filter = typeof FILTERS[number]
@@ -31,6 +31,8 @@ export default function AdminTraders() {
   const [openingDocument, setOpeningDocument] = useState<string | null>(null)
   const [viewedDocuments, setViewedDocuments] = useState<Set<string>>(new Set())
   const [documentPreview, setDocumentPreview] = useState<{ type: string; url: string; contentType: string } | null>(null)
+  const [finance, setFinance] = useState<ApiTraderFinance | null>(null)
+  const [updatingWithdrawal, setUpdatingWithdrawal] = useState<number | null>(null)
 
   useEffect(() => () => {
     if (documentPreview) URL.revokeObjectURL(documentPreview.url)
@@ -42,6 +44,7 @@ export default function AdminTraders() {
       .then(r => setAll(Array.isArray(r.data) ? r.data : (r.data as any).results ?? []))
       .catch(() => setError('Failed to load applications.'))
       .finally(() => setLoading(false))
+    tradersApi.adminFinance().then(r => setFinance(r.data)).catch(() => setError('Failed to load trader finance.'))
   }
 
   useEffect(() => { load() }, [])
@@ -97,6 +100,31 @@ export default function AdminTraders() {
       setRejectNote('')
     } catch { setError('Failed to reject.') }
     finally { setActing(false) }
+  }
+
+  const updateWithdrawal = async (id: number, status: 'paid' | 'rejected') => {
+    const transferReference = status === 'paid'
+      ? window.prompt('Enter the bank or mobile-money transfer reference after sending the payment.')
+      : ''
+    if (status === 'paid' && !transferReference?.trim()) return
+    const adminNote = status === 'rejected'
+      ? window.prompt('Reason for rejecting this withdrawal (optional).') ?? ''
+      : ''
+    setUpdatingWithdrawal(id)
+    setError('')
+    try {
+      await tradersApi.updateWithdrawal(id, {
+        status,
+        ...(status === 'paid' ? { transfer_reference: transferReference!.trim() } : {}),
+        admin_note: adminNote,
+      })
+      const { data } = await tradersApi.adminFinance()
+      setFinance(data)
+    } catch {
+      setError('Could not update this withdrawal.')
+    } finally {
+      setUpdatingWithdrawal(null)
+    }
   }
 
   // Detail view
@@ -259,6 +287,48 @@ export default function AdminTraders() {
       </div>
 
       {error && <p className="text-[12px] text-red-500 mb-4">{error}</p>}
+
+      {finance && (
+        <section className="mb-6 space-y-3">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+            {[
+              ['Total Commission', finance.total_commission],
+              ['Commission This Month', finance.commission_this_month],
+              ['Trader Funds Locked', finance.locked_balance],
+              ['Trader Funds Available', finance.available_balance],
+            ].map(([label, amount]) => (
+              <div key={label} className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-[#94A3B8]">{label}</p>
+                <p className="mt-1 text-[16px] font-extrabold text-[#071A2B]">UGX {Number(amount).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+            <h2 className="text-[13px] font-extrabold text-[#071A2B]">Withdrawal requests</h2>
+            <p className="mt-1 text-[11px] text-[#64748B]">Transfer funds using the listed details, then mark the request paid with the transfer reference.</p>
+            {finance.withdrawals.length === 0 ? (
+              <p className="py-4 text-[12px] text-[#94A3B8]">No pending withdrawal requests.</p>
+            ) : (
+              <div className="mt-3 divide-y divide-[#E2E8F0]">
+                {finance.withdrawals.map(withdrawal => (
+                  <div key={withdrawal.id} className="flex flex-wrap items-center gap-3 py-3">
+                    <div className="min-w-[220px] flex-1">
+                      <p className="text-[12px] font-bold text-[#071A2B]">{withdrawal.trader_name} · UGX {Number(withdrawal.payout_amount).toLocaleString()}</p>
+                      <p className="text-[11px] text-[#64748B]">{withdrawal.payout_method === 'bank' ? 'Bank' : 'Mobile Money'} · {withdrawal.payout_provider} · {withdrawal.payout_account_name}</p>
+                      <p className="text-[11px] text-[#64748B]">{withdrawal.payout_account_number}{withdrawal.payout_branch ? ` · ${withdrawal.payout_branch}` : ''}</p>
+                      <p className="text-[10px] text-[#94A3B8]">Requested {timeAgo(withdrawal.created_at)} · fee UGX {Number(withdrawal.fee).toLocaleString()}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button disabled={updatingWithdrawal === withdrawal.id} onClick={() => updateWithdrawal(withdrawal.id, 'paid')} className="rounded-lg bg-[#16A34A] px-3 py-2 text-[11px] font-bold text-white disabled:opacity-50">Mark paid</button>
+                      <button disabled={updatingWithdrawal === withdrawal.id} onClick={() => updateWithdrawal(withdrawal.id, 'rejected')} className="rounded-lg border border-red-200 px-3 py-2 text-[11px] font-bold text-red-600 disabled:opacity-50">Reject</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Filter chips */}
       <div className="flex gap-2 flex-wrap mb-6">

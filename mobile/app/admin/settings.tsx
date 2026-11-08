@@ -6,7 +6,7 @@ import api from '../lib/api'
 import { C } from '../theme'
 
 type Tab = 'Platform' | 'Users' | 'Delivery'
-type Platform = { ui_active: boolean; allow_selling: boolean; initial_charge: string; commission: string; withdrawal_minimum: string; withdrawal_fee: string; vat: string; free_delivery_threshold: string }
+type Platform = { ui_active: boolean; allow_selling: boolean; initial_charge: string; commission: string; withdrawal_minimum: string; withdrawal_fee: string; payout_hold_days: string; vat: string; free_delivery_threshold: string }
 type Staff = { id: number; name: string; email: string; phone: string; assigned_pages?: string[] }
 const PAGES = ['Dashboard', 'Products', 'Flash Sales', 'Categories', 'Orders', 'Users', 'Payments', 'Settings']
 const SETTINGS_TABS = [
@@ -19,6 +19,7 @@ const CHARGES: Array<{ key: keyof Platform; label: string; description: string; 
   { key: 'commission', label: 'Commission', description: 'Percentage cut taken from each sale.', suffix: '%' },
   { key: 'withdrawal_minimum', label: 'Withdrawal Minimum', description: 'Minimum amount a trader can withdraw.', suffix: 'UGX' },
   { key: 'withdrawal_fee', label: 'Withdrawal Fee', description: 'Flat fee charged per withdrawal request.', suffix: 'UGX' },
+  { key: 'payout_hold_days', label: 'Payout Hold', description: 'Days earnings remain locked after payment.', suffix: 'days' },
   { key: 'vat', label: 'VAT', description: 'Tax percentage applied to transactions.', suffix: '%' },
   { key: 'free_delivery_threshold', label: 'Free Delivery Threshold', description: 'Order amount above which delivery is free.', suffix: 'UGX' },
 ]
@@ -37,7 +38,7 @@ export default function AdminSettings() {
 }
 
 function PlatformTab({ showToast }: { showToast: (message: string) => void }) {
-  const [settings, setSettings] = useState<Platform>({ ui_active: false, allow_selling: false, initial_charge: '', commission: '', withdrawal_minimum: '', withdrawal_fee: '', vat: '', free_delivery_threshold: '' })
+  const [settings, setSettings] = useState<Platform>({ ui_active: false, allow_selling: false, initial_charge: '', commission: '', withdrawal_minimum: '', withdrawal_fee: '', payout_hold_days: '5', vat: '', free_delivery_threshold: '' })
   const [loading, setLoading] = useState(true)
   const [chargesOpen, setChargesOpen] = useState(false)
   const [editing, setEditing] = useState<keyof Platform | null>(null)

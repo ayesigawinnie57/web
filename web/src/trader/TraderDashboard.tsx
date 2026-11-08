@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Store, ChevronRight } from 'lucide-react'
-import { tradersApi, type ApiTraderDashboard, type ApiTraderApplication, type ApiTraderSale, type ApiTraderExpense, type ApiTraderInventoryItem, type ApiTraderOrderItem, type ApiTraderProduct } from '../lib/api'
+import { tradersApi, type ApiTraderDashboard, type ApiTraderApplication, type ApiTraderSale, type ApiTraderExpense, type ApiTraderInventoryItem, type ApiTraderOrderItem, type ApiTraderProduct, type ApiTraderWallet } from '../lib/api'
 
 const fmt = (n: number) => `UGX ${Number(n).toLocaleString()}`
 const fmtShort = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n)
@@ -51,6 +51,10 @@ export default function TraderDashboard() {
   const [inventory, setInventory] = useState<ApiTraderInventoryItem[]>([])
   const [orders, setOrders] = useState<ApiTraderOrderItem[]>([])
   const [products, setProducts] = useState<ApiTraderProduct[]>([])
+  const [wallet, setWallet] = useState<ApiTraderWallet | null>(null)
+  const [withdrawAmount, setWithdrawAmount] = useState('')
+  const [walletError, setWalletError] = useState('')
+  const [withdrawing, setWithdrawing] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const href = (to: string) => `/trader/${traderUuid}/${to}`
@@ -64,8 +68,25 @@ export default function TraderDashboard() {
       tradersApi.inventory(traderUuid!).then(r => setInventory(r.data)),
       tradersApi.orders(traderUuid!).then(r => setOrders(r.data)),
       tradersApi.products(traderUuid!).then(r => setProducts(r.data)),
+      tradersApi.wallet(traderUuid!).then(r => setWallet(r.data)),
     ]).finally(() => setLoading(false))
   }, [traderUuid])
+
+  const requestWithdrawal = async () => {
+    if (!traderUuid || !withdrawAmount) return
+    setWithdrawing(true)
+    setWalletError('')
+    try {
+      await tradersApi.requestWithdrawal(traderUuid, withdrawAmount)
+      const { data: updatedWallet } = await tradersApi.wallet(traderUuid)
+      setWallet(updatedWallet)
+      setWithdrawAmount('')
+    } catch (error: any) {
+      setWalletError(error?.response?.data?.amount || error?.response?.data?.detail || 'Could not submit withdrawal request.')
+    } finally {
+      setWithdrawing(false)
+    }
+  }
 
   if (loading) return <div className="flex justify-center py-32"><div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" /></div>
 
@@ -105,6 +126,53 @@ export default function TraderDashboard() {
         <StatCard label="Today's Sales" value={String(data?.today_orders ?? 0)} />
         <StatCard label="Active Products" value={String(data?.active_products ?? 0)} />
       </div>
+
+      {wallet && (
+        <section className="mb-8 rounded-xl border border-[#E2E8F0] bg-white p-5">
+          <div className="mb-4">
+            <h2 className="text-[14px] font-extrabold text-[#071A2B]">Product earnings wallet</h2>
+            <p className="mt-1 text-[11px] text-[#64748B]">Earnings use the price you listed. New paid-order earnings stay locked for {wallet.payout_hold_days} days, then become available automatically.</p>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard label="Total Earned" value={fmt(Number(wallet.total_earned))} />
+            <StatCard label="Locked" value={fmt(Number(wallet.locked_balance))} />
+            <StatCard label="Pending Withdrawal" value={fmt(Number(wallet.pending_withdrawal))} />
+            <StatCard label="Available" value={fmt(Number(wallet.available_balance))} />
+          </div>
+          {wallet.next_release_at && Number(wallet.locked_balance) > 0 && (
+            <p className="mt-3 text-[11px] text-[#64748B]">Next funds unlock: {new Date(wallet.next_release_at).toLocaleString()}</p>
+          )}
+          {wallet.payout_account.method ? (
+            <p className="mt-2 text-[11px] text-[#64748B]">
+              Payout destination: {wallet.payout_account.method === 'bank' ? 'Bank' : 'Mobile Money'} · {wallet.payout_account.provider} · {wallet.payout_account.account_number}
+            </p>
+          ) : (
+            <p className="mt-2 text-[11px] text-orange-600">Add a bank or mobile-money payout account in Settings before requesting a withdrawal.</p>
+          )}
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <label className="text-[11px] font-bold text-[#64748B]">
+              Withdrawal amount (UGX)
+              <input
+                type="number"
+                min={wallet.payout_minimum}
+                step="0.01"
+                value={withdrawAmount}
+                onChange={event => setWithdrawAmount(event.target.value)}
+                className="mt-1 block w-52 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[13px] text-[#071A2B]"
+              />
+            </label>
+            <button
+              onClick={requestWithdrawal}
+              disabled={withdrawing || !wallet.payout_account.method || Number(wallet.available_balance) <= 0}
+              className="rounded-lg bg-[#071A2B] px-4 py-2.5 text-[12px] font-bold text-white disabled:opacity-50"
+            >
+              {withdrawing ? 'Submitting…' : 'Request withdrawal'}
+            </button>
+            <span className="text-[10px] text-[#94A3B8]">Minimum UGX {Number(wallet.payout_minimum).toLocaleString()} · Fee UGX {Number(wallet.withdrawal_fee).toLocaleString()}</span>
+          </div>
+          {walletError && <p className="mt-2 text-[12px] text-red-600">{walletError}</p>}
+        </section>
+      )}
 
       {/* P&L summary */}
       <div className="bg-[#071A2B] rounded-xl p-6 text-white mb-8">
