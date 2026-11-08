@@ -5,7 +5,7 @@ import { adminProductsApi, type ApiCategory } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 import RichTextEditor from '../../components/RichTextEditor'
 
-type Form = { name: string; price: string; originalPrice: string; stock: string; categoryId: string; shortDescription: string; longDescription: string }
+type Form = { name: string; price: string; originalPrice: string; stock: string; deliveryFee: string; categoryId: string; shortDescription: string; longDescription: string; isFeatured: boolean; isNewDeal: boolean }
 
 const FIELD_ORDER = ['name', 'price', 'originalPrice', 'stock', 'shortDescription']
 
@@ -20,12 +20,12 @@ function navigateField(current: string, dir: 'up' | 'down') {
 export default function EditProduct() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [form, setForm] = useState<Form>({ name: '', price: '', originalPrice: '', stock: '', categoryId: '', shortDescription: '', longDescription: '' })
+  const [form, setForm] = useState<Form>({ name: '', price: '', originalPrice: '', stock: '', deliveryFee: '', categoryId: '', shortDescription: '', longDescription: '', isFeatured: false, isNewDeal: false })
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [existingImage, setExistingImage] = useState<string | null>(null)
   const [newImage, setNewImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [initialForm, setInitialForm] = useState<Form>({ name: '', price: '', originalPrice: '', stock: '', categoryId: '', shortDescription: '', longDescription: '' })
+  const [initialForm, setInitialForm] = useState<Form>({ name: '', price: '', originalPrice: '', stock: '', deliveryFee: '', categoryId: '', shortDescription: '', longDescription: '', isFeatured: false, isNewDeal: false })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -39,7 +39,7 @@ export default function EditProduct() {
         const cats = Array.isArray(catsData) ? catsData : (catsData as any).results ?? []
         setCategories(cats)
         setExistingImage(p.image)
-        const loaded = { name: p.name, price: p.price, originalPrice: p.original_price ?? '', stock: String(p.stock), categoryId: String(p.category?.id ?? ''), shortDescription: p.short_description ?? '', longDescription: p.long_description ?? '' }
+        const loaded = { name: p.name, price: p.listed_price ?? p.price, originalPrice: p.original_price ?? '', stock: String(p.stock), deliveryFee: p.delivery_fee ?? '0', categoryId: String(p.category?.id ?? ''), shortDescription: p.short_description ?? '', longDescription: p.long_description ?? '', isFeatured: p.is_featured, isNewDeal: p.is_new_deal ?? false }
         setForm(loaded)
         setInitialForm(loaded)
       })
@@ -63,10 +63,13 @@ export default function EditProduct() {
       fd.append('name', form.name.trim())
       fd.append('price', form.price)
       fd.append('category_id', form.categoryId)
-      if (form.originalPrice) fd.append('original_price', form.originalPrice)
-      if (form.stock) fd.append('stock', form.stock)
-      if (form.shortDescription) fd.append('short_description', form.shortDescription)
-      if (form.longDescription) fd.append('long_description', form.longDescription)
+      fd.append('delivery_fee', form.deliveryFee || '0')
+      fd.append('is_featured', String(form.isFeatured))
+      fd.append('is_new_deal', String(form.isNewDeal))
+      fd.append('original_price', form.originalPrice)
+      fd.append('stock', form.stock)
+      fd.append('short_description', form.shortDescription)
+      fd.append('long_description', form.longDescription)
       if (newImage) fd.append('image', newImage)
       await adminProductsApi.update(Number(id), fd)
       navigate('/admin/products')
@@ -110,6 +113,17 @@ export default function EditProduct() {
             <div>
               <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Category</label>
               <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => set('categoryId')('')}
+                  className={`px-3 py-1.5 rounded-full border text-[12px] font-semibold transition-colors ${
+                    !form.categoryId
+                      ? 'bg-[#22C55E] border-[#22C55E] text-white'
+                      : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#22C55E]'
+                  }`}
+                >
+                  No category
+                </button>
                 {categories.map(cat => (
                   <button
                     key={cat.id}
@@ -132,9 +146,20 @@ export default function EditProduct() {
           <div className="lg:col-span-2 space-y-4">
             <Field label="Product Name *" value={form.name} onChange={set('name')} fieldKey="name" />
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Price (UGX) *" value={form.price} onChange={set('price')} type="number" fieldKey="price" />
+              <Field label="Listed Price (UGX) *" value={form.price} onChange={set('price')} type="number" fieldKey="price" />
               <Field label="Original Price (UGX)" value={form.originalPrice} onChange={set('originalPrice')} type="number" fieldKey="originalPrice" />
               <Field label="Stock" value={form.stock} onChange={set('stock')} type="number" fieldKey="stock" />
+              <Field label="Delivery Fee (UGX)" value={form.deliveryFee} onChange={set('deliveryFee')} type="number" />
+            </div>
+            <div className="flex flex-wrap gap-6 rounded-xl border border-[#E2E8F0] bg-white p-4">
+              <label className="flex items-center gap-2 text-[13px] font-semibold text-[#071A2B]">
+                <input type="checkbox" checked={form.isFeatured} onChange={e => setForm(f => ({ ...f, isFeatured: e.target.checked }))} />
+                Featured
+              </label>
+              <label className="flex items-center gap-2 text-[13px] font-semibold text-[#071A2B]">
+                <input type="checkbox" checked={form.isNewDeal} onChange={e => setForm(f => ({ ...f, isNewDeal: e.target.checked }))} />
+                New deal
+              </label>
             </div>
             <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} fieldKey="shortDescription" />
             <div>

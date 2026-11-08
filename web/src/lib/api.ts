@@ -128,6 +128,7 @@ export type ApiProduct = {
   slug: string
   name: string
   price: string
+  listed_price?: string
   original_price: string | null
   image: string | null
   rating: string
@@ -138,6 +139,7 @@ export type ApiProduct = {
   short_description: string
   long_description: string
   is_featured: boolean
+  is_new_deal?: boolean
   images: { id: number; url: string; order: number }[]
   category: { id: number; name: string; slug: string }
 }
