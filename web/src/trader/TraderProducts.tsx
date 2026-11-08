@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Package, ArrowLeft, ImagePlus, X, Search } from 'lucide-react'
 import axios from 'axios'
-import { tradersApi, productsApi, type ApiTraderProduct, type ApiCategory } from '../lib/api'
+import { adminProductsApi, tradersApi, productsApi, type ApiTraderProduct, type ApiCategory } from '../lib/api'
 import RichTextEditor from '../components/RichTextEditor'
 
 const fmt = (n: string | number) => `UGX ${Number(n).toLocaleString()}`
@@ -144,7 +144,7 @@ export default function TraderProducts() {
       const fd = new FormData()
       fd.append('name', form.name.trim())
       fd.append('price', form.price)
-      fd.append('original_price', form.original_price)
+      if (form.original_price) fd.append('original_price', form.original_price)
       fd.append('delivery_fee', form.delivery_fee || '0')
       fd.append('stock', form.stock || '0')
       fd.append('short_description', form.short_description)
@@ -158,6 +158,10 @@ export default function TraderProducts() {
       if (view === 'add') {
         const r = await tradersApi.createProduct(traderUuid!, fd)
         setProducts(p => [r.data, ...p])
+      } else if (editing!.public_product_id !== null) {
+        await adminProductsApi.update(editing!.public_product_id, fd)
+        const { data } = await tradersApi.products(traderUuid!)
+        setProducts(data)
       } else {
         const r = await tradersApi.updateProduct(traderUuid!, editing!.uuid, fd)
         setProducts(p => p.map(x => x.uuid === r.data.uuid ? r.data : x))
