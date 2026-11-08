@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Package, ArrowLeft, ImagePlus, X, Search } from 'lucide-react'
+import axios from 'axios'
 import { tradersApi, productsApi, type ApiTraderProduct, type ApiCategory } from '../lib/api'
 import RichTextEditor from '../components/RichTextEditor'
 
@@ -162,7 +163,20 @@ export default function TraderProducts() {
         setProducts(p => p.map(x => x.uuid === r.data.uuid ? r.data : x))
       }
       setView('list')
-    } catch { setError('Failed to save product.') }
+    } catch (cause) {
+      try {
+        const { data } = await tradersApi.products(traderUuid!)
+        setProducts(data)
+        setView('list')
+      } catch {
+        setError('Saving failed and the product list could not be refreshed.')
+        return
+      }
+
+      const detail = axios.isAxiosError(cause) && cause.response?.data?.detail
+      const status = axios.isAxiosError(cause) ? cause.response?.status : undefined
+      setError(typeof detail === 'string' ? detail : status ? `Failed to save product (server returned ${status}).` : 'Failed to save product.')
+    }
     finally { setSaving(false) }
   }
 
