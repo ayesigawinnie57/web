@@ -292,7 +292,10 @@ const saveGuestCart = (items: CartItem[]) => localStorage.setItem(GUEST_CART_KEY
 
 export const productsApi = {
   list: (params?: string) => api.get<{ results: ApiProduct[]; next: string | null }>(`/api/products/${params ? '?' + params : ''}`),
-  bySlug: (slug: string) => api.get<ApiProduct>(`/api/products/${slug}/`),
+  bySlug: (slug: string) => api.get<ApiProduct>(`/api/products/${slug}/`, {
+    params: { _refresh: Date.now() },
+    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+  }),
   byCategory: (categorySlug: string) => api.get<{ results: ApiProduct[] }>(`/api/products/?category=${categorySlug}`),
   categories: () => cachedRequest('products:categories:v2', () => api.get<ApiCategory[]>('/api/products/categories/')),
   flashSales: () => api.get<ApiFlashSale[]>('/api/products/flash-sales/?active=1'),
