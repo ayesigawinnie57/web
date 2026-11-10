@@ -86,7 +86,7 @@ export default function AddFlashSale() {
                     key={p.id}
                     type="button"
                     onClick={() => {
-                      const basePrice = p.base_price ?? p.price
+                      const basePrice = p.base_price ?? p.listed_price ?? p.price
                       setProductSearch(p.name)
                       setForm(f => ({ ...f, product_id: String(p.id), flash_price: String(basePrice), stock_limit: String(p.stock) }))
                     }}
@@ -95,7 +95,7 @@ export default function AddFlashSale() {
                     {p.image && <img src={p.image} className="w-9 h-9 rounded-lg object-cover" />}
                     <div>
                       <p className="text-[13px] font-semibold text-[#071A2B]">{p.name}</p>
-                      <p className="text-[11px] text-[#64748B]">UGX {Number(p.base_price ?? p.price).toLocaleString()} · Stock: {p.stock}</p>
+                      <p className="text-[11px] text-[#64748B]">UGX {Number(p.base_price ?? p.listed_price ?? p.price).toLocaleString()} · Stock: {p.stock}</p>
                     </div>
                   </button>
                 ))}
@@ -106,7 +106,7 @@ export default function AddFlashSale() {
 
         <div>
           <label className="block text-[13px] font-bold text-[#071A2B] mb-1">Flash Price (UGX) *</label>
-          {selectedProduct && <p className="text-[11px] text-[#64748B] italic mb-2">Original: UGX {Number(selectedProduct.base_price ?? selectedProduct.price).toLocaleString()} — must be lower</p>}
+          {selectedProduct && <p className="text-[11px] text-[#64748B] italic mb-2">Original: UGX {Number(selectedProduct.base_price ?? selectedProduct.listed_price ?? selectedProduct.price).toLocaleString()} — must be lower</p>}
           <input
             type="number"
             value={form.flash_price}
