@@ -40,7 +40,7 @@ export default function AdminFlashSales() {
     setEditing(s)
     setForm({
       product_id: String(s.product.id),
-      flash_price: String(s.flash_price),
+      flash_price: String(s.base_flash_price ?? s.flash_price),
       ends_at: new Date(s.ends_at).toISOString().slice(0, 16),
       stock_limit: String(s.stock_limit),
       is_active: s.is_active,
@@ -206,13 +206,17 @@ export default function AdminFlashSales() {
                       {filteredProducts.map(p => (
                         <button
                           key={p.id}
-                          onClick={() => { setProductSearch(p.name); setForm(f => ({ ...f, product_id: String(p.id), flash_price: String(p.price), stock_limit: String(p.stock) })) }}
+                          onClick={() => {
+                            const basePrice = p.base_price ?? p.price
+                            setProductSearch(p.name)
+                            setForm(f => ({ ...f, product_id: String(p.id), flash_price: String(basePrice), stock_limit: String(p.stock) }))
+                          }}
                           className="flex items-center gap-3 w-full py-2.5 border-b border-[#F1F5F9] hover:bg-[#F8FAFC] text-left"
                         >
                           {p.image && <img src={p.image} className="w-9 h-9 rounded-lg object-cover" />}
                           <div>
                             <p className="text-[13px] font-semibold text-[#071A2B]">{p.name}</p>
-                            <p className="text-[11px] text-[#64748B]">UGX {Number(p.price).toLocaleString()} · Stock: {p.stock}</p>
+                            <p className="text-[11px] text-[#64748B]">UGX {Number(p.base_price ?? p.price).toLocaleString()} · Stock: {p.stock}</p>
                           </div>
                         </button>
                       ))}
@@ -223,7 +227,7 @@ export default function AdminFlashSales() {
 
               <div>
                 <label className="block text-[13px] font-bold text-[#071A2B] mb-1">Flash Price (UGX) *</label>
-                {selectedProduct && <p className="text-[11px] text-[#64748B] italic mb-2">Original: UGX {Number(selectedProduct.price).toLocaleString()} — must be lower</p>}
+                {selectedProduct && <p className="text-[11px] text-[#64748B] italic mb-2">Original: UGX {Number(selectedProduct.base_price ?? selectedProduct.price).toLocaleString()} — must be lower</p>}
                 <input
                   type="number"
                   value={form.flash_price}

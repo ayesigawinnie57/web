@@ -146,6 +146,7 @@ export type ApiProduct = {
   slug: string
   name: string
   price: string
+  base_price?: string
   listed_price?: string
   original_price: string | null
   image: string | null
@@ -216,6 +217,7 @@ export type ApiFlashSale = {
   id: number
   product: ApiProduct
   flash_price: string
+  base_flash_price?: string
   ends_at: string
   stock_limit: number
   stock_sold: number
@@ -622,6 +624,7 @@ export type ApiFlashSaleItem = {
   id: number
   product: ApiProduct
   flash_price: string
+  base_flash_price?: string
   ends_at: string
   stock_limit: number
   stock_sold: number

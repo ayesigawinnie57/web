@@ -64,7 +64,7 @@ export default function TraderFlashSales() {
     setEditing(s)
     setForm({
       product_id: String(s.product.id),
-      flash_price: String(s.flash_price),
+      flash_price: String(s.base_flash_price ?? s.flash_price),
       ends_at: new Date(s.ends_at).toISOString().slice(0, 16),
       stock_limit: String(s.stock_limit),
       is_active: s.is_active,
