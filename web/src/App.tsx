@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { NotificationProvider } from './lib/NotificationContext'
 import { SwitchProvider, useSwitchPortal } from './lib/SwitchContext'
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'react'
 import { authApi, BASE_URL } from './lib/api'
 import CookieBanner from './components/CookieBanner'
 import FloatingChatButton from './components/FloatingChatButton'
@@ -133,6 +133,10 @@ function ScrollToTop() {
 export default function App() {
   const [uiActive, setUiActive] = useState<boolean | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+
+  useLayoutEffect(() => {
+    document.getElementById('app-bootstrap-loader')?.remove()
+  }, [])
 
   useEffect(() => {
     let active = true
