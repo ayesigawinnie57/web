@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ImagePlus } from 'lucide-react'
+import axios from 'axios'
 import { adminProductsApi, type ApiCategory } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 import RichTextEditor from '../../components/RichTextEditor'
@@ -75,7 +76,11 @@ export default function EditProduct() {
       await adminProductsApi.update(Number(id), fd)
       navigate('/admin/products')
     } catch (err) {
-      setError(parseError(err, 'Failed to update product.'))
+      const requestId = axios.isAxiosError(err)
+        ? err.response?.headers?.['x-railway-request-id']
+        : undefined
+      const message = parseError(err, 'Failed to update product.')
+      setError(typeof requestId === 'string' ? `${message} Request ID: ${requestId}` : message)
     } finally {
       setSaving(false)
     }
