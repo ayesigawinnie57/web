@@ -7,6 +7,12 @@ import RichTextEditor from '../components/RichTextEditor'
 
 const fmt = (n: string | number) => `UGX ${Number(n).toLocaleString()}`
 
+const getRequestId = (cause: unknown) => {
+  if (!axios.isAxiosError(cause)) return undefined
+  const requestId = cause.response?.headers?.['x-railway-request-id']
+  return typeof requestId === 'string' ? requestId : undefined
+}
+
 type View = 'list' | 'add' | 'edit'
 
 type Form = {
@@ -179,7 +185,9 @@ export default function TraderProducts() {
 
       const detail = axios.isAxiosError(cause) && cause.response?.data?.detail
       const status = axios.isAxiosError(cause) ? cause.response?.status : undefined
-      setError(typeof detail === 'string' ? detail : status ? `Failed to save product (server returned ${status}).` : 'Failed to save product.')
+      const message = typeof detail === 'string' ? detail : status ? `Failed to save product (server returned ${status}).` : 'Failed to save product.'
+      const requestId = getRequestId(cause)
+      setError(requestId ? `${message} Request ID: ${requestId}` : message)
     }
     finally { setSaving(false) }
   }
@@ -201,7 +209,9 @@ export default function TraderProducts() {
 
       const detail = axios.isAxiosError(cause) && cause.response?.data?.detail
       const status = axios.isAxiosError(cause) ? cause.response?.status : undefined
-      setError(typeof detail === 'string' ? detail : status ? `Failed to delete product (server returned ${status}).` : 'Failed to delete product.')
+      const message = typeof detail === 'string' ? detail : status ? `Failed to delete product (server returned ${status}).` : 'Failed to delete product.'
+      const requestId = getRequestId(cause)
+      setError(requestId ? `${message} Request ID: ${requestId}` : message)
     } finally { setDeleting(null) }
   }
 
