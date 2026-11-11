@@ -25,9 +25,9 @@ export default function PaymentCallbackPage() {
     let cancelled = false
     const check = async () => {
       try {
-        const order = await ordersApi.get(orderCode)
+        const payment = await ordersApi.refreshPayment(orderCode)
         if (cancelled) return
-        const paymentStatus = order.data.payment?.status
+        const paymentStatus = payment.data.status
         if (paymentStatus === 'completed') {
           setState('success')
           return
@@ -36,7 +36,7 @@ export default function PaymentCallbackPage() {
           paymentStatus === 'failed'
           || paymentStatus === 'invalid'
           || paymentStatus === 'cancelled'
-          || order.data.status === 'cancelled'
+          || payment.data.order_status === 'cancelled'
         ) {
           setState('failed')
           return
