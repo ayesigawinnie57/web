@@ -153,10 +153,18 @@ export type ApiProduct = {
   rating: string
   reviews_count: number
   seller_uuid?: string | null
+  seller_name: string | null
   stock: number
   delivery_fee: string
   short_description: string
   long_description: string
+  brand: string
+  condition: 'new' | 'used' | 'refurbished'
+  tags: string[]
+  specifications: Record<string, unknown>
+  review_status: 'draft' | 'pending_review' | 'approved' | 'rejected' | 'changes_required' | 'disabled' | 'archived'
+  review_note: string
+  variants: ApiProductVariant[]
   is_active: boolean
   is_featured: boolean
   is_new_deal?: boolean
@@ -164,7 +172,41 @@ export type ApiProduct = {
   category: { id: number; name: string; slug: string }
 }
 
-export type ApiCategory = { id: number; name: string; slug: string; image: string | null }
+export type ApiProductVariant = {
+  id: number
+  sku: string
+  options: Record<string, string | number | boolean>
+  price: string
+  listed_price: string
+  compare_at_price: string | null
+  compare_at_listed_price: string | null
+  stock: number
+  weight: string | null
+  image: string | null
+  image_url: string | null
+  is_active: boolean
+}
+
+export type ApiCategoryAttribute = {
+  id: number
+  name: string
+  key: string
+  input_type: 'text' | 'number' | 'dropdown' | 'multi_select' | 'boolean' | 'measurement' | 'color' | 'size'
+  choices: string[]
+  is_required: boolean
+  is_variant: boolean
+  is_filterable: boolean
+  position: number
+}
+
+export type ApiCategory = {
+  id: number
+  name: string
+  slug: string
+  image: string | null
+  parent_id: number | null
+  attributes: ApiCategoryAttribute[]
+}
 
 export type Product = {
   id: number
@@ -181,6 +223,13 @@ export type Product = {
   deliveryFee: number
   shortDescription: string
   longDescription: string
+  brand: string
+  condition: 'new' | 'used' | 'refurbished'
+  tags: string[]
+  specifications: Record<string, unknown>
+  reviewStatus: ApiProduct['review_status']
+  reviewNote: string
+  variants: ApiProductVariant[]
   category: string
   categoryName: string
 }
@@ -209,6 +258,13 @@ export const toProduct = (p: ApiProduct): Product => ({
   deliveryFee: Number(p.delivery_fee ?? 0),
   shortDescription: p.short_description?.trim() || DEFAULT_PRODUCT_DESCRIPTION,
   longDescription: unescapeHtml(p.long_description?.trim() || DEFAULT_LONG_DESCRIPTION),
+  brand: p.brand ?? '',
+  condition: p.condition ?? 'new',
+  tags: p.tags ?? [],
+  specifications: p.specifications ?? {},
+  reviewStatus: p.review_status ?? 'approved',
+  reviewNote: p.review_note ?? '',
+  variants: p.variants ?? [],
   category: p.category?.slug ?? '',
   categoryName: p.category?.name ?? '',
 })
@@ -321,7 +377,7 @@ export const productsApi = {
     params: { _refresh: Date.now() },
   }),
   byCategory: (categorySlug: string) => productsApi.list(`category=${encodeURIComponent(categorySlug)}`),
-  categories: () => cachedRequest('products:categories:v2', () => api.get<ApiCategory[]>('/api/products/categories/')),
+  categories: () => cachedRequest('products:categories:v3', () => api.get<ApiCategory[]>('/api/products/categories/')),
   flashSales: () => api.get<ApiFlashSale[]>('/api/products/flash-sales/', {
     params: { active: 1, _refresh: Date.now() },
   }),
@@ -653,6 +709,8 @@ export const adminProductsApi = {
   create: (data: FormData) => api.post<ApiProduct>('/api/products/', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   update: (id: number, data: FormData) => api.patch<ApiProduct>(`/api/products/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   delete: (id: number) => api.delete(`/api/products/${id}/`),
+  review: (id: number, review_status: ApiProduct['review_status'], review_note = '') =>
+    api.post<ApiProduct>(`/api/products/${id}/review/`, { review_status, review_note }),
   categories: () => api.get<ApiCategory[]>('/api/products/categories/'),
   createCategory: (data: FormData) => api.post<ApiCategory>('/api/products/categories/', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   updateCategory: (id: number, data: FormData) => api.patch<ApiCategory>(`/api/products/categories/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
@@ -919,6 +977,14 @@ export type ApiTraderProduct = {
   short_description: string
   long_description: string
   description: string
+  brand: string
+  condition: 'new' | 'used' | 'refurbished'
+  tags: string[]
+  specifications: Record<string, unknown>
+  review_status: ApiProduct['review_status']
+  review_note: string
+  variant_list: ApiProductVariant[]
+  variants?: Omit<ApiProductVariant, 'id' | 'image_url'>[]
   price: string
   original_price: string | null
   delivery_fee: string

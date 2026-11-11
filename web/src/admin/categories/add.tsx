@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ImagePlus } from 'lucide-react'
-import { adminProductsApi } from '../../lib/api'
+import { adminProductsApi, type ApiCategory, type ApiCategoryAttribute } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 
 export default function AddCategory() {
@@ -10,9 +10,21 @@ export default function AddCategory() {
   const [slug, setSlug] = useState('')
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [categories, setCategories] = useState<ApiCategory[]>([])
+  const [parentId, setParentId] = useState('')
+  const [attributes, setAttributes] = useState<ApiCategoryAttribute[]>([])
+  const [attributeName, setAttributeName] = useState('')
+  const [attributeType, setAttributeType] = useState<ApiCategoryAttribute['input_type']>('text')
+  const [attributeChoices, setAttributeChoices] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    adminProductsApi.categories().then(({ data }) => {
+      setCategories(Array.isArray(data) ? data : (data as any).results ?? [])
+    }).catch(err => setError(parseError(err, 'Failed to load categories.')))
+  }, [])
 
   const handleNameChange = (val: string) => {
     setName(val)
@@ -34,6 +46,8 @@ export default function AddCategory() {
       const fd = new FormData()
       fd.append('name', name.trim())
       fd.append('slug', slug.trim())
+      fd.append('parent_id', parentId)
+      fd.append('attributes', JSON.stringify(attributes))
       if (image) fd.append('image', image)
       await adminProductsApi.createCategory(fd)
       navigate('/admin/categories')
@@ -43,6 +57,28 @@ export default function AddCategory() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const addAttribute = () => {
+    const name = attributeName.trim()
+    if (!name) return
+    const key = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    if (attributes.some(attribute => attribute.key === key)) {
+      setError('An attribute with that name already exists.')
+      return
+    }
+    const choices = attributeChoices.split(',').map(choice => choice.trim()).filter(Boolean)
+    if (['dropdown', 'multi_select'].includes(attributeType) && choices.length === 0) {
+      setError('Add at least one choice for this attribute.')
+      return
+    }
+    setAttributes(current => [...current, {
+      id: 0, name, key, input_type: attributeType, choices,
+      is_required: false, is_variant: false, is_filterable: false, position: current.length,
+    }])
+    setAttributeName('')
+    setAttributeChoices('')
+    setError('')
   }
 
   return (
@@ -86,6 +122,43 @@ export default function AddCategory() {
             className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px] text-[#64748B] outline-none focus:border-[#22C55E]"
           />
         </div>
+
+        <div>
+          <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Parent category</label>
+          <select value={parentId} onChange={event => setParentId(event.target.value)} className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px]">
+            <option value="">Top-level category</option>
+            {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select>
+        </div>
+
+        <section className="rounded-xl border border-[#E2E8F0] bg-white p-4 space-y-3">
+          <div>
+            <h2 className="text-[14px] font-extrabold text-[#071A2B]">Category attributes</h2>
+            <p className="text-[11px] text-[#64748B] mt-1">Attributes let traders add category-specific product details without code changes.</p>
+          </div>
+          {attributes.map((attribute, index) => (
+            <div key={attribute.key} className="flex items-center justify-between gap-3 border-t border-[#F1F5F9] pt-3">
+              <div>
+                <p className="text-[12px] font-bold text-[#071A2B]">{attribute.name}</p>
+                <p className="text-[10px] text-[#64748B]">{attribute.input_type}{attribute.choices.length ? ` · ${attribute.choices.join(', ')}` : ''}</p>
+              </div>
+              <div className="flex flex-wrap gap-3 text-[10px]">
+                <label><input type="checkbox" checked={attribute.is_required} onChange={event => setAttributes(current => current.map((item, i) => i === index ? { ...item, is_required: event.target.checked } : item))} /> Required</label>
+                <label><input type="checkbox" checked={attribute.is_variant} onChange={event => setAttributes(current => current.map((item, i) => i === index ? { ...item, is_variant: event.target.checked } : item))} /> Variant</label>
+                <label><input type="checkbox" checked={attribute.is_filterable} onChange={event => setAttributes(current => current.map((item, i) => i === index ? { ...item, is_filterable: event.target.checked } : item))} /> Filter</label>
+                <button type="button" onClick={() => setAttributes(current => current.filter((_, i) => i !== index))} className="font-bold text-red-600">Remove</button>
+              </div>
+            </div>
+          ))}
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input value={attributeName} onChange={event => setAttributeName(event.target.value)} placeholder="Attribute name (e.g. Color)" className="min-w-0 px-3 py-2 border border-[#E2E8F0] rounded-lg text-[12px]" />
+            <select value={attributeType} onChange={event => setAttributeType(event.target.value as ApiCategoryAttribute['input_type'])} className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-[12px]">
+              {['text', 'number', 'dropdown', 'multi_select', 'boolean', 'measurement', 'color', 'size'].map(type => <option key={type} value={type}>{type.replace('_', ' ')}</option>)}
+            </select>
+            {['dropdown', 'multi_select'].includes(attributeType) && <input value={attributeChoices} onChange={event => setAttributeChoices(event.target.value)} placeholder="Choices separated by commas" className="sm:col-span-2 px-3 py-2 border border-[#E2E8F0] rounded-lg text-[12px]" />}
+          </div>
+          <button type="button" onClick={addAttribute} className="text-[12px] font-bold text-[#1E3A8A]">+ Add Attribute</button>
+        </section>
 
         <button type="submit" disabled={loading} className="w-full bg-[#22C55E] text-white py-3 rounded-xl text-[14px] font-bold disabled:opacity-60 hover:opacity-90">
           {loading ? 'Saving...' : 'Save Category'}

@@ -29,6 +29,9 @@ type View = 'list' | 'add' | 'edit'
 
 type Form = {
   name: string
+  brand: string
+  condition: 'new' | 'used' | 'refurbished'
+  tags: string
   short_description: string
   long_description: string
   price: string
@@ -42,9 +45,19 @@ type Form = {
 }
 
 const EMPTY: Form = {
-  name: '', short_description: '', long_description: '',
+  name: '', brand: '', condition: 'new', tags: '', short_description: '', long_description: '',
   price: '', original_price: '', delivery_fee: '', stock: '',
   category_id: '', is_active: true, is_featured: false, is_new_deal: false,
+}
+
+type VariantDraft = {
+  sku: string
+  options: Record<string, string | number | boolean>
+  price: string
+  compare_at_price: string
+  stock: string
+  weight: string
+  is_active: boolean
 }
 
 function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
@@ -91,6 +104,9 @@ export default function TraderProducts() {
 
   const [form, setForm] = useState<Form>(EMPTY)
   const set = (k: keyof Form) => (v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
+  const [specifications, setSpecifications] = useState<Record<string, unknown>>({})
+  const [variantValues, setVariantValues] = useState<Record<string, string>>({})
+  const [variants, setVariants] = useState<VariantDraft[]>([])
 
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
@@ -101,6 +117,56 @@ export default function TraderProducts() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const selectedCategory = categories.find(category => String(category.id) === form.category_id)
+  const variantAttributes = selectedCategory?.attributes.filter(attribute => attribute.is_variant) ?? []
+
+  const valuesForAttribute = (key: string, choices: string[]) =>
+    (variantValues[key] ?? choices.join(',')).split(/[,\n]/).map(value => value.trim()).filter(Boolean)
+
+  const variantCount = variantAttributes.reduce((count, attribute) =>
+    count * valuesForAttribute(attribute.key, attribute.choices).length, 1)
+
+  const generateVariants = () => {
+    if (!variantAttributes.length) {
+      setError('Mark at least one category attribute as a variant before generating variants.')
+      return
+    }
+    if (variantCount > 100) {
+      setError('This would create more than 100 variants. Reduce the option values first.')
+      return
+    }
+    let combinations: Record<string, string>[] = [{}]
+    for (const attribute of variantAttributes) {
+      const values = valuesForAttribute(attribute.key, attribute.choices)
+      if (!values.length) {
+        setError(`Enter values for ${attribute.name}.`)
+        return
+      }
+      combinations = combinations.flatMap(combination =>
+        values.map(value => ({ ...combination, [attribute.key]: value })),
+      )
+    }
+    setVariants(combinations.map(options => ({
+      sku: '',
+      options,
+      price: form.price,
+      compare_at_price: form.original_price,
+      stock: '0',
+      weight: '',
+      is_active: true,
+    })))
+    setError('')
+  }
+
+  const updateSpecification = (key: string, value: unknown) =>
+    setSpecifications(current => ({ ...current, [key]: value }))
+
+  const changeCategory = (categoryId: string) => {
+    set('category_id')(categoryId)
+    setSpecifications({})
+    setVariantValues({})
+    setVariants([])
+  }
 
   useEffect(() => {
     let active = true
@@ -149,6 +215,9 @@ export default function TraderProducts() {
   const openAdd = () => {
     const firstCat = categories[0]
     setForm({ ...EMPTY, category_id: firstCat ? String(firstCat.id) : '' })
+    setSpecifications({})
+    setVariantValues({})
+    setVariants([])
     setImages([]); setPreviews([]); setExistingImage(null)
     setError(''); setEditing(null); setView('add')
   }
@@ -156,6 +225,9 @@ export default function TraderProducts() {
   const openEdit = (p: ApiTraderProduct) => {
     setForm({
       name: p.name,
+      brand: p.brand ?? '',
+      condition: p.condition ?? 'new',
+      tags: (p.tags ?? []).join(', '),
       short_description: p.short_description ?? '',
       long_description: p.long_description ?? '',
       price: p.price,
@@ -167,6 +239,17 @@ export default function TraderProducts() {
       is_featured: p.is_featured,
       is_new_deal: p.is_new_deal,
     })
+    setSpecifications(p.specifications ?? {})
+    setVariantValues({})
+    setVariants((p.variant_list ?? []).map(variant => ({
+      sku: variant.sku,
+      options: variant.options,
+      price: variant.listed_price,
+      compare_at_price: variant.compare_at_listed_price ?? '',
+      stock: String(variant.stock),
+      weight: variant.weight ?? '',
+      is_active: variant.is_active,
+    })))
     setImages([]); setPreviews([])
     setExistingImage(p.image_url || null)
     setError(''); setEditing(p); setView('edit')
@@ -190,16 +273,35 @@ export default function TraderProducts() {
     setPreviews([URL.createObjectURL(files[0])])
   }
 
-  const handleSave = async () => {
+  const handleSave = async (submitForReview: boolean) => {
     if (!form.name.trim() || !form.price) { setError('Name and price are required.'); return }
+    const variantPayload = variants.map(variant => ({
+      sku: variant.sku.trim(),
+      options: variant.options,
+      price: Number(variant.price),
+      compare_at_price: variant.compare_at_price ? Number(variant.compare_at_price) : null,
+      stock: Number(variant.stock || 0),
+      weight: variant.weight ? Number(variant.weight) : null,
+      is_active: variant.is_active,
+    }))
+    if (variantPayload.some(variant => !Number.isFinite(variant.price) || variant.price <= 0)) {
+      setError('Every variant needs a price greater than zero.')
+      return
+    }
     setSaving(true); setError('')
     try {
       const fd = new FormData()
       fd.append('name', form.name.trim())
-      fd.append('price', form.price)
+      fd.append('price', variants.length ? String(Math.min(...variantPayload.map(variant => variant.price))) : form.price)
       if (form.original_price) fd.append('original_price', form.original_price)
       fd.append('delivery_fee', form.delivery_fee || '0')
-      fd.append('stock', form.stock || '0')
+      fd.append('stock', variants.length ? String(variantPayload.reduce((total, variant) => total + variant.stock, 0)) : form.stock || '0')
+      fd.append('brand', form.brand.trim())
+      fd.append('condition', form.condition)
+      fd.append('tags', JSON.stringify(form.tags.split(',').map(tag => tag.trim()).filter(Boolean)))
+      fd.append('specifications', JSON.stringify(specifications))
+      fd.append('variants', JSON.stringify(variantPayload))
+      fd.append('submit_for_review', String(submitForReview))
       fd.append('short_description', form.short_description)
       fd.append('long_description', form.long_description)
       fd.append('category_id', form.category_id)
@@ -341,7 +443,7 @@ export default function TraderProducts() {
                   <button
                     key={cat.id}
                     type="button"
-                    onClick={() => set('category_id')(String(cat.id))}
+                    onClick={() => changeCategory(String(cat.id))}
                     className={`px-3 py-1.5 rounded-full border text-[12px] font-semibold capitalize transition-colors ${
                       form.category_id === String(cat.id)
                         ? 'bg-[#22C55E] border-[#22C55E] text-white'
@@ -358,6 +460,16 @@ export default function TraderProducts() {
           {/* Right columns */}
           <div className="lg:col-span-2 space-y-4">
             <Field label="Product Name *" value={form.name} onChange={set('name')} placeholder="e.g. Wireless Earbuds" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Brand" value={form.brand} onChange={set('brand')} placeholder="e.g. Apple" />
+              <div>
+                <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Condition</label>
+                <select value={form.condition} onChange={event => set('condition')(event.target.value as Form['condition'])} className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px]">
+                  <option value="new">New</option><option value="used">Used</option><option value="refurbished">Refurbished</option>
+                </select>
+              </div>
+              <Field label="Tags (comma separated)" value={form.tags} onChange={set('tags')} placeholder="e.g. electronics, repair" />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <Field label="Price (UGX) *" value={form.price} onChange={set('price')} placeholder="e.g. 29000" type="number" />
               <Field label="Original Price (UGX)" value={form.original_price} onChange={set('original_price')} placeholder="e.g. 59000" type="number" />
@@ -374,6 +486,86 @@ export default function TraderProducts() {
               />
             </div>
 
+            {!!selectedCategory?.attributes.filter(attribute => !attribute.is_variant).length && (
+              <section className="rounded-xl border border-[#E2E8F0] bg-white p-4 space-y-4">
+                <div>
+                  <h2 className="text-[14px] font-extrabold text-[#071A2B]">Product specifications</h2>
+                  <p className="text-[11px] text-[#64748B] mt-1">Fields are configured for {selectedCategory.name}.</p>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {selectedCategory.attributes.filter(attribute => !attribute.is_variant).map(attribute => {
+                    const value = specifications[attribute.key]
+                    const inputClass = 'w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-[12px]'
+                    return (
+                      <div key={attribute.key}>
+                        <label className="block text-[12px] font-bold text-[#071A2B] mb-1.5">{attribute.name}{attribute.is_required ? ' *' : ''}</label>
+                        {attribute.input_type === 'boolean' ? (
+                          <label className="flex items-center gap-2 text-[12px]"><input type="checkbox" checked={Boolean(value)} onChange={event => updateSpecification(attribute.key, event.target.checked)} /> Yes</label>
+                        ) : attribute.input_type === 'dropdown' ? (
+                          <select className={inputClass} value={String(value ?? '')} onChange={event => updateSpecification(attribute.key, event.target.value)}>
+                            <option value="">Select...</option>{attribute.choices.map(choice => <option key={choice}>{choice}</option>)}
+                          </select>
+                        ) : (
+                          <input
+                            type={attribute.input_type === 'number' ? 'number' : 'text'}
+                            className={inputClass}
+                            value={Array.isArray(value) ? value.join(', ') : String(value ?? '')}
+                            placeholder={attribute.input_type === 'multi_select' ? 'Separate values with commas' : ''}
+                            onChange={event => updateSpecification(
+                              attribute.key,
+                              attribute.input_type === 'number' ? (event.target.value ? Number(event.target.value) : '') :
+                                attribute.input_type === 'multi_select' ? event.target.value.split(',').map(item => item.trim()).filter(Boolean) :
+                                  event.target.value,
+                            )}
+                          />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {variantAttributes.length > 0 && (
+              <section className="rounded-xl border border-[#E2E8F0] bg-white p-4 space-y-4">
+                <div>
+                  <h2 className="text-[14px] font-extrabold text-[#071A2B]">Options &amp; variants</h2>
+                  <p className="text-[11px] text-[#64748B] mt-1">Add option values, then generate editable product combinations.</p>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {variantAttributes.map(attribute => (
+                    <div key={attribute.key}>
+                      <label className="block text-[12px] font-bold text-[#071A2B] mb-1.5">{attribute.name} values{attribute.is_required ? ' *' : ''}</label>
+                      <input
+                        className="w-full px-3 py-2.5 border border-[#E2E8F0] rounded-lg text-[12px]"
+                        value={variantValues[attribute.key] ?? attribute.choices.join(', ')}
+                        onChange={event => setVariantValues(current => ({ ...current, [attribute.key]: event.target.value }))}
+                        placeholder="e.g. Black, White"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className={`text-[12px] ${variantCount > 100 ? 'text-red-600' : 'text-[#64748B]'}`}>
+                    {variantCount} variant{variantCount === 1 ? '' : 's'} will be created{variantCount > 100 ? ' — maximum is 100' : ''}.
+                  </p>
+                  <button type="button" onClick={generateVariants} disabled={variantCount > 100} className="px-3 py-2 rounded-lg bg-[#071A2B] text-white text-[12px] font-bold disabled:opacity-50">
+                    Generate variants
+                  </button>
+                </div>
+                {variants.map((variant, index) => (
+                  <div key={`${index}-${JSON.stringify(variant.options)}`} className="grid grid-cols-2 md:grid-cols-5 gap-2 border-t border-[#F1F5F9] pt-3">
+                    <p className="col-span-2 md:col-span-5 text-[11px] font-bold text-[#071A2B]">{Object.values(variant.options).join(' / ')}</p>
+                    <input aria-label="Variant SKU" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="SKU" value={variant.sku} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, sku: event.target.value } : item))} />
+                    <input aria-label="Variant price" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="Price" type="number" value={variant.price} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, price: event.target.value } : item))} />
+                    <input aria-label="Variant compare-at price" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="Compare-at" type="number" value={variant.compare_at_price} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, compare_at_price: event.target.value } : item))} />
+                    <input aria-label="Variant stock" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="Stock" type="number" value={variant.stock} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, stock: event.target.value } : item))} />
+                    <input aria-label="Variant weight" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="Weight (kg)" type="number" step="0.001" value={variant.weight} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, weight: event.target.value } : item))} />
+                  </div>
+                ))}
+              </section>
+            )}
+
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
@@ -384,11 +576,19 @@ export default function TraderProducts() {
               </button>
               <button
                 type="button"
-                onClick={handleSave}
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                className="px-6 py-2.5 rounded-lg text-[13px] font-bold border border-[#E2E8F0] text-[#071A2B] disabled:opacity-60"
+              >
+                {saving ? 'Saving...' : 'Save Draft'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSave(true)}
                 disabled={saving}
                 className="bg-[#22C55E] text-white px-6 py-2.5 rounded-lg text-[13px] font-bold disabled:opacity-60 hover:opacity-90"
               >
-                {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Product'}
+                {saving ? 'Saving...' : isEdit ? 'Submit Changes' : 'Submit for Review'}
               </button>
             </div>
           </div>
@@ -464,6 +664,8 @@ export default function TraderProducts() {
                 <p className="text-[14px] font-bold text-[#071A2B] truncate">{p.name}</p>
                 <p className="text-[13px] font-bold text-[#22C55E]">{fmt(p.price)}</p>
                 <p className="text-[11px] text-[#64748B]">{p.category_name ?? '—'} · Stock: {p.stock}</p>
+                <p className="text-[10px] font-bold text-[#475569] mt-1 capitalize">{p.review_status.replace('_', ' ')}</p>
+                {p.review_note && <p className="text-[10px] text-amber-700 mt-0.5">Admin note: {p.review_note}</p>}
                 <p className="text-[10px] text-[#94A3B8] mt-0.5">Updated {new Date(p.updated_at).toLocaleDateString('en-UG', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-[#F1F5F9] text-[#94A3B8]'}`}>
