@@ -13,6 +13,18 @@ const getRequestId = (cause: unknown) => {
   return typeof requestId === 'string' ? requestId : undefined
 }
 
+const getLoadError = (cause: unknown, resource: string) => {
+  const detail = axios.isAxiosError(cause) && cause.response?.data?.detail
+  const status = axios.isAxiosError(cause) ? cause.response?.status : undefined
+  const message = typeof detail === 'string'
+    ? detail
+    : status
+      ? `Failed to load ${resource} (server returned ${status}).`
+      : `Failed to load ${resource}.`
+  const requestId = getRequestId(cause)
+  return requestId ? `${message} Request ID: ${requestId}` : message
+}
+
 type View = 'list' | 'add' | 'edit'
 
 type Form = {
@@ -72,6 +84,8 @@ export default function TraderProducts() {
   const [products, setProducts] = useState<ApiTraderProduct[]>([])
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [loading, setLoading] = useState(true)
+  const [productsLoadFailed, setProductsLoadFailed] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [view, setView] = useState<View>('list')
   const [editing, setEditing] = useState<ApiTraderProduct | null>(null)
 
@@ -89,15 +103,48 @@ export default function TraderProducts() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    let active = true
     setLoading(true)
-    Promise.all([tradersApi.products(traderUuid!), productsApi.categories()])
-      .then(([prodRes, catRes]) => {
-        setProducts(prodRes.data)
-        const cats = Array.isArray(catRes.data) ? catRes.data : (catRes.data as any).results ?? []
-        setCategories(cats)
+    setError('')
+    setProductsLoadFailed(false)
+
+    if (!traderUuid) {
+      setProductsLoadFailed(true)
+      setError('Trader account could not be identified.')
+      setLoading(false)
+      return () => { active = false }
+    }
+
+    Promise.allSettled([tradersApi.products(traderUuid), productsApi.categories()])
+      .then(([productsResult, categoriesResult]) => {
+        if (!active) return
+
+        const loadErrors: string[] = []
+        if (productsResult.status === 'fulfilled' && Array.isArray(productsResult.value.data)) {
+          setProducts(productsResult.value.data)
+        } else {
+          setProductsLoadFailed(true)
+          loadErrors.push(productsResult.status === 'rejected'
+            ? getLoadError(productsResult.reason, 'products')
+            : 'The products service returned an unexpected response.')
+        }
+
+        if (categoriesResult.status === 'fulfilled') {
+          const categoryData = categoriesResult.value.data
+          const cats = Array.isArray(categoryData) ? categoryData : (categoryData as any).results ?? []
+          setCategories(cats)
+        } else {
+          loadErrors.push(getLoadError(categoriesResult.reason, 'categories'))
+        }
+
+        setError(loadErrors.join(' '))
       })
-      .finally(() => setLoading(false))
-  }, [traderUuid])
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => { active = false }
+  }, [traderUuid, reloadKey])
 
   const openAdd = () => {
     const firstCat = categories[0]
@@ -367,8 +414,15 @@ export default function TraderProducts() {
       </div>
 
       {error && (
-        <div role="alert" className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600">
+        <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600">
           {error}
+          <button
+            onClick={() => setReloadKey(key => key + 1)}
+            disabled={loading}
+            className="shrink-0 font-bold underline disabled:opacity-50"
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -390,7 +444,13 @@ export default function TraderProducts() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
           <Package size={40} color="#CBD5E1" className="mx-auto mb-3" />
-          <p className="text-[14px] text-[#64748B]">{search ? 'No products match your search.' : 'No products yet. Add your first product.'}</p>
+          <p className="text-[14px] text-[#64748B]">
+            {productsLoadFailed
+              ? 'Products could not be loaded. Retry the request above.'
+              : search
+                ? 'No products match your search.'
+                : 'No products yet. Add your first product.'}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
