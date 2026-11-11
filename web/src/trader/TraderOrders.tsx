@@ -124,6 +124,11 @@ export default function TraderOrders() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-bold text-[#071A2B] truncate">{item.product_name}</p>
+                    {Object.keys(item.variant_options ?? {}).length > 0 && (
+                      <p className="text-[11px] text-[#64748B]">
+                        {Object.entries(item.variant_options).map(([key, value]) => `${key.replace(/[_-]/g, ' ')}: ${value}`).join(' · ')}
+                      </p>
+                    )}
                     <p className="text-[12px] text-[#64748B]">Qty: {item.quantity} · UGX {money(Number(item.price) * item.quantity)}</p>
                   </div>
                 </div>

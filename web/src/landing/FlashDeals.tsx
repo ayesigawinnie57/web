@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Flame, ShoppingCart, Timer } from 'lucide-react'
 import { cartApi, productsApi, toFlashSale, watchPageResume, type FlashSale } from '../lib/api'
 import { Link as RouterLink } from 'react-router-dom'
@@ -28,6 +28,7 @@ function useCountdown(endsAt: Date) {
 }
 
 function FlashCard({ sale }: { sale: FlashSale }) {
+  const navigate = useNavigate()
   const { label, expired, urgent } = useCountdown(sale.endsAt)
   const { product } = sale
   const stockPercent = sale.stockLimit > 0 ? Math.max(0, Math.min(100, (sale.stockLeft / sale.stockLimit) * 100)) : 0
@@ -36,6 +37,10 @@ function FlashCard({ sale }: { sale: FlashSale }) {
   const addToCart = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
     event.stopPropagation()
+    if (product.variants.length > 0) {
+      navigate(`/shop/${product.slug}`)
+      return
+    }
     await cartApi.add(product, 1)
   }
 

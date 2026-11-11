@@ -317,6 +317,9 @@ export type ApiReview = {
 export type CartItem = {
   id: number
   product_id: number
+  variant_id?: number | null
+  variant_options?: Record<string, string | number | boolean>
+  variant_sku?: string
   product_name: string
   product_price: string
   product_image: string | null
@@ -339,6 +342,16 @@ export type CartQuote = {
   total: string
 }
 
+export type ApiOrderItem = {
+  id: number
+  product: ApiProduct | null
+  variant_id: number | null
+  variant_options: Record<string, string | number | boolean>
+  variant_sku: string
+  quantity: number
+  price: string
+}
+
 export type ApiOrder = {
   id: number
   code: string
@@ -346,7 +359,7 @@ export type ApiOrder = {
   subtotal: string
   delivery_fee: string
   total: string
-  items: unknown[]
+  items: ApiOrderItem[]
   delivery_address: string
   phone: string
   note: string
@@ -501,7 +514,13 @@ export const cartApi = {
   quote: async (districtId?: number) => {
     const guestItems = hasAccessToken()
       ? []
-      : getGuestCart().map(item => ({ product_id: item.product_id, quantity: item.quantity }))
+      : getGuestCart().map(item => ({
+        id: item.id,
+        product_id: item.product_id,
+        variant_id: item.variant_id ?? null,
+        variant_options: item.variant_options ?? {},
+        quantity: item.quantity,
+      }))
     const { data } = await api.post<CartQuote>('/api/orders/quote/', {
       items: guestItems,
       ...(districtId ? { district_id: districtId } : {}),
@@ -511,10 +530,11 @@ export const cartApi = {
   list: async () => hasAccessToken()
     ? (await api.get<CartItem[]>('/api/auth/cart/')).data
     : getGuestCart(),
-  add: async (product: Product, quantity: number) => {
+  add: async (product: Product, quantity: number, variantId?: number) => {
     if (hasAccessToken()) {
       const response = await api.post<CartItem>('/api/auth/cart/', {
         product_id: product.id,
+        variant_id: variantId ?? null,
         product_name: product.name,
         product_price: product.price,
         product_image: product.image ?? null,
@@ -528,11 +548,16 @@ export const cartApi = {
     }
 
     const items = getGuestCart()
-    const existing = items.find(item => item.product_id === product.id)
+    const existing = items.find(item =>
+      item.product_id === product.id && (item.variant_id ?? null) === (variantId ?? null),
+    )
     if (existing) existing.quantity += quantity
     else items.push({
-      id: product.id,
+      id: Math.max(Date.now(), ...items.map(item => item.id + 1)),
       product_id: product.id,
+      variant_id: variantId ?? null,
+      variant_options: product.variants.find(variant => variant.id === variantId)?.options ?? {},
+      variant_sku: product.variants.find(variant => variant.id === variantId)?.sku ?? '',
       product_name: product.name,
       product_price: String(product.price),
       product_image: product.image ?? null,
@@ -547,24 +572,24 @@ export const cartApi = {
     notifyCartUpdated()
     return item
   },
-  update: async (productId: number, quantity: number) => {
+  update: async (cartItemId: number, quantity: number) => {
     if (hasAccessToken()) {
-      const response = await api.patch<CartItem>(`/api/auth/cart/${productId}/`, { quantity })
+      const response = await api.patch<CartItem>(`/api/auth/cart/items/${cartItemId}/`, { quantity })
       notifyCartUpdated()
       return response.data
     }
-    const items = getGuestCart().map(item => item.product_id === productId ? { ...item, quantity } : item)
+    const items = getGuestCart().map(item => item.id === cartItemId ? { ...item, quantity } : item)
     saveGuestCart(items)
     notifyCartUpdated()
-    return items.find(item => item.product_id === productId)
+    return items.find(item => item.id === cartItemId)
   },
-  remove: async (productId: number) => {
+  remove: async (cartItemId: number) => {
     if (hasAccessToken()) {
-      await api.delete(`/api/auth/cart/${productId}/`)
+      await api.delete(`/api/auth/cart/items/${cartItemId}/`)
       notifyCartUpdated()
       return
     }
-    saveGuestCart(getGuestCart().filter(item => item.product_id !== productId))
+    saveGuestCart(getGuestCart().filter(item => item.id !== cartItemId))
     notifyCartUpdated()
   },
   sendAbandonedReminder: async () => {
@@ -598,7 +623,7 @@ export type ApiOrderDetail = {
   note: string
   cancel_reason: string
   has_service_rating: boolean
-  items: { id: number; product: ApiProduct; quantity: number; price: string }[]
+  items: ApiOrderItem[]
   created_at: string
   updated_at: string
 }
@@ -651,7 +676,7 @@ export type ApiAdminOrder = {
   cancel_reason: string
   user_name: string
   user_email: string
-  items: { id: number; product: ApiProduct; quantity: number; price: string }[]
+  items: ApiOrderItem[]
 }
 
 export type ApiAdminUser = {
@@ -1032,6 +1057,8 @@ export type ApiTraderOrderItem = {
   delivery_address: string
   product_name: string
   product_image: string | null
+  variant_options: Record<string, string | number | boolean>
+  variant_sku: string
   quantity: number
   price: string
   status: 'pending' | 'preparing' | 'ready'

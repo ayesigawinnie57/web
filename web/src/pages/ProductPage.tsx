@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { BadgeCheck, ChevronDown, ChevronRight, MapPin, Star, Users } from 'lucide-react'
-import { cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiPublicSeller, type Product, type ApiReview } from '../lib/api'
+import { cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiPublicSeller, type CartItem, type Product, type ApiReview } from '../lib/api'
 import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../landing/Navbar'
@@ -38,6 +38,15 @@ function percentLabel(value: number | null, lowerIsBetter = false) {
   if (normalized >= 40) return 'Poor'
   return 'Very poor'
 }
+
+const COLOR_SWATCHES: Record<string, string> = {
+  black: '#111827', white: '#FFFFFF', red: '#DC2626', blue: '#2563EB',
+  navy: '#1E3A8A', green: '#16A34A', yellow: '#EAB308', orange: '#EA580C',
+  purple: '#9333EA', pink: '#EC4899', gray: '#6B7280', grey: '#6B7280',
+  brown: '#92400E', beige: '#D6C3A5',
+}
+
+const optionLabel = (key: string) => key.replace(/[_-]/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
 
 function SellerInformationPanel({
   seller,
@@ -145,12 +154,13 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [activeImg, setActiveImg] = useState(0)
   const [qty, setQty] = useState(1)
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [wishlisted, setWishlisted] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [productDetailsExpanded, setProductDetailsExpanded] = useState(false)
   const [cartBusy, setCartBusy] = useState(false)
   const [cartToast, setCartToast] = useState<string | null>(null)
-  const [inCart, setInCart] = useState(false)
   const [followBusy, setFollowBusy] = useState(false)
   const [followError, setFollowError] = useState('')
 
@@ -189,6 +199,8 @@ export default function ProductPage() {
     setLoading(true)
     setActiveImg(0)
     setQty(1)
+    setSelectedOptions({})
+    setCartItems([])
     setWishlisted(false)
     setProductDetailsExpanded(false)
     setReviews([])
@@ -247,7 +259,7 @@ export default function ProductPage() {
       }
 
       cartApi.list().then(items => {
-        setInCart(items.some(i => i.product_id === p.id))
+        setCartItems(items)
       }).catch(() => undefined)
 
       productsApi.byCategory(p.category).then(({ data: d }) => {
@@ -308,8 +320,25 @@ export default function ProductPage() {
   const pageImage = product.image || 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789111152/Majo_Gadgets_logo_an2hbc.png'
   const pageUrl = `https://www.majogadgets.com/shop/${product.slug}`
 
-  const discount = product.originalPrice
-    ? Math.round((1 - product.price / product.originalPrice) * 100)
+  const activeVariants = product.variants.filter(variant => variant.is_active)
+  const hasVariants = product.variants.length > 0
+  const optionKeys = [...new Set(activeVariants.flatMap(variant => Object.keys(variant.options)))]
+  const selectedVariant = optionKeys.length > 0 && optionKeys.every(key => selectedOptions[key] !== undefined)
+    ? activeVariants.find(variant =>
+      optionKeys.every(key => String(variant.options[key]) === selectedOptions[key]),
+    )
+    : undefined
+  const selectionComplete = !hasVariants || (optionKeys.length > 0 && Boolean(selectedVariant))
+  const currentPrice = selectedVariant ? Number(selectedVariant.price) : product.price
+  const currentOriginalPrice = selectedVariant?.compare_at_price
+    ? Number(selectedVariant.compare_at_price)
+    : product.originalPrice
+  const currentStock = hasVariants ? (selectedVariant?.stock ?? 0) : product.stock
+  const inCart = cartItems.some(item =>
+    item.product_id === product.id && (item.variant_id ?? null) === (selectedVariant?.id ?? null),
+  )
+  const discount = currentOriginalPrice
+    ? Math.round((1 - currentPrice / currentOriginalPrice) * 100)
     : null
 
   const allImages = [
@@ -317,7 +346,7 @@ export default function ProductPage() {
     ...product.images.map(i => i.url).filter(u => u !== product.image),
   ]
 
-  const savings = product.originalPrice ? product.originalPrice - product.price : 0
+  const savings = currentOriginalPrice ? currentOriginalPrice - currentPrice : 0
   const shortDescription = product.shortDescription.trim() || 'A quality product from Majo Gadgets, selected for reliable everyday use and great value.'
   const longDescription = product.longDescription.trim() || shortDescription
   const deliveryDate = new Date()
@@ -369,11 +398,15 @@ export default function ProductPage() {
   }
 
   const addToCart = async () => {
+    if (!selectionComplete) {
+      showToast('Select all product options before adding to cart.')
+      return
+    }
     if (inCart) { navigate('/cart'); return }
     setCartBusy(true)
     try {
-      await cartApi.add(product, qty)
-      setInCart(true)
+      const item = await cartApi.add(product, qty, selectedVariant?.id)
+      setCartItems(current => [...current.filter(existing => existing.id !== item.id), item])
       showToast(`${product.name} added to cart`)
     } catch {
       showToast('Could not add to cart. Please try again.')
@@ -383,11 +416,15 @@ export default function ProductPage() {
   }
 
   const buyNow = async () => {
+    if (!selectionComplete) {
+      showToast('Select all product options before continuing.')
+      return
+    }
     if (inCart) { navigate('/cart'); return }
     setCartBusy(true)
     try {
-      await cartApi.add(product, qty)
-      setInCart(true)
+      const item = await cartApi.add(product, qty, selectedVariant?.id)
+      setCartItems(current => [...current.filter(existing => existing.id !== item.id), item])
       navigate('/cart')
     } catch {
       showToast('Could not add to cart. Please try again.')
@@ -395,6 +432,13 @@ export default function ProductPage() {
       setCartBusy(false)
     }
   }
+
+  const hasAvailableOptionValue = (key: string, value: string) => activeVariants.some(variant =>
+    String(variant.options[key]) === value
+    && Object.entries(selectedOptions).every(([selectedKey, selectedValue]) =>
+      selectedKey === key || String(variant.options[selectedKey]) === selectedValue,
+    ),
+  )
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -514,8 +558,10 @@ export default function ProductPage() {
                 {product.reviewsCount > 0 && (
                   <span className="text-[12px] text-[#64748B]">({product.reviewsCount} {product.reviewsCount === 1 ? 'review' : 'reviews'})</span>
                 )}
-                <span className={`ml-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${product.stock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
-                  {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                <span className={`ml-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${currentStock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                  {hasVariants && !selectedVariant
+                    ? 'Select options'
+                    : currentStock > 0 ? `${currentStock} in stock` : 'Out of stock'}
                 </span>
               </div>
 
@@ -525,9 +571,9 @@ export default function ProductPage() {
               {/* Pricing block */}
               <div>
                 <div className="flex items-baseline gap-3 flex-wrap mb-1">
-                  <span className="text-[30px] font-extrabold text-[#1E3A8A]">UGX {product.price.toLocaleString()}</span>
-                  {product.originalPrice && (
-                    <span className="text-[16px] text-[#94A3B8] line-through">UGX {product.originalPrice.toLocaleString()}</span>
+                  <span className="text-[30px] font-extrabold text-[#1E3A8A]">UGX {currentPrice.toLocaleString()}</span>
+                  {currentOriginalPrice && (
+                    <span className="text-[16px] text-[#94A3B8] line-through">UGX {currentOriginalPrice.toLocaleString()}</span>
                   )}
                 </div>
                 {savings > 0 && (
@@ -543,6 +589,91 @@ export default function ProductPage() {
                 <p className="text-[13px] text-[#475569] leading-relaxed whitespace-pre-line">{shortDescription}</p>
               </div>
 
+              {hasVariants && (
+                <div className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-4">
+                  <h2 className="text-[13px] font-extrabold text-[#071A2B]">Choose options</h2>
+                  {optionKeys.length === 0 ? (
+                    <p className="text-[12px] text-amber-700">No options are currently available.</p>
+                  ) : optionKeys.map(key => {
+                    const values = [...new Set(activeVariants
+                      .map(variant => variant.options[key])
+                      .filter(value => value !== undefined)
+                      .map(String))]
+                    const normalizedKey = key.toLowerCase()
+                    const isColor = normalizedKey.includes('color') || normalizedKey.includes('colour')
+                    const isSize = normalizedKey.includes('size')
+                    return (
+                      <fieldset key={key}>
+                        <legend className="mb-2 text-[12px] font-bold text-[#334155]">
+                          {optionLabel(key)}
+                          {selectedOptions[key] && <span className="ml-1 font-normal text-[#64748B]">· {selectedOptions[key]}</span>}
+                        </legend>
+                        {isColor ? (
+                          <div className="flex flex-wrap gap-2">
+                            {values.map(value => {
+                              const color = COLOR_SWATCHES[value.toLowerCase()]
+                              const selected = selectedOptions[key] === value
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  disabled={!hasAvailableOptionValue(key, value)}
+                                  aria-pressed={selected}
+                                  onClick={() => {
+                                    setSelectedOptions(current => ({ ...current, [key]: value }))
+                                    setQty(1)
+                                  }}
+                                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0]'}`}
+                                >
+                                  <span className="h-4 w-4 rounded-full border border-black/10" style={color ? { backgroundColor: color } : undefined} />
+                                  {value}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        ) : isSize ? (
+                          <div className="flex flex-wrap gap-2">
+                            {values.map(value => (
+                              <button
+                                key={value}
+                                type="button"
+                                disabled={!hasAvailableOptionValue(key, value)}
+                                aria-pressed={selectedOptions[key] === value}
+                                onClick={() => {
+                                  setSelectedOptions(current => ({ ...current, [key]: value }))
+                                  setQty(1)
+                                }}
+                                className={`min-w-12 rounded-lg border px-3 py-2 text-[12px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${selectedOptions[key] === value ? 'border-[#1E3A8A] bg-blue-50 text-[#1E3A8A]' : 'border-[#E2E8F0] text-[#334155]'}`}
+                              >{value}</button>
+                            ))}
+                          </div>
+                        ) : (
+                          <select
+                            value={selectedOptions[key] ?? ''}
+                            onChange={event => {
+                              setSelectedOptions(current => ({ ...current, [key]: event.target.value }))
+                              setQty(1)
+                            }}
+                            className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-[13px] text-[#071A2B]"
+                          >
+                            <option value="">Select {optionLabel(key).toLowerCase()}</option>
+                            {values.map(value => (
+                              <option key={value} value={value} disabled={!hasAvailableOptionValue(key, value)}>{value}</option>
+                            ))}
+                          </select>
+                        )}
+                      </fieldset>
+                    )
+                  })}
+                  {!selectionComplete && optionKeys.length > 0 && (
+                    <p className="text-[12px] font-semibold text-amber-700">Select each option to see availability and add this product.</p>
+                  )}
+                  {selectedVariant && currentStock === 0 && (
+                    <p className="text-[12px] font-semibold text-red-600">This option is currently out of stock.</p>
+                  )}
+                </div>
+              )}
+
               {/* Qty + actions */}
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-center gap-3">
@@ -554,7 +685,8 @@ export default function ProductPage() {
                     >−</button>
                     <span className="w-12 text-center text-[15px] font-extrabold text-[#071A2B]">{qty}</span>
                     <button
-                      onClick={() => setQty(q => Math.min(product.stock || 99, q + 1))}
+                      onClick={() => setQty(q => Math.min(currentStock || 99, q + 1))}
+                      disabled={currentStock === 0 || !selectionComplete}
                       className="w-10 h-11 flex items-center justify-center text-[#071A2B] hover:bg-[#F8FAFC] text-xl font-bold transition-colors"
                     >+</button>
                   </div>
@@ -564,7 +696,7 @@ export default function ProductPage() {
                 <div className="flex gap-3">
                   {/* Add to cart */}
                   <button
-                    disabled={product.stock === 0 || cartBusy}
+                    disabled={currentStock === 0 || !selectionComplete || cartBusy}
                     onClick={addToCart}
                     className="flex-1 h-11 bg-[#1E3A8A] text-white font-bold text-[14px] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
@@ -576,7 +708,7 @@ export default function ProductPage() {
 
                   {/* Buy now */}
                   <button
-                    disabled={product.stock === 0 || cartBusy}
+                    disabled={currentStock === 0 || !selectionComplete || cartBusy}
                     onClick={buyNow}
                     className="flex-1 h-11 border-2 border-[#1E3A8A] text-[#1E3A8A] font-bold text-[14px] rounded-xl hover:bg-[#EFF6FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >

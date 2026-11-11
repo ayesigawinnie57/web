@@ -163,6 +163,18 @@ export default function CheckoutPage() {
         <div className="mt-7 py-4 border-y border-[#E2E8F0] flex justify-between text-[14px]">
           <span>Order No.</span><strong>{order.code}</strong>
         </div>
+        <div className="mt-4 space-y-3 text-left">
+          {order.items.map(item => (
+            <div key={item.id} className="border-b border-[#E2E8F0] pb-3">
+              <p className="text-[13px] font-bold text-[#071A2B]">{item.product?.name ?? 'Product'} · Qty {item.quantity}</p>
+              {Object.keys(item.variant_options).length > 0 && (
+                <p className="mt-1 text-[12px] text-[#64748B]">
+                  {Object.entries(item.variant_options).map(([key, value]) => `${key.replace(/[_-]/g, ' ')}: ${value}`).join(' · ')}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
         <div className="mt-5 space-y-3 text-[13px] text-[#64748B]">
           <div className="flex justify-between"><span>Subtotal</span><span>UGX {money(order.subtotal)}</span></div>
           <div className="flex justify-between"><span>Delivery fee</span><span>UGX {money(order.delivery_fee)}</span></div>

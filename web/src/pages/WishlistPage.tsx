@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Heart, Trash2 } from 'lucide-react'
-import { wishlistApi, cartApi, hasAccessToken, notifyWishlistUpdated, toProduct, type WishlistItem } from '../lib/api'
+import { wishlistApi, cartApi, hasAccessToken, notifyWishlistUpdated, productsApi, toProduct, type WishlistItem } from '../lib/api'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
 export default function WishlistPage() {
+  const navigate = useNavigate()
   const [items, setItems] = useState<WishlistItem[]>([])
   const [loading, setLoading] = useState(true)
   const [removing, setRemoving] = useState<number | null>(null)
@@ -28,33 +29,17 @@ export default function WishlistPage() {
 
   const addToCart = async (item: WishlistItem) => {
     setAdding(item.product_id)
-    await cartApi.add(toProduct({
-      id: item.product_id,
-      slug: item.product_slug,
-      name: item.product_name,
-      price: item.product_price,
-      original_price: null,
-      image: item.product_image,
-      rating: item.product_rating,
-      reviews_count: 0,
-      stock: 1,
-      delivery_fee: '0',
-      short_description: '',
-      long_description: '',
-      seller_name: null,
-      brand: '',
-      condition: 'new',
-      tags: [],
-      specifications: {},
-      review_status: 'approved',
-      review_note: '',
-      variants: [],
-      is_active: true,
-      is_featured: false,
-      images: [],
-      category: { id: 0, name: item.product_category, slug: item.product_category },
-    }), 1)
-    setAdding(null)
+    try {
+      const { data } = await productsApi.bySlug(item.product_slug)
+      const product = toProduct(data)
+      if (product.variants.length > 0) {
+        navigate(`/shop/${product.slug}`)
+        return
+      }
+      await cartApi.add(product, 1)
+    } finally {
+      setAdding(null)
+    }
   }
 
   return (

@@ -91,19 +91,19 @@ export default function CartPage() {
     }
   }, [sendReminder])
 
-  const updateQuantity = async (item: Pick<CartItem, 'product_id'>, quantity: number) => {
-    if (quantity < 1) return removeItem(item.product_id)
+  const updateQuantity = async (item: Pick<CartItem, 'id'>, quantity: number) => {
+    if (quantity < 1) return removeItem(item.id)
     try {
-      await cartApi.update(item.product_id, quantity)
+      await cartApi.update(item.id, quantity)
       await loadCart()
     } catch {
       setError(true)
     }
   }
 
-  const removeItem = async (productId: number) => {
+  const removeItem = async (cartItemId: number) => {
     try {
-      await cartApi.remove(productId)
+      await cartApi.remove(cartItemId)
       await loadCart()
     } catch {
       setError(true)
@@ -153,6 +153,11 @@ export default function CartPage() {
                       <p className="text-[11px] font-bold uppercase tracking-wider text-[#1E3A8A]">{item.product_category}</p>
                       <div className="flex items-center gap-x-3 gap-y-1 flex-wrap mt-1">
                         <Link to={`/shop/${item.product_slug}`} title={item.product_name} className="max-w-[180px] sm:max-w-[280px] text-[15px] font-extrabold text-[#071A2B] whitespace-nowrap overflow-hidden text-ellipsis">{item.product_name}</Link>
+                        {Object.keys(item.variant_options ?? {}).length > 0 && (
+                          <span className="basis-full text-[12px] text-[#64748B]">
+                            {Object.entries(item.variant_options ?? {}).map(([key, value]) => `${key.replace(/[_-]/g, ' ')}: ${value}`).join(' · ')}
+                          </span>
+                        )}
                         {quoteUnavailable ? (
                           <span className="text-[12px] font-bold text-amber-700">Price unavailable</span>
                         ) : (
@@ -169,7 +174,7 @@ export default function CartPage() {
                         <span className="w-8 text-center text-[13px] font-bold">{item.quantity}</span>
                         <button onClick={() => updateQuantity(item, item.quantity + 1)} className="w-8 h-8 text-[#071A2B]">+</button>
                       </div>
-                      <button onClick={() => removeItem(item.product_id)} aria-label={`Delete ${item.product_name}`} title="Delete item" className="p-1 text-red-500 hover:text-red-700 transition-colors">
+                      <button onClick={() => removeItem(item.id)} aria-label={`Delete ${item.product_name}`} title="Delete item" className="p-1 text-red-500 hover:text-red-700 transition-colors">
                         <Trash2 className="w-4 h-4" strokeWidth={2} />
                       </button>
                     </div>

@@ -239,6 +239,11 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-bold text-[#071A2B] truncate">{item.product?.name}</p>
+                      {Object.keys(item.variant_options ?? {}).length > 0 && (
+                        <p className="text-[12px] text-[#64748B] mt-0.5">
+                          {Object.entries(item.variant_options).map(([key, value]) => `${key.replace(/[_-]/g, ' ')}: ${value}`).join(' · ')}
+                        </p>
+                      )}
                       <p className="text-[12px] text-[#64748B] mt-0.5">Qty: {item.quantity}</p>
                       {order.status === 'delivered' && item.product?.slug && (
                         <Link to={`/rate-product/${item.product.slug}?order_code=${encodeURIComponent(order.code)}`} className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-[#B45309] hover:underline">
