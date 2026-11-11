@@ -234,8 +234,8 @@ export type Product = {
   categoryName: string
 }
 
-const DEFAULT_PRODUCT_DESCRIPTION = 'A quality product from Majo Gadgets, selected for reliable everyday use and great value.'
-const DEFAULT_LONG_DESCRIPTION = 'This product is carefully selected by Majo Gadgets for dependable quality, practical everyday use, and excellent value. Product availability and delivery details are shown above.'
+const DEFAULT_PRODUCT_DESCRIPTION = 'Product details are provided by the seller. Contact us if you need more information.'
+const DEFAULT_LONG_DESCRIPTION = 'This product is available through the Majo Gadgets marketplace. Product availability and delivery details are shown above.'
 
 function unescapeHtml(str: string): string {
   const txt = document.createElement('textarea')
