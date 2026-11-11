@@ -135,7 +135,11 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false)
 
   useLayoutEffect(() => {
-    document.getElementById('app-bootstrap-loader')?.remove()
+    const remainingTime = Math.max(0, 4000 - performance.now())
+    const timer = window.setTimeout(() => {
+      document.getElementById('app-bootstrap-loader')?.remove()
+    }, remainingTime)
+    return () => window.clearTimeout(timer)
   }, [])
 
   useEffect(() => {
