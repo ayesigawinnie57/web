@@ -623,6 +623,7 @@ export type ApiOrderDetail = {
   note: string
   cancel_reason: string
   has_service_rating: boolean
+  payment: { status: string } | null
   items: ApiOrderItem[]
   created_at: string
   updated_at: string

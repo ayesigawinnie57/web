@@ -10,6 +10,7 @@ export default function PaymentCallbackPage() {
   const [params] = useSearchParams()
   const orderCode = params.get('OrderMerchantReference') ?? ''
   const [state, setState] = useState<State>('loading')
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     // If loaded inside Pesapal's iframe, break out to top-level
@@ -19,29 +20,41 @@ export default function PaymentCallbackPage() {
     }
     if (!orderCode) { setState('failed'); return }
 
-    // Poll up to 10 times (every 2s = 20s max) waiting for IPN to update payment status
     let attempts = 0
+    let timer: number | undefined
+    let cancelled = false
     const check = async () => {
       try {
         const order = await ordersApi.get(orderCode)
-        const paymentStatus = (order.data as any)?.payment?.status
-        if (paymentStatus === 'completed' || order.data.status === 'processing') {
+        if (cancelled) return
+        const paymentStatus = order.data.payment?.status
+        if (paymentStatus === 'completed') {
           setState('success')
-        } else if (paymentStatus === 'failed' || paymentStatus === 'invalid' || paymentStatus === 'cancelled' || order.data.status === 'cancelled') {
+          return
+        }
+        if (
+          paymentStatus === 'failed'
+          || paymentStatus === 'invalid'
+          || paymentStatus === 'cancelled'
+          || order.data.status === 'cancelled'
+        ) {
           setState('failed')
-        } else {
-          attempts++
-          if (attempts < 10) setTimeout(check, 2000)
-          else setState('pending')
+          return
         }
       } catch {
-        attempts++
-        if (attempts < 10) setTimeout(check, 2000)
-        else setState('failed')
+        // A temporary API error should not be shown as a failed payment.
       }
+      if (cancelled) return
+      attempts++
+      if (attempts >= 10) setState('pending')
+      timer = window.setTimeout(check, attempts < 10 ? 2000 : 8000)
     }
     check()
-  }, [orderCode])
+    return () => {
+      cancelled = true
+      if (timer !== undefined) window.clearTimeout(timer)
+    }
+  }, [orderCode, refreshKey])
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -76,11 +89,20 @@ export default function PaymentCallbackPage() {
             <Loader2 size={52} className="mx-auto text-yellow-500 animate-spin mb-6" />
             <p className="text-[22px] font-extrabold text-[#071A2B]">Payment Pending</p>
             <p className="text-[13px] text-[#64748B] mt-2 mb-8">
-              Your payment is still being processed. Check your order status shortly.
+              Pesapal is still confirming your payment. This page will update automatically when confirmation arrives.
             </p>
-            <Link to={`/orders/${orderCode}`} className="inline-block bg-[#1E3A8A] text-white px-8 py-3 rounded-xl text-[14px] font-bold hover:opacity-90">
-              View Order
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                type="button"
+                onClick={() => { setState('loading'); setRefreshKey(key => key + 1) }}
+                className="bg-[#1E3A8A] text-white px-8 py-3 rounded-xl text-[14px] font-bold hover:opacity-90"
+              >
+                Check payment now
+              </button>
+              <Link to={`/orders/${orderCode}`} className="border border-[#E2E8F0] text-[#071A2B] px-8 py-3 rounded-xl text-[14px] font-bold hover:bg-white">
+                View Order
+              </Link>
+            </div>
           </>
         )}
 
