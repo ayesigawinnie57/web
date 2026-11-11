@@ -7,6 +7,7 @@ import CookieBanner from './components/CookieBanner'
 import FloatingChatButton from './components/FloatingChatButton'
 import DesktopAdminEnforcer from './components/DesktopAdminEnforcer'
 import SwitchTransition from './components/SwitchTransition'
+import AppLoadingScreen from './components/AppLoadingScreen'
 import LandingPage from './landing'
 
 const ProductPage            = lazy(() => import('./pages/ProductPage'))
@@ -166,7 +167,7 @@ export default function App() {
       <SwitchOverlay />
       <FloatingChatButton />
       <CookieBanner />
-      <Suspense fallback={<div style={{ position: 'fixed', inset: 0, background: '#071A2B' }} />}>
+      <Suspense fallback={<AppLoadingScreen />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/open" element={<Navigate to="/admin" replace />} />
