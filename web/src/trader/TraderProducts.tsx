@@ -569,27 +569,28 @@ export default function TraderProducts() {
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {variantAttributes.map(attribute => (
-                    <div key={attribute.key}>
-                      <label className="block text-[12px] font-bold text-[#071A2B] mb-1.5">{attribute.name}{attribute.is_required ? ' *' : ''}</label>
-                      <div className="flex items-center gap-2">
+                    <div key={attribute.key} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3">
+                      <label className="mb-1.5 block text-[12px] font-bold text-[#071A2B]">{attribute.name}{attribute.is_required ? ' *' : ''} value</label>
+                      <p className="mb-2 text-[11px] leading-4 text-[#64748B]">Enter one {attribute.name.toLowerCase()} choice at a time.</p>
+                      <div className="space-y-2">
                         <input
-                          className="min-w-0 flex-1 px-3 py-2 border border-[#E2E8F0] rounded-lg text-[12px]"
+                          className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-[12px] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE]"
                           value={variantValueDrafts[attribute.key] ?? ''}
                           onChange={event => setVariantValueDrafts(current => ({ ...current, [attribute.key]: event.target.value }))}
-                          placeholder={`One ${attribute.name.toLowerCase()} value`}
+                          placeholder={attribute.key.toLowerCase().includes('size') ? 'e.g. S, M, L, 42' : `e.g. ${attribute.name}`}
                           aria-label={`${attribute.name} variant value`}
                         />
                         <button
                           type="button"
                           onClick={() => addCategoryVariant(attribute.key)}
                           disabled={!variantValueDrafts[attribute.key]?.trim()}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#071A2B] px-2.5 py-1.5 text-[11px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-lg border border-[#CBD5E1] bg-white px-3 py-1.5 text-[11px] font-bold text-[#334155] hover:border-[#071A2B] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <Plus size={13} /> Add Variant
+                          <Plus size={13} /> Add value
                         </button>
                       </div>
                       {(variantValues[attribute.key]?.length ?? 0) > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
+                        <div className="mt-3 flex flex-wrap gap-1 border-t border-[#E2E8F0] pt-2">
                           {variantValues[attribute.key].map(value => (
                             <span key={value} className="rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-semibold text-[#475569]">{value}</span>
                           ))}

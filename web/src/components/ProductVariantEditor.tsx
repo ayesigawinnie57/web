@@ -126,6 +126,7 @@ export default function ProductVariantEditor({
   basePrice: string
   baseOriginalPrice: string
 }) {
+  const [isExpanded, setIsExpanded] = useState(false)
   const [optionName, setOptionName] = useState('color')
   const [optionValue, setOptionValue] = useState('')
   const normalizedOptionName = optionName.trim().toLowerCase()
@@ -211,54 +212,101 @@ export default function ProductVariantEditor({
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-4">
-      <div>
-        <h2 className="text-[14px] font-extrabold text-[#071A2B]">Options &amp; variants</h2>
-        <p className="mt-1 text-[11px] text-[#64748B]">Optional. Add variants such as red, white, and green; shoppers can select an image and label.</p>
+    <section className="rounded-xl border border-[#CBD5E1] bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[14px] font-extrabold text-[#071A2B]">Options &amp; variants</h2>
+          <p className="mt-1 text-[12px] leading-5 text-[#64748B]">
+            Optional product choices such as color or size. Shoppers select a combination before adding it to their cart.
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[11px] font-bold text-[#475569]">
+          {variants.length} {variants.length === 1 ? 'variant' : 'variants'}
+        </span>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          aria-label="Variant option name"
-          className="min-w-0 flex-1 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[12px]"
-          placeholder="Option (e.g. size, gender, age)"
-          value={optionName}
-          onChange={event => setOptionName(event.target.value)}
-          list="product-variant-option-names"
-        />
-        <datalist id="product-variant-option-names">
-          {['Size', 'Gender', 'Age', 'Measurement', 'Color', 'Material'].map(value => <option key={value} value={value} />)}
-        </datalist>
-        <input
-          aria-label="Variant option value"
-          className="min-w-0 flex-1 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[12px]"
-          placeholder="Value (e.g. Red)"
-          value={optionValue}
-          onChange={event => setOptionValue(event.target.value)}
-          list="product-variant-suggested-values"
-        />
-        <datalist id="product-variant-suggested-values">
-          {suggestedValues.map(value => <option key={value} value={value} />)}
-        </datalist>
+      {isExpanded && (
+        <div className="mt-4 space-y-4 border-t border-[#E2E8F0] pt-4">
+          <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 sm:p-4">
+            <p className="mb-3 text-[12px] font-bold text-[#334155]">1. Choose an option and enter one value</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="product-variant-option-name" className="mb-1.5 block text-[12px] font-bold text-[#071A2B]">
+                  Option name
+                </label>
+                <input
+                  id="product-variant-option-name"
+                  aria-label="Variant option name"
+                  className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-[13px] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE]"
+                  placeholder="e.g. Color, Size, Gender"
+                  value={optionName}
+                  onChange={event => setOptionName(event.target.value)}
+                  list="product-variant-option-names"
+                />
+                <p className="mt-1 text-[11px] leading-4 text-[#64748B]">What kind of choice is this?</p>
+                <datalist id="product-variant-option-names">
+                  {['Size', 'Gender', 'Age', 'Measurement', 'Color', 'Material'].map(value => <option key={value} value={value} />)}
+                </datalist>
+              </div>
+              <div>
+                <label htmlFor="product-variant-option-value" className="mb-1.5 block text-[12px] font-bold text-[#071A2B]">
+                  Option value
+                </label>
+                <input
+                  id="product-variant-option-value"
+                  aria-label="Variant option value"
+                  className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-[13px] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE]"
+                  placeholder={normalizedOptionName.includes('size') ? 'e.g. S, M, L, 42' : 'e.g. Red'}
+                  value={optionValue}
+                  onChange={event => setOptionValue(event.target.value)}
+                  list="product-variant-suggested-values"
+                />
+                <p className="mt-1 text-[11px] leading-4 text-[#64748B]">One choice at a time; add another value for each color or size.</p>
+                <datalist id="product-variant-suggested-values">
+                  {suggestedValues.map(value => <option key={value} value={value} />)}
+                </datalist>
+              </div>
+            </div>
+          </div>
+          {variantError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">{variantError}</p>}
+          {variants.length > 0 ? (
+            <div className="rounded-xl border border-[#E2E8F0] px-3 sm:px-4">
+              <p className="pt-3 text-[12px] font-bold text-[#334155]">2. Set details for each combination</p>
+              {variants.map((variant, index) => (
+                <VariantRow
+                  key={`${index}-${JSON.stringify(variant.options)}`}
+                  variant={variant}
+                  index={index}
+                  onChange={patch => onChange(variants.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item))}
+                  onRemove={() => onChange(variants.filter((_, itemIndex) => itemIndex !== index))}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg bg-[#F8FAFC] px-3 py-2.5 text-[12px] leading-5 text-[#64748B]">
+              No variants yet. Add one value above, then set its price, stock, and image. If you skip variants, the product keeps its regular settings.
+            </p>
+          )}
+        </div>
+      )}
+      <div className="mt-4 flex justify-end border-t border-[#E2E8F0] pt-3">
+        {isExpanded && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(false)}
+            className="mr-2 rounded-lg border border-[#CBD5E1] px-4 py-2 text-[12px] font-bold text-[#475569] hover:bg-[#F8FAFC]"
+          >
+            Close
+          </button>
+        )}
         <button
           type="button"
-          onClick={addVariant}
-          disabled={!optionName.trim() || !optionValue.trim() || variants.length >= 100}
-          className="inline-flex items-center gap-1 rounded-lg bg-[#071A2B] px-2.5 py-1.5 text-[11px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => isExpanded ? addVariant() : setIsExpanded(true)}
+          disabled={isExpanded && (!optionName.trim() || !optionValue.trim() || variants.length >= 100)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#071A2B] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#12304A] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Plus size={13} /> Add Variant
+          <Plus size={14} /> Add Variant
         </button>
       </div>
-      {variantError && <p role="alert" className="text-[11px] text-red-600">{variantError}</p>}
-      {variants.map((variant, index) => (
-        <VariantRow
-          key={`${index}-${JSON.stringify(variant.options)}`}
-          variant={variant}
-          index={index}
-          onChange={patch => onChange(variants.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item))}
-          onRemove={() => onChange(variants.filter((_, itemIndex) => itemIndex !== index))}
-        />
-      ))}
-      {variants.length === 0 && <p className="text-[12px] text-[#94A3B8]">No variants added. The product will use its existing price, stock, and image settings.</p>}
     </section>
   )
 }
