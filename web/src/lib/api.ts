@@ -149,6 +149,7 @@ export type ApiProduct = {
   base_price?: string
   listed_price?: string
   original_price: string | null
+  original_listed_price?: string | null
   image: string | null
   rating: string
   reviews_count: number

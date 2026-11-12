@@ -43,7 +43,7 @@ export default function EditProduct() {
         const cats = Array.isArray(catsData) ? catsData : (catsData as any).results ?? []
         setCategories(cats)
         setExistingImage(p.image)
-        const loaded = { name: p.name, price: p.price, originalPrice: p.original_price ?? '', stock: String(p.stock), deliveryFee: p.delivery_fee ?? '0', categoryId: String(p.category?.id ?? ''), shortDescription: p.short_description ?? '', longDescription: p.long_description ?? '', isFeatured: p.is_featured, isNewDeal: p.is_new_deal ?? false, isActive: p.is_active }
+        const loaded = { name: p.name, price: p.listed_price ?? p.price, originalPrice: p.original_listed_price ?? p.original_price ?? '', stock: String(p.stock), deliveryFee: p.delivery_fee ?? '0', categoryId: String(p.category?.id ?? ''), shortDescription: p.short_description ?? '', longDescription: p.long_description ?? '', isFeatured: p.is_featured, isNewDeal: p.is_new_deal ?? false, isActive: p.is_active }
         setForm(loaded)
         setInitialForm(loaded)
         const loadedVariants = (p.variants ?? []).map(variant => ({
