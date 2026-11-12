@@ -328,12 +328,12 @@ export default function ProductPage() {
       optionKeys.every(key => String(variant.options[key]) === selectedOptions[key]),
     )
     : undefined
-  const selectionComplete = !hasVariants || (optionKeys.length > 0 && Boolean(selectedVariant))
+  const selectionComplete = Object.keys(selectedOptions).length === 0 || Boolean(selectedVariant)
   const currentPrice = selectedVariant ? Number(selectedVariant.price) : product.price
   const currentOriginalPrice = selectedVariant?.compare_at_price
     ? Number(selectedVariant.compare_at_price)
     : product.originalPrice
-  const currentStock = hasVariants ? (selectedVariant?.stock ?? 0) : product.stock
+  const currentStock = selectedVariant?.stock ?? product.stock
   const inCart = cartItems.some(item =>
     item.product_id === product.id && (item.variant_id ?? null) === (selectedVariant?.id ?? null),
   )
@@ -357,6 +357,12 @@ export default function ProductPage() {
       const imageIndex = allImages.indexOf(variant.image_url)
       if (imageIndex >= 0) setActiveImg(imageIndex)
     }
+  }
+
+  const selectMainProduct = () => {
+    setSelectedOptions({})
+    setQty(1)
+    setActiveImg(0)
   }
 
   const selectOption = (key: string, value: string) => {
@@ -589,7 +595,7 @@ export default function ProductPage() {
                   <span className="text-[12px] text-[#64748B]">({product.reviewsCount} {product.reviewsCount === 1 ? 'review' : 'reviews'})</span>
                 )}
                 <span className={`ml-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${currentStock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
-                  {hasVariants && !selectedVariant
+                  {Object.keys(selectedOptions).length > 0 && !selectedVariant
                     ? 'Select options'
                     : currentStock > 0 ? `${currentStock} in stock` : 'Out of stock'}
                 </span>
@@ -622,6 +628,14 @@ export default function ProductPage() {
               {hasVariants && (
                 <div className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-4">
                   <h2 className="text-[13px] font-extrabold text-[#071A2B]">Choose options</h2>
+                  <button
+                    type="button"
+                    aria-pressed={Object.keys(selectedOptions).length === 0}
+                    onClick={selectMainProduct}
+                    className={`rounded-lg border px-3 py-2 text-[12px] font-semibold ${Object.keys(selectedOptions).length === 0 ? 'border-[#1E3A8A] bg-blue-50 text-[#1E3A8A]' : 'border-[#E2E8F0] text-[#475569]'}`}
+                  >
+                    Main product
+                  </button>
                   {variantImageChoices.length > 0 && (
                     <fieldset>
                       <legend className="mb-2 text-[12px] font-bold text-[#334155]">Choose a version</legend>

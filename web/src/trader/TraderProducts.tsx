@@ -98,7 +98,8 @@ export default function TraderProducts() {
   const [form, setForm] = useState<Form>(EMPTY)
   const set = (k: keyof Form) => (v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
   const [specifications, setSpecifications] = useState<Record<string, unknown>>({})
-  const [variantValues, setVariantValues] = useState<Record<string, string>>({})
+  const [variantValues, setVariantValues] = useState<Record<string, string[]>>({})
+  const [variantValueDrafts, setVariantValueDrafts] = useState<Record<string, string>>({})
   const [variants, setVariants] = useState<VariantDraft[]>([])
 
   const [images, setImages] = useState<File[]>([])
@@ -113,49 +114,55 @@ export default function TraderProducts() {
   const selectedCategory = categories.find(category => String(category.id) === form.category_id)
   const variantAttributes = selectedCategory?.attributes.filter(attribute => attribute.is_variant) ?? []
 
-  const valuesForAttribute = (key: string, choices: string[]) =>
-    [...new Set((variantValues[key] ?? choices.join(',')).split(/[,\n]/).map(value => value.trim()).filter(Boolean))]
-
-  const variantCount = variantAttributes.reduce((count, attribute) =>
-    count * valuesForAttribute(attribute.key, attribute.choices).length, 1)
-
-  const generateVariants = () => {
-    if (!variantAttributes.length) {
-      setError('Mark at least one category attribute as a variant before generating variants.')
+  const addCategoryVariant = (attributeKey: string) => {
+    const value = variantValueDrafts[attributeKey]?.trim()
+    if (!value) return
+    const existingValues = variantValues[attributeKey] ?? []
+    if (existingValues.some(existing => existing.toLowerCase() === value.toLowerCase())) {
+      setError(`"${value}" is already added for this option.`)
       return
     }
-    if (variants.length + variantCount > 100) {
-      setError('This would create more than 100 variants. Reduce the option values first.')
-      return
-    }
+
+    const nextValues = { ...variantValues, [attributeKey]: [...existingValues, value] }
     let combinations: Record<string, string>[] = [{}]
     for (const attribute of variantAttributes) {
-      const values = valuesForAttribute(attribute.key, attribute.choices)
+      const values = nextValues[attribute.key] ?? []
       if (!values.length) {
-        setError(`Enter values for ${attribute.name}.`)
+        setVariantValues(nextValues)
+        setVariantValueDrafts(current => ({ ...current, [attributeKey]: '' }))
+        setError(`Added "${value}". Add a value for ${attribute.name} to create variants.`)
         return
       }
       combinations = combinations.flatMap(combination =>
-        values.map(value => ({ ...combination, [attribute.key]: value })),
+        values.map(optionValue => ({ ...combination, [attribute.key]: optionValue })),
       )
     }
+
     const optionKey = (options: Record<string, string | number | boolean>) =>
       JSON.stringify(Object.entries(options).sort(([left], [right]) => left.localeCompare(right)))
     const existingOptions = new Set(variants.map(variant => optionKey(variant.options)))
-    const additions = combinations
-      .filter(options => !existingOptions.has(optionKey(options)))
-      .map(options => ({
-        sku: '',
-        options,
-        price: form.price,
-        compare_at_price: form.original_price,
-        stock: '0',
-        weight: '',
-        is_active: true,
-        image_url: null,
-        image_file: null,
-      }))
-    setVariants(current => [...current, ...additions])
+    const additions = combinations.filter(options => !existingOptions.has(optionKey(options)))
+    if (variants.length + additions.length > 100) {
+      setError('A product cannot have more than 100 variants. Remove variants or option values first.')
+      return
+    }
+    setVariantValues(nextValues)
+    setVariantValueDrafts(current => ({ ...current, [attributeKey]: '' }))
+    if (!additions.length) {
+      setError(`The ${attributeKey} combinations already exist.`)
+      return
+    }
+    setVariants(current => [...current, ...additions.map(options => ({
+      sku: '',
+      options,
+      price: form.price,
+      compare_at_price: form.original_price,
+      stock: '0',
+      weight: '',
+      is_active: true,
+      image_url: null,
+      image_file: null,
+    }))])
     setError('')
   }
 
@@ -166,6 +173,7 @@ export default function TraderProducts() {
     set('category_id')(categoryId)
     setSpecifications({})
     setVariantValues({})
+    setVariantValueDrafts({})
     setVariants([])
   }
 
@@ -218,6 +226,7 @@ export default function TraderProducts() {
     setForm({ ...EMPTY, category_id: firstCat ? String(firstCat.id) : '' })
     setSpecifications({})
     setVariantValues({})
+    setVariantValueDrafts({})
     setVariants([])
     setImages([]); setPreviews([]); setExistingImage(null)
     setError(''); setEditing(null); setView('add')
@@ -242,6 +251,7 @@ export default function TraderProducts() {
     })
     setSpecifications(p.specifications ?? {})
     setVariantValues({})
+    setVariantValueDrafts({})
     setVariants((p.variant_list ?? []).map(variant => ({
       sku: variant.sku,
       options: variant.options,
@@ -543,24 +553,35 @@ export default function TraderProducts() {
                 <div className="grid sm:grid-cols-2 gap-3">
                   {variantAttributes.map(attribute => (
                     <div key={attribute.key}>
-                      <label className="block text-[12px] font-bold text-[#071A2B] mb-1.5">{attribute.name} values{attribute.is_required ? ' *' : ''}</label>
-                      <input
-                        className="w-full px-3 py-2.5 border border-[#E2E8F0] rounded-lg text-[12px]"
-                        value={variantValues[attribute.key] ?? attribute.choices.join(', ')}
-                        onChange={event => setVariantValues(current => ({ ...current, [attribute.key]: event.target.value }))}
-                        placeholder="e.g. Black, White"
-                      />
+                      <label className="block text-[12px] font-bold text-[#071A2B] mb-1.5">{attribute.name}{attribute.is_required ? ' *' : ''}</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          className="min-w-0 flex-1 px-3 py-2 border border-[#E2E8F0] rounded-lg text-[12px]"
+                          value={variantValueDrafts[attribute.key] ?? ''}
+                          onChange={event => setVariantValueDrafts(current => ({ ...current, [attribute.key]: event.target.value }))}
+                          placeholder={`One ${attribute.name.toLowerCase()} value`}
+                          aria-label={`${attribute.name} variant value`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => addCategoryVariant(attribute.key)}
+                          disabled={!variantValueDrafts[attribute.key]?.trim()}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#071A2B] px-2.5 py-1.5 text-[11px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Plus size={13} /> Add Variant
+                        </button>
+                      </div>
+                      {(variantValues[attribute.key]?.length ?? 0) > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {variantValues[attribute.key].map(value => (
+                            <span key={value} className="rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-semibold text-[#475569]">{value}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className={`text-[12px] ${variants.length + variantCount > 100 ? 'text-red-600' : 'text-[#64748B]'}`}>
-                    {variantCount} variant{variantCount === 1 ? '' : 's'} will be added.
-                  </p>
-                  <button type="button" onClick={generateVariants} disabled={variants.length + variantCount > 100} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#071A2B] text-white text-[11px] font-bold disabled:opacity-50">
-                    <Plus size={13} /> Add Variant
-                  </button>
-                </div>
+                <p className="text-[11px] text-[#64748B]">For products with multiple options, add at least one value for each option to create combinations.</p>
               </section>
             )}
 
