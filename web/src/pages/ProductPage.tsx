@@ -674,7 +674,7 @@ export default function ProductPage() {
                   {optionKeys.length === 0 ? (
                     <p className="text-[12px] text-amber-700">No options are currently available.</p>
                   ) : (
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid min-w-0 gap-4">
                     {optionKeys.map(key => {
                     const values = [...new Set(activeVariants
                       .map(variant => variant.options[key])
