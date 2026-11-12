@@ -426,8 +426,6 @@ export const productsApi = {
 export type ApiPublicSeller = {
   uuid: string
   business_name: string
-  location: string
-  district: string
   bio: string
   is_verified: boolean
   is_official?: boolean
@@ -1062,7 +1060,6 @@ export type ApiTraderSale = {
   quantity: number
   unit_price: string
   total: string
-  customer_name: string
   note: string
   created_at: string
 }
@@ -1081,10 +1078,8 @@ export type ApiTraderOrderItem = {
   id: number
   order_item_id: number
   order_code: string
-  order_id: number
   order_status: string
   order_created_at: string
-  delivery_address: string
   product_name: string
   product_image: string | null
   variant_options: Record<string, string | number | boolean>

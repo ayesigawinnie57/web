@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { BadgeCheck, ChevronDown, ChevronRight, MapPin, Star, Users } from 'lucide-react'
+import { BadgeCheck, ChevronDown, ChevronRight, Star, Users } from 'lucide-react'
 import { cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiPublicSeller, type CartItem, type Product, type ApiReview } from '../lib/api'
 import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
 import ProductCard from '../components/ProductCard'
@@ -92,7 +92,6 @@ function SellerInformationPanel({
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase text-[#94A3B8]">Seller Information</p>
           <h3 className="mt-1 break-words text-[16px] font-extrabold text-[#071A2B]">{seller.business_name}</h3>
-          {(seller.district || seller.location) && <p className="mt-1 flex items-start gap-1.5 text-[12px] text-[#64748B]"><MapPin size={13} className="mt-0.5 shrink-0" />{[seller.district, seller.location].filter(Boolean).join(' · ')}</p>}
         </div>
         {seller.is_official
           ? <span className="shrink-0 bg-[#071A2B] px-2 py-1 text-[10px] font-bold text-white">Official store</span>
@@ -229,8 +228,6 @@ export default function ProductPage() {
         setSeller({
           uuid: '',
           business_name: 'Majo Gadgets',
-          location: 'Uganda',
-          district: '',
           bio: 'Official Majo Gadgets store.',
           is_verified: false,
           is_official: true,

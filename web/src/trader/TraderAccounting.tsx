@@ -214,7 +214,7 @@ export default function TraderAccounting() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-[12px]">
                     <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                      <tr>{['Product', 'Customer', 'Qty', 'Total'].map(h => (
+                      <tr>{['Product', 'Qty', 'Total'].map(h => (
                         <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-[#94A3B8] uppercase">{h}</th>
                       ))}</tr>
                     </thead>
@@ -222,7 +222,6 @@ export default function TraderAccounting() {
                       {sales.map(item => (
                         <tr key={item.uuid}>
                           <td className="px-4 py-3 font-bold text-[#071A2B]">{item.product_name}</td>
-                          <td className="px-4 py-3 text-[#64748B]">{item.customer_name || '—'}</td>
                           <td className="px-4 py-3">{item.quantity}</td>
                           <td className="px-4 py-3 font-bold text-[#22C55E]">{fmt(item.total)}</td>
                         </tr>

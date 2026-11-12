@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Loader2, Package, Clock, ChefHat, CheckCircle2, MapPin } from 'lucide-react'
+import { Loader2, Package, Clock, ChefHat, CheckCircle2 } from 'lucide-react'
 import { tradersApi, type ApiTraderOrderItem } from '../lib/api'
 
 const STATUS_CONFIG = {
@@ -132,14 +132,6 @@ export default function TraderOrders() {
                     <p className="text-[12px] text-[#64748B]">Qty: {item.quantity} · UGX {money(Number(item.price) * item.quantity)}</p>
                   </div>
                 </div>
-
-                {/* Delivery address */}
-                {item.delivery_address && (
-                  <div className="flex items-start gap-1.5 text-[12px] text-[#64748B]">
-                    <MapPin size={12} className="shrink-0 mt-0.5 text-[#94A3B8]" />
-                    <span className="truncate">{item.delivery_address}</span>
-                  </div>
-                )}
 
                 {/* Action buttons */}
                 {item.order_status !== 'delivered' && item.order_status !== 'cancelled' && (

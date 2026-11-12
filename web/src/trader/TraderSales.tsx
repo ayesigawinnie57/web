@@ -52,7 +52,7 @@ export default function TraderSales() {
   const [products, setProducts] = useState<ApiTraderProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
-  const [form, setForm] = useState({ product: '', product_name: '', quantity: '1', unit_price: '', customer_name: '', note: '' })
+  const [form, setForm] = useState({ product: '', product_name: '', quantity: '1', unit_price: '', note: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [range, setRange] = useState<'7' | '30'>('30')
@@ -120,12 +120,11 @@ export default function TraderSales() {
         quantity: Number(form.quantity),
         unit_price: Number(form.unit_price),
         total,
-        customer_name: form.customer_name,
         note: form.note,
       })
       setSales(p => [r.data, ...p])
       setModal(false)
-      setForm({ product: '', product_name: '', quantity: '1', unit_price: '', customer_name: '', note: '' })
+      setForm({ product: '', product_name: '', quantity: '1', unit_price: '', note: '' })
     } catch { setError('Failed to record sale.') }
     finally { setSaving(false) }
   }
@@ -214,7 +213,7 @@ export default function TraderSales() {
           <div className="overflow-x-auto">
             <table className="w-full text-[12px]">
               <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                <tr>{['Product', 'Customer', 'Qty', 'Unit Price', 'Total', 'When'].map(h => (
+                <tr>{['Product', 'Qty', 'Unit Price', 'Total', 'When'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-[#94A3B8] uppercase">{h}</th>
                 ))}</tr>
               </thead>
@@ -222,7 +221,6 @@ export default function TraderSales() {
                 {sales.map(s => (
                   <tr key={s.uuid}>
                     <td className="px-4 py-3 font-bold text-[#071A2B]">{s.product_name}</td>
-                    <td className="px-4 py-3 text-[#64748B]">{s.customer_name || '—'}</td>
                     <td className="px-4 py-3">{s.quantity}</td>
                     <td className="px-4 py-3">{fmt(s.unit_price)}</td>
                     <td className="px-4 py-3 font-bold text-[#22C55E]">{fmt(s.total)}</td>
@@ -260,7 +258,6 @@ export default function TraderSales() {
               {[
                 { k: 'quantity', label: 'Quantity', type: 'number' },
                 { k: 'unit_price', label: 'Unit Price (UGX)', type: 'number' },
-                { k: 'customer_name', label: 'Customer Name (optional)', type: 'text' },
               ].map(({ k, label, type }) => (
                 <div key={k}>
                   <label className="text-[11px] font-bold text-[#64748B] mb-1 block">{label}</label>
