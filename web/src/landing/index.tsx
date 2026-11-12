@@ -47,12 +47,12 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
-      <div className="pt-[150px] lg:pt-[156px] pb-16 lg:pb-0">
+      <div className="pb-20 pt-[112px] lg:pb-0 lg:pt-[128px]">
         <Hero />
-        {loading ? <ProductsSkeleton /> : <Products products={products} />}
-        <PromoBanners />
-        <FlashDeals products={[]} />
         <ShopByCategory />
+        <FlashDeals products={[]} />
+        <PromoBanners />
+        {loading ? <ProductsSkeleton /> : <Products products={products} />}
         {!loading && <Recommended products={products} nextPage={nextProductsPage} featuredIds={new Set(products.slice(0, 12).map(p => p.id))} />}
       </div>
       <Footer />
@@ -70,7 +70,7 @@ function ProductsSkeleton() {
             <div className="h-3 w-28 bg-[#E2E8F0] rounded animate-pulse mt-1.5" />
           </div>
         </div>
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-3">
           {Array.from({ length: 12 }).map((_, i) => (
             <div key={i} className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
               <div className="aspect-square bg-[#E2E8F0] animate-pulse" />

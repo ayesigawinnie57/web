@@ -12,7 +12,7 @@ export default function ProductCard({ product }: { product: Product }) {
     <Link
       to={`/shop/${product.slug}`}
       onClick={() => trackProductClick(product.id, product.category)}
-      className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden hover:shadow-md transition-shadow group"
+      className="group overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#CBD5E1] hover:shadow-lg"
     >
       <div className="relative bg-[#F8FAFC] aspect-square overflow-hidden">
         {product.image
@@ -38,23 +38,23 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         </div>
         {discount && (
-          <div className="absolute top-1 left-1 bg-[#EF4444] rounded-[6px] px-1 py-0.5">
-            <span className="text-white text-[8px] font-bold">-{discount}%</span>
+          <div className="absolute left-2 top-2 rounded-md bg-[#EF4444] px-1.5 py-1">
+            <span className="text-[9px] font-extrabold text-white">-{discount}%</span>
           </div>
         )}
       </div>
-      <div className="p-[7px]">
-        <p className="text-[10px] font-bold text-[#071A2B] leading-[14px] truncate mb-1">{product.name}</p>
+      <div className="p-2.5 sm:p-3">
+        <p className="mb-1.5 truncate text-[11px] font-bold leading-4 text-[#071A2B] sm:text-[12px]">{product.name}</p>
         <div className="flex items-center flex-wrap gap-1">
-          <span className="text-[10px] font-extrabold text-[#1E3A8A]">UGX {product.price.toLocaleString()}</span>
+          <span className="text-[11px] font-extrabold text-[#1E3A8A] sm:text-[12px]">UGX {product.price.toLocaleString()}</span>
           {product.originalPrice && (
-            <span className="text-[8px] text-[#94A3B8] line-through">UGX {product.originalPrice.toLocaleString()}</span>
+            <span className="text-[9px] text-[#94A3B8] line-through">UGX {product.originalPrice.toLocaleString()}</span>
           )}
         </div>
         {product.rating > 0 && (
           <div className="flex items-center gap-0.5 mt-1">
-            <span className="text-yellow-400 text-[11px]">★</span>
-            <span className="text-[9px] text-[#64748B] font-semibold">{product.rating.toFixed(1)}</span>
+            <span className="text-[12px] text-yellow-400">★</span>
+            <span className="text-[10px] font-semibold text-[#64748B]">{product.rating.toFixed(1)}</span>
           </div>
         )}
       </div>

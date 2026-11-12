@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, Download, ShoppingCart, ShieldCheck, Home, UserRound, ShoppingBag, Store, X } from 'lucide-react'
+import { ArrowRight, Bell, ChevronRight, Download, ShoppingCart, ShieldCheck, Home, UserRound, ShoppingBag, Store, X } from 'lucide-react'
 import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, getCategoryUrl, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
@@ -146,6 +146,16 @@ export default function Navbar() {
 
   const [catNav, setCatNav] = useState<ApiCategory[]>([])
   const [showCategoryMenu, setShowCategoryMenu] = useState(false)
+  const [hoveredDepartmentId, setHoveredDepartmentId] = useState<number | null>(null)
+  const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(null)
+  const departmentItems = catNav.filter(category => category.parent_id === null)
+  const categoryItems = catNav.filter(category => category.parent_id === hoveredDepartmentId)
+  const subcategoryItems = catNav.filter(category => category.parent_id === hoveredCategoryId)
+
+  const openCategoryMenu = () => {
+    setShowCategoryMenu(true)
+    setHoveredDepartmentId(current => current ?? departmentItems[0]?.id ?? null)
+  }
 
   useEffect(() => {
     productsApi.categories().then(({ data }) => {
@@ -377,16 +387,117 @@ export default function Navbar() {
         {/* Category bar — mobile + desktop */}
         {catNav.length > 0 && (
           <div className="relative border-t border-[#E2E8F0]">
-            <div className="flex items-center max-w-7xl mx-auto w-full px-2 lg:px-4 pr-14 lg:pr-4 overflow-x-auto scrollbar-none">
-              <button
-                type="button"
-                aria-expanded={showCategoryMenu}
-                onClick={() => setShowCategoryMenu(value => !value)}
-                className="mr-2 flex shrink-0 items-center gap-1.5 rounded-lg bg-[#071A2B] px-3 py-2 text-[10px] font-bold text-white lg:text-[12px]"
+            <div className="mx-auto flex w-full max-w-7xl items-center px-2 pr-14 lg:px-4 lg:pr-4">
+              <Link
+                to="/categories"
+                onClick={() => { closeSearch(); setShowCategoryMenu(false) }}
+                className="mr-2 flex shrink-0 items-center gap-1.5 rounded-lg bg-[#071A2B] px-3 py-2 text-[10px] font-bold text-white lg:hidden"
               >
                 <ShoppingBag size={14} /> All Categories
-              </button>
-              {catNav.filter(cat => cat.parent_id === null).map((cat) => (
+              </Link>
+              <div
+                className="relative mr-2 hidden shrink-0 lg:block"
+                onMouseEnter={openCategoryMenu}
+                onMouseLeave={() => setShowCategoryMenu(false)}
+                onKeyDown={event => {
+                  if (event.key === 'Escape') setShowCategoryMenu(false)
+                }}
+                onBlur={event => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    setShowCategoryMenu(false)
+                  }
+                }}
+              >
+                <button
+                  type="button"
+                  aria-expanded={showCategoryMenu}
+                  aria-haspopup="true"
+                  onFocus={openCategoryMenu}
+                  onClick={() => showCategoryMenu ? setShowCategoryMenu(false) : openCategoryMenu()}
+                  className="flex items-center gap-2 !rounded-lg bg-[#071A2B] px-3.5 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#12344A]"
+                >
+                  <ShoppingBag size={15} /> All Categories <ChevronRight className={`h-3.5 w-3.5 transition-transform ${showCategoryMenu ? 'rotate-90' : ''}`} />
+                </button>
+                {showCategoryMenu && (
+                  <div className="absolute left-0 top-full z-[70] flex max-h-[min(70vh,560px)] w-[min(850px,calc(100vw-2rem))] overflow-hidden rounded-b-2xl border border-t-0 border-[#E2E8F0] bg-white shadow-2xl">
+                    <div className="w-[30%] min-w-[220px] overflow-y-auto border-r border-[#E2E8F0] bg-[#F8FAFC] py-2">
+                      <p className="px-4 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Departments</p>
+                      {departmentItems.map(department => (
+                        <div
+                          key={department.id}
+                          onMouseEnter={() => {
+                            setHoveredDepartmentId(department.id)
+                            setHoveredCategoryId(null)
+                          }}
+                          onFocus={() => {
+                            setHoveredDepartmentId(department.id)
+                            setHoveredCategoryId(null)
+                          }}
+                          className={`flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold transition-colors ${hoveredDepartmentId === department.id ? 'bg-white text-[#1E3A8A]' : 'text-[#334155] hover:bg-white hover:text-[#1E3A8A]'}`}
+                        >
+                          <Link
+                            to={getCategoryUrl(catNav, department)}
+                            onClick={() => setShowCategoryMenu(false)}
+                            className="min-w-0 flex-1 truncate"
+                          >
+                            {department.name}
+                          </Link>
+                          <ChevronRight size={14} className="shrink-0 text-[#94A3B8]" />
+                        </div>
+                      ))}
+                      <Link
+                        to="/categories"
+                        onClick={() => setShowCategoryMenu(false)}
+                        className="mt-2 flex items-center gap-2 border-t border-[#E2E8F0] px-4 pt-3 text-[11px] font-bold text-[#1E3A8A] hover:text-[#F97316]"
+                      >
+                        Browse all departments <ArrowRight size={13} />
+                      </Link>
+                    </div>
+                    {hoveredDepartmentId !== null && (
+                      <div className="w-[35%] min-w-[240px] overflow-y-auto border-r border-[#E2E8F0] py-2">
+                        <p className="px-4 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Categories</p>
+                        {categoryItems.length ? categoryItems.map(category => {
+                          const hasSubcategories = catNav.some(item => item.parent_id === category.id)
+                          return (
+                            <div
+                              key={category.id}
+                              onMouseEnter={() => setHoveredCategoryId(category.id)}
+                              onFocus={() => setHoveredCategoryId(category.id)}
+                              className={`flex items-center gap-2 px-4 py-2.5 text-[12px] font-medium transition-colors ${hoveredCategoryId === category.id ? 'bg-[#EFF6FF] text-[#1E3A8A]' : 'text-[#475569] hover:bg-[#F8FAFC] hover:text-[#1E3A8A]'}`}
+                            >
+                              <Link
+                                to={getCategoryUrl(catNav, category)}
+                                onClick={() => setShowCategoryMenu(false)}
+                                className="min-w-0 flex-1 truncate"
+                              >
+                                {category.name}
+                              </Link>
+                              {hasSubcategories && <ChevronRight size={14} className="shrink-0 text-[#94A3B8]" />}
+                            </div>
+                          )
+                        }) : <p className="px-4 py-3 text-[12px] text-[#94A3B8]">No categories yet.</p>}
+                      </div>
+                    )}
+                    {subcategoryItems.length > 0 && (
+                      <div className="min-w-[220px] flex-1 overflow-y-auto bg-white py-2">
+                        <p className="px-4 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Subcategories</p>
+                        {subcategoryItems.map(subcategory => (
+                          <Link
+                            key={subcategory.id}
+                            to={getCategoryUrl(catNav, subcategory)}
+                            onClick={() => setShowCategoryMenu(false)}
+                            className="block px-4 py-2.5 text-[12px] text-[#475569] transition-colors hover:bg-[#F8FAFC] hover:text-[#1E3A8A]"
+                          >
+                            {subcategory.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex min-w-0 flex-1 items-center overflow-x-auto scrollbar-none">
+                {departmentItems.map((cat) => (
                 <Link
                   key={cat.slug}
                   to={getCategoryUrl(catNav, cat)}
@@ -398,51 +509,9 @@ export default function Navbar() {
                     : <ShoppingBag size={14} strokeWidth={2} />}
                   {cat.name}
                 </Link>
-              ))}
-            </div>
-            {showCategoryMenu && (
-              <div className="absolute left-0 right-0 top-full z-[70] max-h-[75vh] overflow-y-auto border-y border-[#E2E8F0] bg-white shadow-xl">
-                <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-5 sm:grid-cols-3 lg:grid-cols-5">
-                  {catNav.filter(cat => cat.parent_id === null).map(department => {
-                    const children = catNav.filter(category => category.parent_id === department.id)
-                    return (
-                      <section key={department.id}>
-                        <Link
-                          to={getCategoryUrl(catNav, department)}
-                          onClick={() => setShowCategoryMenu(false)}
-                          className="text-[12px] font-extrabold text-[#071A2B] hover:text-[#1E3A8A]"
-                        >
-                          {department.name}
-                        </Link>
-                        <div className="mt-2 space-y-1.5">
-                          {children.map(child => (
-                            <div key={child.id}>
-                              <Link
-                                to={getCategoryUrl(catNav, child)}
-                                onClick={() => setShowCategoryMenu(false)}
-                                className="block text-[11px] font-semibold text-[#475569] hover:text-[#1E3A8A]"
-                              >
-                                {child.name}
-                              </Link>
-                              {catNav.filter(category => category.parent_id === child.id).map(subcategory => (
-                                <Link
-                                  key={subcategory.id}
-                                  to={getCategoryUrl(catNav, subcategory)}
-                                  onClick={() => setShowCategoryMenu(false)}
-                                  className="ml-2 mt-1 block text-[10px] text-[#64748B] hover:text-[#1E3A8A]"
-                                >
-                                  {subcategory.name}
-                                </Link>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    )
-                  })}
-                </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         )}
       </nav>

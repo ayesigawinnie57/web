@@ -64,7 +64,7 @@ export default function PromoBanners() {
         track.style.transform = 'translateX(0)'
         transitionTimer.current = null
       }, 560)
-    }, 2000)
+    }, 6000)
 
     return () => {
       window.clearInterval(interval)
@@ -113,7 +113,7 @@ export default function PromoBanners() {
           </div>
           <div className="mt-2 flex justify-center gap-2" aria-label="Choose banner">
             {PROMOS.map((promo, dotIndex) => (
-              <button key={promo.title} onClick={() => selectSlide(dotIndex)} aria-label={`Show ${promo.title}`} aria-current={index === dotIndex ? 'true' : undefined} className={`h-1.5 rounded-full transition-all ${index === dotIndex ? 'w-7 bg-[#071A2B]' : 'w-2 bg-[#CBD5E1]'}`} />
+              <button key={promo.title} onClick={() => selectSlide(dotIndex)} aria-label={`Show ${promo.title}`} aria-current={index === dotIndex ? 'true' : undefined} className={`h-1.5 !rounded-full transition-all ${index === dotIndex ? 'w-7 bg-[#071A2B]' : 'w-2 bg-[#CBD5E1]'}`} />
             ))}
           </div>
         </div>

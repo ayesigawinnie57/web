@@ -22,7 +22,7 @@ const SLIDES = [
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152114/eletronics.png',
   },
   {
-    slug: 'appliances',
+    slug: 'home-appliances',
     label: 'Appliances',
     icon: WashingMachine,
     color: '#15803D',
@@ -31,7 +31,7 @@ const SLIDES = [
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152114/appl.png',
   },
   {
-    slug: 'fashion',
+    slug: 'fashion-accessories',
     label: 'Fashion',
     icon: Shirt,
     color: '#7C3AED',
@@ -40,7 +40,7 @@ const SLIDES = [
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152177/Fashion.png',
   },
   {
-    slug: 'computing',
+    slug: 'computers-laptops',
     label: 'Computing',
     icon: Monitor,
     color: '#DC2626',
@@ -49,7 +49,7 @@ const SLIDES = [
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152114/Computing.png',
   },
   {
-    slug: 'health-beauty',
+    slug: 'beauty-personal-care',
     label: 'Health & Beauty',
     icon: Sparkles,
     color: '#0369A1',
@@ -58,7 +58,7 @@ const SLIDES = [
     image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789152116/pppp.png',
   },
   {
-    slug: 'baby-products',
+    slug: 'baby-kids',
     label: 'Baby Products',
     icon: ShoppingBag,
     color: '#B45309',
@@ -185,7 +185,7 @@ export default function Hero() {
           <button
             onClick={() => goTo((index - 1 + SLIDES.length) % SLIDES.length)}
             aria-label="Show previous category"
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-10 md:h-10 !rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition"
           >
             <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
           </button>
@@ -193,7 +193,7 @@ export default function Hero() {
           <button
             onClick={() => goTo((index + 1) % SLIDES.length)}
             aria-label="Show next category"
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-10 md:h-10 !rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition"
           >
             <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
           </button>
@@ -207,7 +207,7 @@ export default function Hero() {
               onClick={() => goTo(i)}
               aria-label={`Show ${s.label}`}
               aria-current={i === index ? 'true' : undefined}
-              className="h-1.5 rounded-full transition-all duration-300"
+              className="h-1.5 !rounded-full transition-all duration-300"
               style={{ width: i === index ? 20 : 6, backgroundColor: i === index ? s.color : '#CBD5E1' }}
             />
           ))}

@@ -1,30 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { BookOpen, Grid2X2, Home, ShoppingBag, Sparkles, Trophy } from 'lucide-react'
+import { ArrowRight, BookOpen, Grid2X2, Home, Search, ShoppingBag, Sparkles, Trophy } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 import { getCategoryUrl, productsApi, watchPageResume, type ApiCategory } from '../lib/api'
 
-type Category = ApiCategory & { count: number }
 const icons = [Grid2X2, ShoppingBag, Sparkles, BookOpen, Home, Trophy]
 const colors = ['#1E3A8A', '#E11D48', '#D97706', '#7C3AED', '#0F766E', '#15803D']
-const backgrounds = ['#EFF6FF', '#FFF1F2', '#FFFBEB', '#F5F3FF', '#F0FDFA', '#F0FDF4']
 
 export default function CategoryPage() {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<ApiCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     let active = true
     const loadCategories = () => {
-      productsApi.categories().then(categoryResponse => {
-        const rawCategories = Array.isArray(categoryResponse.data) ? categoryResponse.data : (categoryResponse.data as any).results ?? []
+      productsApi.categories().then(({ data }) => {
+        const rawCategories = Array.isArray(data) ? data : (data as any).results ?? []
         if (active) {
-          setCategories(rawCategories
-            .filter((category: ApiCategory) => category.parent_id === null)
-            .map((category: ApiCategory) => ({ ...category, count: category.product_count })))
+          setCategories(rawCategories)
           setError(false)
         }
       }).catch(() => {
@@ -41,17 +38,144 @@ export default function CategoryPage() {
     }
   }, [])
 
+  const departments = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    return categories
+      .filter(category => category.parent_id === null)
+      .map(category => {
+        const children = categories.filter(item => item.parent_id === category.id)
+        const descendants = [
+          ...children,
+          ...children.flatMap(child => categories.filter(item => item.parent_id === child.id)),
+        ]
+        const matchesDepartment = !term || category.name.toLowerCase().includes(term)
+        const matchingDescendants = term
+          ? descendants.filter(item => item.name.toLowerCase().includes(term))
+          : children
+
+        return {
+          category,
+          matchesDepartment,
+          visibleCategories: matchesDepartment ? children : matchingDescendants,
+          hasMatch: matchesDepartment || matchingDescendants.length > 0,
+        }
+      })
+      .filter(item => item.hasMatch)
+  }, [categories, search])
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="min-h-screen bg-[#F4F7FB]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Helmet>
-        <title>Categories – Majo Gadgets</title>
-        <meta name="description" content="Browse all product categories on Majo Gadgets. Find electronics, accessories, and more." />
+        <title>All Categories – Majo Gadgets</title>
+        <meta name="description" content="Browse all product departments and categories on Majo Gadgets. Find electronics, fashion, home essentials, and more." />
         <link rel="canonical" href="https://www.majogadgets.com/categories" />
       </Helmet>
       <Navbar />
-      <main className="pt-14 lg:pt-16 max-w-6xl mx-auto px-4 py-8">
-        <div className="mb-8"><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1E3A8A]">Explore Majo Gadgets</p><h1 className="text-3xl font-extrabold text-[#071A2B] mt-1">Categories</h1><p className="text-[13px] text-[#64748B] mt-2">Find products by category.</p></div>
-        {loading ? <div className="py-20 text-center text-[13px] text-[#64748B]">Loading categories...</div> : error ? <div className="py-20 text-center"><p className="font-bold text-[#071A2B]">Could not load categories</p><p className="text-[13px] text-[#64748B] mt-2">Please try again in a moment.</p></div> : categories.length === 0 ? <div className="py-20 text-center text-[13px] text-[#64748B]">No categories yet.</div> : <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">{categories.map((category, index) => { const Icon = icons[index % icons.length]; return <Link key={category.id} to={getCategoryUrl(categories, category)} className="group bg-white border border-[#E2E8F0] hover:border-[#1E3A8A] transition-colors overflow-hidden"><div className="aspect-[1.4] flex items-center justify-center overflow-hidden" style={{ backgroundColor: backgrounds[index % backgrounds.length] }}>{category.image ? <img src={category.image} alt={category.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" /> : <Icon size={42} color={colors[index % colors.length]} strokeWidth={1.7} />}</div><div className="p-4"><h2 className="text-[15px] font-extrabold text-[#071A2B] truncate">{category.name}</h2><p className="text-[12px] text-[#64748B] mt-1">{category.count} item{category.count === 1 ? '' : 's'}</p></div></Link> })}</div>}
+      <main className="mx-auto max-w-[1440px] px-4 pb-20 pt-[112px] lg:px-6 lg:pb-12 lg:pt-[128px]">
+        <header className="relative mb-7 overflow-hidden rounded-3xl bg-gradient-to-br from-[#071A2B] via-[#12344A] to-[#1E3A8A] px-5 py-7 text-white shadow-lg shadow-[#071A2B]/10 sm:px-8 sm:py-9">
+          <div className="pointer-events-none absolute -right-10 -top-20 h-64 w-64 rounded-full border-[36px] border-white/[0.04]" />
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-200">Explore Majo Gadgets</p>
+              <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">Shop by category</h1>
+              <p className="mt-2 text-[13px] leading-6 text-white/75">
+                Browse departments, discover new collections, and find just what you need.
+              </p>
+            </div>
+            <label className="relative block w-full lg:max-w-sm">
+              <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B]" />
+              <input
+                type="search"
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                placeholder="Search departments or categories"
+                aria-label="Search departments or categories"
+                className="h-12 w-full rounded-xl border border-white/30 bg-white pl-11 pr-4 text-[13px] text-[#071A2B] outline-none placeholder:text-[#94A3B8] focus:ring-4 focus:ring-white/20"
+              />
+            </label>
+          </div>
+        </header>
+
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-extrabold text-[#071A2B]">All departments</h2>
+            <p className="mt-0.5 text-[12px] text-[#64748B]">
+              {search ? `${departments.length} matching department${departments.length === 1 ? '' : 's'}` : `${departments.length} departments to explore`}
+            </p>
+          </div>
+          {search && (
+            <button type="button" onClick={() => setSearch('')} className="text-[12px] font-bold text-[#1E3A8A] hover:text-[#F97316]">
+              Clear search
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="h-56 animate-pulse rounded-2xl border border-[#E2E8F0] bg-white" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white px-5 py-16 text-center">
+            <p className="font-bold text-[#071A2B]">Could not load categories</p>
+            <p className="mt-2 text-[13px] text-[#64748B]">Please refresh the page to try again.</p>
+          </div>
+        ) : departments.length === 0 ? (
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white px-5 py-16 text-center">
+            <p className="font-bold text-[#071A2B]">No matching categories</p>
+            <p className="mt-2 text-[13px] text-[#64748B]">Try a different search term.</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {departments.map(({ category, matchesDepartment, visibleCategories }, index) => {
+              const Icon = icons[index % icons.length]
+              const displayCategories = visibleCategories.slice(0, 5)
+              const hasMoreCategories = visibleCategories.length > displayCategories.length
+
+              return (
+                <article key={category.id} className="group flex min-h-56 flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-lg">
+                  <Link to={getCategoryUrl(categories, category)} className="flex items-center gap-3.5 border-b border-[#F1F5F9] p-4 sm:p-5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl" style={{ backgroundColor: `${colors[index % colors.length]}12`, color: colors[index % colors.length] }}>
+                      {category.image
+                        ? <img src={category.image} alt="" className="h-full w-full object-cover" />
+                        : <Icon size={22} strokeWidth={1.8} />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-[15px] font-extrabold text-[#071A2B] transition-colors group-hover:text-[#1E3A8A]">{category.name}</h3>
+                      <p className="mt-1 text-[11px] text-[#64748B]">{category.product_count.toLocaleString()} products</p>
+                    </div>
+                    <ArrowRight size={17} className="shrink-0 text-[#94A3B8] transition-transform group-hover:translate-x-1 group-hover:text-[#1E3A8A]" />
+                  </Link>
+
+                  <div className="flex flex-1 flex-col p-4 sm:px-5">
+                    {displayCategories.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {displayCategories.map(item => (
+                          <Link
+                            key={item.id}
+                            to={getCategoryUrl(categories, item)}
+                            className="rounded-full border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1.5 text-[11px] font-medium text-[#475569] transition hover:border-[#BFDBFE] hover:bg-[#EFF6FF] hover:text-[#1E3A8A]"
+                          >
+                            {item.name}
+                          </Link>
+                        ))}
+                        {hasMoreCategories && !search && (
+                          <span className="self-center text-[10px] font-medium text-[#94A3B8]">+{visibleCategories.length - displayCategories.length} more</span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[12px] text-[#94A3B8]">{matchesDepartment ? 'Explore products in this department.' : 'No matching subcategories.'}</p>
+                    )}
+                    <Link to={getCategoryUrl(categories, category)} className="mt-auto inline-flex items-center gap-1 pt-4 text-[11px] font-bold text-[#1E3A8A] hover:text-[#F97316]">
+                      Browse department <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        )}
       </main>
       <Footer />
     </div>
