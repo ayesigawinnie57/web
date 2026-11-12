@@ -128,32 +128,80 @@ export default function ProductVariantEditor({
 }) {
   const [optionName, setOptionName] = useState('color')
   const [optionValue, setOptionValue] = useState('')
+  const normalizedOptionName = optionName.trim().toLowerCase()
+  const suggestedValues = normalizedOptionName.includes('size')
+    ? ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46']
+    : normalizedOptionName.includes('gender')
+      ? ['Men', 'Women', 'Unisex', 'Boys', 'Girls']
+      : normalizedOptionName.includes('age')
+        ? ['Young', 'Old', 'Adult', 'Child']
+        : []
   const [variantError, setVariantError] = useState('')
 
   const addVariant = () => {
     const key = optionName.trim()
     const value = optionValue.trim()
     if (!key || !value) return
-    if (variants.length >= 100) {
-      setVariantError('A product cannot have more than 100 variants.')
-      return
-    }
-    if (variants.some(variant => variant.options[key] !== undefined && String(variant.options[key]).toLowerCase() === value.toLowerCase())) {
+    const currentValues = [...new Set(variants
+      .map(variant => variant.options[key])
+      .filter(optionValue => optionValue !== undefined)
+      .map(String))]
+    if (currentValues.some(current => current.toLowerCase() === value.toLowerCase())) {
       setVariantError(`A ${key} variant named "${value}" already exists.`)
       return
     }
 
-    onChange([...variants, {
-      sku: '',
-      options: { [key]: value },
-      price: basePrice,
-      compare_at_price: baseOriginalPrice,
-      stock: '0',
-      weight: '',
-      is_active: true,
-      image_url: null,
-      image_file: null,
-    }])
+    const optionKeys = [...new Set([...variants.flatMap(variant => Object.keys(variant.options)), key])]
+    const valuesByKey = Object.fromEntries(optionKeys.map(optionKey => [
+      optionKey,
+      [...new Set([
+        ...variants.map(variant => variant.options[optionKey]).filter(optionValue => optionValue !== undefined).map(String),
+        ...(optionKey === key ? [value] : []),
+      ])],
+    ])) as Record<string, string[]>
+    const combinations = optionKeys.reduce<Record<string, string>[]>(
+      (current, optionKey) => current.flatMap(options =>
+        valuesByKey[optionKey].map(optionValue => ({ ...options, [optionKey]: optionValue })),
+      ),
+      [{}],
+    )
+    if (combinations.length > 100) {
+      setVariantError('A product cannot have more than 100 variant combinations.')
+      return
+    }
+
+    const optionKeyOf = (options: Record<string, string | number | boolean>) =>
+      JSON.stringify(Object.entries(options).sort(([left], [right]) => left.localeCompare(right)))
+    const sourceUseCount = new Map<number, number>()
+    const nextVariants = combinations.map(options => {
+      const exactIndex = variants.findIndex(variant => optionKeyOf(variant.options) === optionKeyOf(options))
+      if (exactIndex >= 0) {
+        sourceUseCount.set(exactIndex, (sourceUseCount.get(exactIndex) ?? 0) + 1)
+        return variants[exactIndex]
+      }
+
+      const sourceIndex = variants.findIndex(variant =>
+        Object.entries(variant.options).every(([optionKey, optionValue]) =>
+          optionKey === key || String(options[optionKey]) === String(optionValue),
+        ),
+      )
+      const source = sourceIndex >= 0 ? variants[sourceIndex] : null
+      if (sourceIndex >= 0) sourceUseCount.set(sourceIndex, (sourceUseCount.get(sourceIndex) ?? 0) + 1)
+      const isSourceCombination = sourceIndex >= 0 && sourceUseCount.get(sourceIndex) === 1
+      return {
+        sku: isSourceCombination ? source!.sku : '',
+        options,
+        price: source?.price ?? basePrice,
+        compare_at_price: source?.compare_at_price ?? baseOriginalPrice,
+        stock: isSourceCombination ? source!.stock : '0',
+        weight: source?.weight ?? '',
+        is_active: source?.is_active ?? true,
+        image_url: isSourceCombination ? source!.image_url : null,
+        image_file: isSourceCombination ? source!.image_file : null,
+      }
+    })
+
+    onChange(nextVariants)
     setOptionValue('')
     setVariantError('')
   }
@@ -168,17 +216,25 @@ export default function ProductVariantEditor({
         <input
           aria-label="Variant option name"
           className="min-w-0 flex-1 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[12px]"
-          placeholder="Option (e.g. color)"
+          placeholder="Option (e.g. size, gender, age)"
           value={optionName}
           onChange={event => setOptionName(event.target.value)}
+          list="product-variant-option-names"
         />
+        <datalist id="product-variant-option-names">
+          {['Size', 'Gender', 'Age', 'Measurement', 'Color', 'Material'].map(value => <option key={value} value={value} />)}
+        </datalist>
         <input
           aria-label="Variant option value"
           className="min-w-0 flex-1 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[12px]"
           placeholder="Value (e.g. Red)"
           value={optionValue}
           onChange={event => setOptionValue(event.target.value)}
+          list="product-variant-suggested-values"
         />
+        <datalist id="product-variant-suggested-values">
+          {suggestedValues.map(value => <option key={value} value={value} />)}
+        </datalist>
         <button
           type="button"
           onClick={addVariant}

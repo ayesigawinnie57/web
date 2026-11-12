@@ -322,7 +322,12 @@ export default function ProductPage() {
 
   const activeVariants = product.variants.filter(variant => variant.is_active)
   const hasVariants = product.variants.length > 0
-  const optionKeys = [...new Set(activeVariants.flatMap(variant => Object.keys(variant.options)))]
+  const optionPriority = ['size', 'gender', 'age', 'measurement', 'length', 'width', 'color', 'colour']
+  const optionKeys = [...new Set(activeVariants.flatMap(variant => Object.keys(variant.options)))].sort((left, right) => {
+    const leftIndex = optionPriority.findIndex(key => left.toLowerCase().includes(key))
+    const rightIndex = optionPriority.findIndex(key => right.toLowerCase().includes(key))
+    return (leftIndex < 0 ? optionPriority.length : leftIndex) - (rightIndex < 0 ? optionPriority.length : rightIndex)
+  })
   const selectedVariant = optionKeys.length > 0 && optionKeys.every(key => selectedOptions[key] !== undefined)
     ? activeVariants.find(variant =>
       optionKeys.every(key => String(variant.options[key]) === selectedOptions[key]),
@@ -626,7 +631,7 @@ export default function ProductPage() {
               </div>
 
               {hasVariants && (
-                <div className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-4">
+                <div className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-4 sm:p-5">
                   <h2 className="text-[13px] font-extrabold text-[#071A2B]">Choose options</h2>
                   <button
                     type="button"
@@ -662,16 +667,19 @@ export default function ProductPage() {
                   )}
                   {optionKeys.length === 0 ? (
                     <p className="text-[12px] text-amber-700">No options are currently available.</p>
-                  ) : optionKeys.map(key => {
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                    {optionKeys.map(key => {
                     const values = [...new Set(activeVariants
                       .map(variant => variant.options[key])
                       .filter(value => value !== undefined)
                       .map(String))]
                     const normalizedKey = key.toLowerCase()
                     const isColor = normalizedKey.includes('color') || normalizedKey.includes('colour')
-                    const isSize = normalizedKey.includes('size')
+                    const isChoice = ['size', 'gender', 'age', 'measurement', 'length', 'width']
+                      .some(option => normalizedKey.includes(option))
                     return (
-                      <fieldset key={key}>
+                      <fieldset key={key} className="min-w-0 rounded-lg bg-[#F8FAFC] p-3">
                         <legend className="mb-2 text-[12px] font-bold text-[#334155]">
                           {optionLabel(key)}
                           {selectedOptions[key] && <span className="ml-1 font-normal text-[#64748B]">· {selectedOptions[key]}</span>}
@@ -696,7 +704,7 @@ export default function ProductPage() {
                               )
                             })}
                           </div>
-                        ) : isSize ? (
+                        ) : isChoice ? (
                           <div className="flex flex-wrap gap-2">
                             {values.map(value => (
                               <button
@@ -723,7 +731,9 @@ export default function ProductPage() {
                         )}
                       </fieldset>
                     )
-                  })}
+                    })}
+                    </div>
+                  )}
                   {!selectionComplete && optionKeys.length > 0 && (
                     <p className="text-[12px] font-semibold text-amber-700">Select each option to see availability and add this product.</p>
                   )}
