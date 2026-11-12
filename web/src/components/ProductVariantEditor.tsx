@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ImagePlus, X } from 'lucide-react'
+import { ImagePlus, Plus, X } from 'lucide-react'
 
 export type ProductVariantDraft = {
   sku: string
@@ -127,14 +127,23 @@ export default function ProductVariantEditor({
   baseOriginalPrice: string
 }) {
   const [optionName, setOptionName] = useState('color')
-  const [optionValues, setOptionValues] = useState('')
+  const [optionValue, setOptionValue] = useState('')
+  const [variantError, setVariantError] = useState('')
 
-  const generateVariants = () => {
+  const addVariant = () => {
     const key = optionName.trim()
-    const values = [...new Set(optionValues.split(/[,\n]/).map(value => value.trim()).filter(Boolean))]
-    if (!key || !values.length) return
+    const value = optionValue.trim()
+    if (!key || !value) return
+    if (variants.length >= 100) {
+      setVariantError('A product cannot have more than 100 variants.')
+      return
+    }
+    if (variants.some(variant => variant.options[key] !== undefined && String(variant.options[key]).toLowerCase() === value.toLowerCase())) {
+      setVariantError(`A ${key} variant named "${value}" already exists.`)
+      return
+    }
 
-    onChange(values.slice(0, 100).map(value => ({
+    onChange([...variants, {
       sku: '',
       options: { [key]: value },
       price: basePrice,
@@ -144,7 +153,9 @@ export default function ProductVariantEditor({
       is_active: true,
       image_url: null,
       image_file: null,
-    })))
+    }])
+    setOptionValue('')
+    setVariantError('')
   }
 
   return (
@@ -153,25 +164,31 @@ export default function ProductVariantEditor({
         <h2 className="text-[14px] font-extrabold text-[#071A2B]">Options &amp; variants</h2>
         <p className="mt-1 text-[11px] text-[#64748B]">Optional. Add variants such as red, white, and green; shoppers can select an image and label.</p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-[1fr_2fr_auto]">
+      <div className="flex flex-wrap items-center gap-2">
         <input
           aria-label="Variant option name"
-          className="min-w-0 rounded-lg border border-[#E2E8F0] px-3 py-2.5 text-[12px]"
-          placeholder="Option name (e.g. color)"
+          className="min-w-0 flex-1 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[12px]"
+          placeholder="Option (e.g. color)"
           value={optionName}
           onChange={event => setOptionName(event.target.value)}
         />
         <input
-          aria-label="Variant option values"
-          className="min-w-0 rounded-lg border border-[#E2E8F0] px-3 py-2.5 text-[12px]"
-          placeholder="Values separated by commas (e.g. Red, White, Green)"
-          value={optionValues}
-          onChange={event => setOptionValues(event.target.value)}
+          aria-label="Variant option value"
+          className="min-w-0 flex-1 rounded-lg border border-[#E2E8F0] px-3 py-2 text-[12px]"
+          placeholder="Value (e.g. Red)"
+          value={optionValue}
+          onChange={event => setOptionValue(event.target.value)}
         />
-        <button type="button" onClick={generateVariants} className="rounded-lg bg-[#071A2B] px-3 py-2 text-[12px] font-bold text-white">
-          Generate variants
+        <button
+          type="button"
+          onClick={addVariant}
+          disabled={!optionName.trim() || !optionValue.trim() || variants.length >= 100}
+          className="inline-flex items-center gap-1 rounded-lg bg-[#071A2B] px-2.5 py-1.5 text-[11px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Plus size={13} /> Add Variant
         </button>
       </div>
+      {variantError && <p role="alert" className="text-[11px] text-red-600">{variantError}</p>}
       {variants.map((variant, index) => (
         <VariantRow
           key={`${index}-${JSON.stringify(variant.options)}`}

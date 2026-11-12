@@ -532,13 +532,15 @@ export const cartApi = {
     ? (await api.get<CartItem[]>('/api/auth/cart/')).data
     : getGuestCart(),
   add: async (product: Product, quantity: number, variantId?: number) => {
+    const selectedVariant = product.variants.find(variant => variant.id === variantId)
+    const productImage = selectedVariant?.image_url ?? product.image ?? null
     if (hasAccessToken()) {
       const response = await api.post<CartItem>('/api/auth/cart/', {
         product_id: product.id,
         variant_id: variantId ?? null,
         product_name: product.name,
         product_price: product.price,
-        product_image: product.image ?? null,
+        product_image: productImage,
         product_slug: product.slug,
         product_category: product.category,
         product_rating: product.rating,
@@ -552,7 +554,10 @@ export const cartApi = {
     const existing = items.find(item =>
       item.product_id === product.id && (item.variant_id ?? null) === (variantId ?? null),
     )
-    if (existing) existing.quantity += quantity
+    if (existing) {
+      existing.quantity += quantity
+      existing.product_image = productImage
+    }
     else items.push({
       id: Math.max(Date.now(), ...items.map(item => item.id + 1)),
       product_id: product.id,
@@ -561,7 +566,7 @@ export const cartApi = {
       variant_sku: product.variants.find(variant => variant.id === variantId)?.sku ?? '',
       product_name: product.name,
       product_price: String(product.price),
-      product_image: product.image ?? null,
+      product_image: productImage,
       product_slug: product.slug,
       product_category: product.category,
       product_rating: String(product.rating),

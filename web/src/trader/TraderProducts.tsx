@@ -114,7 +114,7 @@ export default function TraderProducts() {
   const variantAttributes = selectedCategory?.attributes.filter(attribute => attribute.is_variant) ?? []
 
   const valuesForAttribute = (key: string, choices: string[]) =>
-    (variantValues[key] ?? choices.join(',')).split(/[,\n]/).map(value => value.trim()).filter(Boolean)
+    [...new Set((variantValues[key] ?? choices.join(',')).split(/[,\n]/).map(value => value.trim()).filter(Boolean))]
 
   const variantCount = variantAttributes.reduce((count, attribute) =>
     count * valuesForAttribute(attribute.key, attribute.choices).length, 1)
@@ -124,7 +124,7 @@ export default function TraderProducts() {
       setError('Mark at least one category attribute as a variant before generating variants.')
       return
     }
-    if (variantCount > 100) {
+    if (variants.length + variantCount > 100) {
       setError('This would create more than 100 variants. Reduce the option values first.')
       return
     }
@@ -139,17 +139,23 @@ export default function TraderProducts() {
         values.map(value => ({ ...combination, [attribute.key]: value })),
       )
     }
-    setVariants(combinations.map(options => ({
-      sku: '',
-      options,
-      price: form.price,
-      compare_at_price: form.original_price,
-      stock: '0',
-      weight: '',
-      is_active: true,
-      image_url: null,
-      image_file: null,
-    })))
+    const optionKey = (options: Record<string, string | number | boolean>) =>
+      JSON.stringify(Object.entries(options).sort(([left], [right]) => left.localeCompare(right)))
+    const existingOptions = new Set(variants.map(variant => optionKey(variant.options)))
+    const additions = combinations
+      .filter(options => !existingOptions.has(optionKey(options)))
+      .map(options => ({
+        sku: '',
+        options,
+        price: form.price,
+        compare_at_price: form.original_price,
+        stock: '0',
+        weight: '',
+        is_active: true,
+        image_url: null,
+        image_file: null,
+      }))
+    setVariants(current => [...current, ...additions])
     setError('')
   }
 
@@ -548,11 +554,11 @@ export default function TraderProducts() {
                   ))}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className={`text-[12px] ${variantCount > 100 ? 'text-red-600' : 'text-[#64748B]'}`}>
-                    {variantCount} variant{variantCount === 1 ? '' : 's'} will be created{variantCount > 100 ? ' — maximum is 100' : ''}.
+                  <p className={`text-[12px] ${variants.length + variantCount > 100 ? 'text-red-600' : 'text-[#64748B]'}`}>
+                    {variantCount} variant{variantCount === 1 ? '' : 's'} will be added.
                   </p>
-                  <button type="button" onClick={generateVariants} disabled={variantCount > 100} className="px-3 py-2 rounded-lg bg-[#071A2B] text-white text-[12px] font-bold disabled:opacity-50">
-                    Generate variants
+                  <button type="button" onClick={generateVariants} disabled={variants.length + variantCount > 100} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#071A2B] text-white text-[11px] font-bold disabled:opacity-50">
+                    <Plus size={13} /> Add Variant
                   </button>
                 </div>
               </section>
