@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { BadgeCheck, ChevronDown, ChevronRight, MapPin, Star, Users } from 'lucide-react'
@@ -155,6 +155,7 @@ export default function ProductPage() {
   const [activeImg, setActiveImg] = useState(0)
   const [qty, setQty] = useState(1)
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
+  const variantImageChoiceRefs = useRef(new Map<number, HTMLButtonElement>())
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [wishlisted, setWishlisted] = useState(false)
   const [sharing, setSharing] = useState(false)
@@ -333,6 +334,11 @@ export default function ProductPage() {
       optionKeys.every(key => String(variant.options[key]) === selectedOptions[key]),
     )
     : undefined
+  const selectedImageVariant = selectedVariant ?? activeVariants.find(variant =>
+    Boolean(variant.image_url)
+    && Object.keys(selectedOptions).length > 0
+    && Object.entries(selectedOptions).every(([key, value]) => String(variant.options[key]) === value),
+  )
   const selectionComplete = Object.keys(selectedOptions).length === 0 || Boolean(selectedVariant)
   const currentPrice = selectedVariant ? Number(selectedVariant.price) : product.price
   const currentOriginalPrice = selectedVariant?.compare_at_price
@@ -375,11 +381,19 @@ export default function ProductPage() {
     setSelectedOptions(nextOptions)
     setQty(1)
     const matchingVariant = activeVariants.find(variant =>
-      optionKeys.every(optionKey => String(variant.options[optionKey]) === nextOptions[optionKey]),
+      Boolean(variant.image_url)
+      && Object.entries(nextOptions).every(([optionKey, optionValue]) => String(variant.options[optionKey]) === optionValue),
     )
     if (matchingVariant?.image_url) {
       const imageIndex = allImages.indexOf(matchingVariant.image_url)
       if (imageIndex >= 0) setActiveImg(imageIndex)
+      requestAnimationFrame(() => {
+        variantImageChoiceRefs.current.get(matchingVariant.id)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest',
+        })
+      })
     }
   }
 
@@ -651,19 +665,23 @@ export default function ProductPage() {
                             ? String(variant.options[optionLabelKey] ?? 'Option')
                             : 'Option'
                           const accessibleLabel = Object.values(variant.options).map(String).join(' · ') || label
-                          const selected = selectedVariant?.id === variant.id
+                          const selected = selectedImageVariant?.id === variant.id
                           return (
                             <button
                               key={variant.id}
                               type="button"
                               aria-label={`Select ${accessibleLabel}`}
-                              aria-pressed={selected}
+                              aria-pressed={selectedImageVariant?.id === variant.id}
+                              ref={element => {
+                                if (element) variantImageChoiceRefs.current.set(variant.id, element)
+                                else variantImageChoiceRefs.current.delete(variant.id)
+                              }}
                               onClick={() => selectVariant(variant)}
-                              className={`w-24 shrink-0 snap-start overflow-hidden rounded-xl border-2 text-left transition-colors ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
+                              className={`box-border w-24 shrink-0 snap-start overflow-hidden rounded-xl border-2 text-left transition-colors ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
                             >
                               <span className="flex flex-col">
-                                <img src={variant.image_url ?? ''} alt="" className="h-20 w-full object-cover" />
-                                <span className="block truncate px-2 py-1.5 text-center text-[11px] font-semibold text-[#334155]">{label}</span>
+                                <img src={variant.image_url ?? ''} alt="" className="block h-20 w-full object-cover" />
+                                <span className="box-border block w-full truncate px-2 py-1.5 text-center text-[11px] font-semibold text-[#334155]">{label}</span>
                               </span>
                             </button>
                           )
@@ -702,7 +720,7 @@ export default function ProductPage() {
                                   disabled={!hasAvailableOptionValue(key, value)}
                                   aria-pressed={selected}
                                   onClick={() => selectOption(key, value)}
-                                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0]'}`}
+                                  className={`inline-flex box-border w-[92px] shrink-0 items-center justify-center gap-2 rounded-xl border px-2 py-1.5 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0]'}`}
                                 >
                                   <span className="h-4 w-4 rounded-full border border-black/10" style={color ? { backgroundColor: color } : undefined} />
                                   {value}
@@ -719,7 +737,7 @@ export default function ProductPage() {
                                 disabled={!hasAvailableOptionValue(key, value)}
                                 aria-pressed={selectedOptions[key] === value}
                                 onClick={() => selectOption(key, value)}
-                                className={`min-w-12 rounded-lg border px-3 py-2 text-[12px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${selectedOptions[key] === value ? 'border-[#1E3A8A] bg-blue-50 text-[#1E3A8A]' : 'border-[#E2E8F0] text-[#334155]'}`}
+                                className={`box-border w-[92px] shrink-0 rounded-lg border px-2 py-2 text-center text-[12px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${selectedOptions[key] === value ? 'border-[#1E3A8A] bg-blue-50 text-[#1E3A8A]' : 'border-[#E2E8F0] text-[#334155]'}`}
                               >{value}</button>
                             ))}
                           </div>
