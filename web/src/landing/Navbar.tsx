@@ -409,9 +409,9 @@ export default function Navbar() {
               <Link
                 to="/categories"
                 onClick={() => { closeSearch(); setShowCategoryMenu(false) }}
-                className="mr-2 flex shrink-0 items-center gap-1.5 rounded-lg bg-[#071A2B] px-3 py-2 text-[10px] font-bold text-white lg:hidden"
+                className="mr-2 flex shrink-0 items-center rounded-lg bg-[#071A2B] px-3 py-2 text-[10px] font-bold text-white lg:hidden"
               >
-                <ShoppingBag size={14} /> All Categories
+                All Categories
               </Link>
               <div
                 className="relative mr-2 hidden shrink-0 lg:block"
@@ -434,7 +434,7 @@ export default function Navbar() {
                   onClick={() => showCategoryMenu ? closeCategoryMenu() : openCategoryMenu()}
                   className="flex items-center gap-2 !rounded-lg bg-[#071A2B] px-3.5 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#12344A]"
                 >
-                  <ShoppingBag size={15} /> All Categories <ChevronRight className={`h-3.5 w-3.5 transition-transform ${showCategoryMenu ? 'rotate-90' : ''}`} />
+                  All Categories <ChevronRight className={`h-3.5 w-3.5 transition-transform ${showCategoryMenu ? 'rotate-90' : ''}`} />
                 </button>
                 {showCategoryMenu && (
                   <div className={`absolute left-0 top-full z-[70] flex h-[calc(100dvh-8.25rem)] ${categoryMenuWidth} overflow-hidden rounded-b-2xl border border-t-0 border-[#E2E8F0] bg-white shadow-2xl`}>
