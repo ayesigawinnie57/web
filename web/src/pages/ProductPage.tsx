@@ -685,13 +685,13 @@ export default function ProductPage() {
                     const isChoice = ['size', 'gender', 'age', 'measurement', 'length', 'width']
                       .some(option => normalizedKey.includes(option))
                     return (
-                      <fieldset key={key} className="min-w-0 rounded-lg bg-[#F8FAFC] p-3">
+                      <fieldset key={key} className="min-w-0 max-w-full rounded-lg bg-[#F8FAFC] p-3">
                         <legend className="mb-2 text-[12px] font-bold text-[#334155]">
                           {optionLabel(key)}
                           {selectedOptions[key] && <span className="ml-1 font-normal text-[#64748B]">· {selectedOptions[key]}</span>}
                         </legend>
                         {isColor ? (
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex w-full max-w-full flex-nowrap gap-2 overflow-x-auto scrollbar-none pb-1">
                             {values.map(value => {
                               const color = COLOR_SWATCHES[value.toLowerCase()]
                               const selected = selectedOptions[key] === value
@@ -711,7 +711,7 @@ export default function ProductPage() {
                             })}
                           </div>
                         ) : isChoice ? (
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex w-full max-w-full flex-nowrap gap-2 overflow-x-auto scrollbar-none pb-1">
                             {values.map(value => (
                               <button
                                 key={value}
