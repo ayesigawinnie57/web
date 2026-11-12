@@ -126,7 +126,7 @@ export default function ProductVariantEditor({
   basePrice: string
   baseOriginalPrice: string
 }) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isAddingVariant, setIsAddingVariant] = useState(false)
   const [optionName, setOptionName] = useState('color')
   const [optionValue, setOptionValue] = useState('')
   const normalizedOptionName = optionName.trim().toLowerCase()
@@ -209,6 +209,7 @@ export default function ProductVariantEditor({
     onChange(nextVariants)
     setOptionValue('')
     setVariantError('')
+    setIsAddingVariant(false)
   }
 
   return (
@@ -224,7 +225,7 @@ export default function ProductVariantEditor({
           {variants.length} {variants.length === 1 ? 'variant' : 'variants'}
         </span>
       </div>
-      {isExpanded && (
+      {isAddingVariant && (
         <div className="mt-4 space-y-4 border-t border-[#E2E8F0] pt-4">
           <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 sm:p-4">
             <p className="mb-3 text-[12px] font-bold text-[#334155]">1. Choose an option and enter one value</p>
@@ -268,31 +269,34 @@ export default function ProductVariantEditor({
             </div>
           </div>
           {variantError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">{variantError}</p>}
-          {variants.length > 0 ? (
-            <div className="rounded-xl border border-[#E2E8F0] px-3 sm:px-4">
-              <p className="pt-3 text-[12px] font-bold text-[#334155]">2. Set details for each combination</p>
-              {variants.map((variant, index) => (
-                <VariantRow
-                  key={`${index}-${JSON.stringify(variant.options)}`}
-                  variant={variant}
-                  index={index}
-                  onChange={patch => onChange(variants.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item))}
-                  onRemove={() => onChange(variants.filter((_, itemIndex) => itemIndex !== index))}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-lg bg-[#F8FAFC] px-3 py-2.5 text-[12px] leading-5 text-[#64748B]">
-              No variants yet. Add one value above, then set its price, stock, and image. If you skip variants, the product keeps its regular settings.
-            </p>
-          )}
         </div>
       )}
+      {variants.length > 0 ? (
+        <div className="mt-4 rounded-xl border border-[#E2E8F0] px-3 sm:px-4">
+          <p className="pt-3 text-[12px] font-bold text-[#334155]">Set details for each combination</p>
+          {variants.map((variant, index) => (
+            <VariantRow
+              key={`${index}-${JSON.stringify(variant.options)}`}
+              variant={variant}
+              index={index}
+              onChange={patch => onChange(variants.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item))}
+              onRemove={() => onChange(variants.filter((_, itemIndex) => itemIndex !== index))}
+            />
+          ))}
+        </div>
+      ) : !isAddingVariant && (
+        <p className="mt-4 rounded-lg bg-[#F8FAFC] px-3 py-2.5 text-[12px] leading-5 text-[#64748B]">
+          No variants yet. If you skip variants, the product keeps its regular settings.
+        </p>
+      )}
       <div className="mt-4 flex justify-end border-t border-[#E2E8F0] pt-3">
-        {isExpanded && (
+        {isAddingVariant && (
           <button
             type="button"
-            onClick={() => setIsExpanded(false)}
+            onClick={() => {
+              setIsAddingVariant(false)
+              setVariantError('')
+            }}
             className="mr-2 rounded-lg border border-[#CBD5E1] px-4 py-2 text-[12px] font-bold text-[#475569] hover:bg-[#F8FAFC]"
           >
             Close
@@ -300,8 +304,8 @@ export default function ProductVariantEditor({
         )}
         <button
           type="button"
-          onClick={() => isExpanded ? addVariant() : setIsExpanded(true)}
-          disabled={isExpanded && (!optionName.trim() || !optionValue.trim() || variants.length >= 100)}
+          onClick={() => isAddingVariant ? addVariant() : setIsAddingVariant(true)}
+          disabled={isAddingVariant && (!optionName.trim() || !optionValue.trim() || variants.length >= 100)}
           className="inline-flex items-center gap-1.5 rounded-lg bg-[#071A2B] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#12304A] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={14} /> Add Variant
