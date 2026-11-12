@@ -456,8 +456,11 @@ export default function Navbar() {
                           <Link
                             to={getCategoryUrl(catNav, department)}
                             onClick={closeCategoryMenu}
-                            className="min-w-0 flex-1 truncate"
+                            className="flex min-w-0 flex-1 items-center gap-2 truncate"
                           >
+                            {department.image && (
+                              <img src={department.image} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
+                            )}
                             {department.name}
                           </Link>
                           <ChevronRight size={14} className="shrink-0 text-[#94A3B8]" />
@@ -486,8 +489,11 @@ export default function Navbar() {
                               <Link
                                 to={getCategoryUrl(catNav, category)}
                                 onClick={closeCategoryMenu}
-                                className="min-w-0 flex-1 truncate"
+                                className="flex min-w-0 flex-1 items-center gap-2 truncate"
                               >
+                                {category.image && (
+                                  <img src={category.image} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
+                                )}
                                 {category.name}
                               </Link>
                               {hasSubcategories && <ChevronRight size={14} className="shrink-0 text-[#94A3B8]" />}
@@ -504,8 +510,11 @@ export default function Navbar() {
                             key={subcategory.id}
                             to={getCategoryUrl(catNav, subcategory)}
                             onClick={closeCategoryMenu}
-                            className="block px-4 py-2.5 text-[12px] text-[#475569] transition-colors hover:bg-[#F8FAFC] hover:text-[#1E3A8A]"
+                            className="flex items-center gap-2 px-4 py-2.5 text-[12px] text-[#475569] transition-colors hover:bg-[#F8FAFC] hover:text-[#1E3A8A]"
                           >
+                            {subcategory.image && (
+                              <img src={subcategory.image} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
+                            )}
                             {subcategory.name}
                           </Link>
                         ))}
