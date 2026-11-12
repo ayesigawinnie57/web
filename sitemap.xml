@@ -11,6 +11,10 @@
   <url><loc>https://www.majogadgets.com/privacy-policy</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://www.majogadgets.com/cookies</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://www.majogadgets.com/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/arduino-zero-00d46adfeb22</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/esp32-cam-with-micro-usb-downloader-module-aafc678a4839</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/ts-300b-turbidity-sensor-module-536404a07da6</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.majogadgets.com/shop/2-channel-5v-relay-module-with-optocoupler-isolation-0a02a5b03745</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/hw-125-micro-sd-card-reader-writer-spi-module-4b5594bcbe92</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/ds3231-at24c32-high-precision-i2c-real-time-clock-rtc-module-58b2039556f5</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/24-in-1-magnetic-precision-screwdriver-set-18c7c2b9e49f</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
@@ -19,7 +23,6 @@
   <url><loc>https://www.majogadgets.com/shop/ds18b20-waterproof-digital-temperature-sensor-probe-e860e7c71ec6</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/tan-nubuck-leather-casual-sneakers-2ad0f3e1c47b</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/benbu-low-top-black-canvas-sneakers-c0d22e3f9ace</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://www.majogadgets.com/shop/mg-c509d9341bf4</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/aneng-m118a-digital-mini-multimeter-tester-f1237f5ad681</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/12v-dc-solenoid-valve-8c1309b64654</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://www.majogadgets.com/shop/gy-neo6mv2-gps-module-with-ceramic-antenna-e2331b138af8</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
