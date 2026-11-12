@@ -187,17 +187,21 @@ export default function ProductVariantEditor({
       )
       const source = sourceIndex >= 0 ? variants[sourceIndex] : null
       if (sourceIndex >= 0) sourceUseCount.set(sourceIndex, (sourceUseCount.get(sourceIndex) ?? 0) + 1)
-      const isSourceCombination = sourceIndex >= 0 && sourceUseCount.get(sourceIndex) === 1
+      const isFirstCombinationForSource = sourceIndex >= 0 && sourceUseCount.get(sourceIndex) === 1
+      const sourceHasMatchingColor = source && Object.entries(source.options).some(([optionKey, optionValue]) =>
+        (optionKey.toLowerCase().includes('color') || optionKey.toLowerCase().includes('colour'))
+        && String(options[optionKey]) === String(optionValue),
+      )
       return {
-        sku: isSourceCombination ? source!.sku : '',
+        sku: isFirstCombinationForSource ? source!.sku : '',
         options,
         price: source?.price ?? basePrice,
         compare_at_price: source?.compare_at_price ?? baseOriginalPrice,
-        stock: isSourceCombination ? source!.stock : '0',
+        stock: isFirstCombinationForSource ? source!.stock : '0',
         weight: source?.weight ?? '',
         is_active: source?.is_active ?? true,
-        image_url: isSourceCombination ? source!.image_url : null,
-        image_file: isSourceCombination ? source!.image_file : null,
+        image_url: sourceHasMatchingColor ? source?.image_url ?? null : null,
+        image_file: sourceHasMatchingColor ? source?.image_file ?? null : null,
       }
     })
 

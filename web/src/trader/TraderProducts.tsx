@@ -140,29 +140,46 @@ export default function TraderProducts() {
 
     const optionKey = (options: Record<string, string | number | boolean>) =>
       JSON.stringify(Object.entries(options).sort(([left], [right]) => left.localeCompare(right)))
-    const existingOptions = new Set(variants.map(variant => optionKey(variant.options)))
-    const additions = combinations.filter(options => !existingOptions.has(optionKey(options)))
-    if (variants.length + additions.length > 100) {
+    if (combinations.length > 100) {
       setError('A product cannot have more than 100 variants. Remove variants or option values first.')
       return
     }
     setVariantValues(nextValues)
     setVariantValueDrafts(current => ({ ...current, [attributeKey]: '' }))
-    if (!additions.length) {
+    const sourceUseCount = new Map<number, number>()
+    const nextVariants = combinations.map(options => {
+      const exactIndex = variants.findIndex(variant => optionKey(variant.options) === optionKey(options))
+      if (exactIndex >= 0) {
+        sourceUseCount.set(exactIndex, (sourceUseCount.get(exactIndex) ?? 0) + 1)
+        return variants[exactIndex]
+      }
+      const sourceIndex = variants.findIndex(variant => Object.entries(variant.options).every(([key, optionValue]) =>
+        key === attributeKey || String(options[key]) === String(optionValue),
+      ))
+      const source = sourceIndex >= 0 ? variants[sourceIndex] : null
+      if (sourceIndex >= 0) sourceUseCount.set(sourceIndex, (sourceUseCount.get(sourceIndex) ?? 0) + 1)
+      const isFirstCombinationForSource = sourceIndex >= 0 && sourceUseCount.get(sourceIndex) === 1
+      const sourceHasMatchingColor = source && Object.entries(source.options).some(([key, optionValue]) =>
+        (key.toLowerCase().includes('color') || key.toLowerCase().includes('colour'))
+        && String(options[key]) === String(optionValue),
+      )
+      return {
+        sku: isFirstCombinationForSource ? source!.sku : '',
+        options,
+        price: source?.price ?? form.price,
+        compare_at_price: source?.compare_at_price ?? form.original_price,
+        stock: isFirstCombinationForSource ? source!.stock : '0',
+        weight: source?.weight ?? '',
+        is_active: source?.is_active ?? true,
+        image_url: sourceHasMatchingColor ? source?.image_url ?? null : null,
+        image_file: sourceHasMatchingColor ? source?.image_file ?? null : null,
+      }
+    })
+    if (!nextVariants.some(variant => !variants.some(existing => optionKey(existing.options) === optionKey(variant.options)))) {
       setError(`The ${attributeKey} combinations already exist.`)
       return
     }
-    setVariants(current => [...current, ...additions.map(options => ({
-      sku: '',
-      options,
-      price: form.price,
-      compare_at_price: form.original_price,
-      stock: '0',
-      weight: '',
-      is_active: true,
-      image_url: null,
-      image_file: null,
-    }))])
+    setVariants(nextVariants)
     setError('')
   }
 
