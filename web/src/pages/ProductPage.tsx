@@ -642,23 +642,29 @@ export default function ProductPage() {
                     Main product
                   </button>
                   {variantImageChoices.length > 0 && (
-                    <fieldset>
+                    <fieldset className="min-w-0 max-w-full">
                       <legend className="mb-2 text-[12px] font-bold text-[#334155]">Choose a version</legend>
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex w-full max-w-full snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none pb-2">
                         {variantImageChoices.map(variant => {
-                          const label = Object.values(variant.options).map(String).join(' · ') || 'Option'
+                          const optionLabelKey = optionKeys.find(key => /color|colour/i.test(key)) ?? optionKeys[0]
+                          const label = optionLabelKey
+                            ? String(variant.options[optionLabelKey] ?? 'Option')
+                            : 'Option'
+                          const accessibleLabel = Object.values(variant.options).map(String).join(' · ') || label
                           const selected = selectedVariant?.id === variant.id
                           return (
                             <button
                               key={variant.id}
                               type="button"
-                              aria-label={`Select ${label}`}
+                              aria-label={`Select ${accessibleLabel}`}
                               aria-pressed={selected}
                               onClick={() => selectVariant(variant)}
-                              className={`w-24 overflow-hidden rounded-xl border-2 text-left transition-colors ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
+                              className={`w-24 shrink-0 snap-start overflow-hidden rounded-xl border-2 text-left transition-colors ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
                             >
-                              <img src={variant.image_url ?? ''} alt="" className="h-20 w-full object-cover" />
-                              <span className="block truncate px-2 py-1.5 text-[11px] font-semibold text-[#334155]">{label}</span>
+                              <span className="flex flex-col">
+                                <img src={variant.image_url ?? ''} alt="" className="h-20 w-full object-cover" />
+                                <span className="block truncate px-2 py-1.5 text-center text-[11px] font-semibold text-[#334155]">{label}</span>
+                              </span>
                             </button>
                           )
                         })}
