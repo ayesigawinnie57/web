@@ -204,9 +204,29 @@ export type ApiCategory = {
   id: number
   name: string
   slug: string
+  description: string
   image: string | null
   parent_id: number | null
+  is_active: boolean
+  position: number
+  product_count: number
   attributes: ApiCategoryAttribute[]
+}
+
+export function getCategoryPath(categories: ApiCategory[], category: ApiCategory): ApiCategory[] {
+  const path = [category]
+  let parentId = category.parent_id
+  while (parentId !== null) {
+    const parent = categories.find(item => item.id === parentId)
+    if (!parent || path.some(item => item.id === parent.id)) break
+    path.unshift(parent)
+    parentId = parent.parent_id
+  }
+  return path
+}
+
+export function getCategoryUrl(categories: ApiCategory[], category: ApiCategory): string {
+  return `/shop/${getCategoryPath(categories, category).map(item => item.slug).join('/')}`
 }
 
 export type Product = {
@@ -390,8 +410,9 @@ export const productsApi = {
   bySlug: (slug: string) => api.get<ApiProduct>(`/api/products/${slug}/`, {
     params: { _refresh: Date.now() },
   }),
-  byCategory: (categorySlug: string) => productsApi.list(`category=${encodeURIComponent(categorySlug)}`),
-  categories: () => cachedRequest('products:categories:v3', () => api.get<ApiCategory[]>('/api/products/categories/')),
+  byCategory: (categorySlug: string, page = 1) =>
+    productsApi.list(`category=${encodeURIComponent(categorySlug)}&page=${page}`),
+  categories: () => cachedRequest('products:categories:v4', () => api.get<ApiCategory[]>('/api/products/categories/')),
   flashSales: () => api.get<ApiFlashSale[]>('/api/products/flash-sales/', {
     params: { active: 1, _refresh: Date.now() },
   }),

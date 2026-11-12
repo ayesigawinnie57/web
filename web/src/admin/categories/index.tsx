@@ -18,10 +18,10 @@ export default function AdminCategories() {
   }, [])
 
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Delete "${name}"?`)) return
+    if (!confirm(`Deactivate "${name}"? Existing products and category history will be preserved.`)) return
     try {
       await adminProductsApi.deleteCategory(id)
-      setCategories(prev => prev.filter(c => c.id !== id))
+      setCategories(prev => prev.map(category => category.id === id ? { ...category, is_active: false } : category))
     } catch (err) {
       setError(parseError(err, 'Failed to delete category.'))
     }
@@ -57,7 +57,8 @@ export default function AdminCategories() {
                 : <div className="w-full h-28 rounded-lg bg-[#F8FAFC] flex items-center justify-center mb-2"><Grid2X2 size={24} color="#CBD5E1" /></div>
               }
               <p className="text-[13px] font-bold text-[#071A2B]">{item.name}</p>
-              <p className="text-[11px] text-[#94A3B8] mb-2">{item.slug}</p>
+              <p className="text-[11px] text-[#64748B]">{item.parent_id ? `Parent: ${categories.find(category => category.id === item.parent_id)?.name ?? 'Unknown'}` : 'Department'}</p>
+              <p className="mb-2 text-[11px] text-[#94A3B8]">{item.slug} · {item.product_count} products · Order {item.position} · {item.is_active ? 'Active' : 'Inactive'}</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => navigate(`/admin/categories/${item.id}`)}
@@ -66,7 +67,8 @@ export default function AdminCategories() {
                   <Pencil size={13} color="#6366f1" />
                 </button>
                 <button
-                  onClick={() => handleDelete(item.id, item.name)}
+                  onClick={() => item.is_active && handleDelete(item.id, item.name)}
+                  disabled={!item.is_active}
                   className="flex-1 h-8 rounded-lg bg-[#ef444418] flex items-center justify-center hover:opacity-80"
                 >
                   <Trash2 size={13} color="#ef4444" />

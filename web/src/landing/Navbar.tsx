@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Bell, Download, ShoppingCart, ShieldCheck, Home, UserRound, ShoppingBag, Store, X } from 'lucide-react'
-import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, sessionApi } from '../lib/api'
+import { CART_UPDATED_EVENT, WISHLIST_UPDATED_EVENT, cartApi, wishlistApi, hasAccessToken, LOGO, getCategoryUrl, productsApi, toProduct, type Product, type ApiCategory, authApi, cloudinaryUrl, sessionApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
 import { isPwaInstalled, promptToInstall, subscribeToInstalledState, subscribeToInstallPrompt, type InstallPromptEvent } from '../lib/pwaInstall'
@@ -78,10 +78,14 @@ export default function Navbar() {
         const [prodRes, catRes] = await Promise.all([productsApi.list(), productsApi.categories()])
         const rawP = (prodRes.data as any)?.results ?? prodRes.data ?? []
         const allP: Product[] = (Array.isArray(rawP) ? rawP : []).map(toProduct)
-        setResults(allP.filter(p => p.name.toLowerCase().includes(q)).slice(0, 20))
+        setResults(allP.filter(p =>
+          p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q),
+        ).slice(0, 20))
         const rawC = catRes.data as any
         const allC: ApiCategory[] = Array.isArray(rawC) ? rawC : (rawC?.results ?? [])
-        setCatResults(allC.filter((c: ApiCategory) => c.name.toLowerCase().includes(q)).slice(0, 3))
+        setCatResults(allC.filter((c: ApiCategory) =>
+          c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q),
+        ).slice(0, 3))
       } catch { setResults([]); setCatResults([]) }
       finally { setSearching(false) }
     }, 350)
@@ -141,6 +145,7 @@ export default function Navbar() {
   }, [accountOpen])
 
   const [catNav, setCatNav] = useState<ApiCategory[]>([])
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false)
 
   useEffect(() => {
     productsApi.categories().then(({ data }) => {
@@ -322,7 +327,7 @@ export default function Navbar() {
                       {catResults.map((cat, i) => (
                         <button
                           key={cat.id}
-                          onClick={() => { navigate(`/shop?category=${cat.slug}`); closeSearch() }}
+                          onClick={() => { navigate(getCategoryUrl(catNav, cat)); closeSearch() }}
                           className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#F8FAFC] ${i < catResults.length - 1 ? 'border-b border-[#E2E8F0]' : ''}`}
                         >
                           <div className="w-9 h-9 rounded-[10px] bg-[#EFF6FF] flex items-center justify-center overflow-hidden shrink-0">
@@ -371,13 +376,21 @@ export default function Navbar() {
         )}
         {/* Category bar — mobile + desktop */}
         {catNav.length > 0 && (
-          <div className="flex items-center border-t border-[#E2E8F0] overflow-x-auto scrollbar-none">
-            <div className="flex items-center max-w-7xl mx-auto w-full px-2 lg:px-4 pr-14 lg:pr-4">
-              {catNav.map((cat) => (
+          <div className="relative border-t border-[#E2E8F0]">
+            <div className="flex items-center max-w-7xl mx-auto w-full px-2 lg:px-4 pr-14 lg:pr-4 overflow-x-auto scrollbar-none">
+              <button
+                type="button"
+                aria-expanded={showCategoryMenu}
+                onClick={() => setShowCategoryMenu(value => !value)}
+                className="mr-2 flex shrink-0 items-center gap-1.5 rounded-lg bg-[#071A2B] px-3 py-2 text-[10px] font-bold text-white lg:text-[12px]"
+              >
+                <ShoppingBag size={14} /> All Categories
+              </button>
+              {catNav.filter(cat => cat.parent_id === null).map((cat) => (
                 <Link
                   key={cat.slug}
-                  to={`/shop?category=${cat.slug}`}
-                  onClick={closeSearch}
+                  to={getCategoryUrl(catNav, cat)}
+                  onClick={() => { closeSearch(); setShowCategoryMenu(false) }}
                   className="flex flex-col lg:flex-row items-center gap-1 lg:gap-1.5 px-3 lg:px-3.5 py-2 lg:py-2.5 text-[10px] lg:text-[12.5px] font-semibold text-[#071A2B] hover:text-[#1E3A8A] hover:bg-[#F0F4FF] whitespace-nowrap transition-colors border-b-2 border-transparent hover:border-[#1E3A8A] shrink-0"
                 >
                   {cat.image
@@ -387,6 +400,49 @@ export default function Navbar() {
                 </Link>
               ))}
             </div>
+            {showCategoryMenu && (
+              <div className="absolute left-0 right-0 top-full z-[70] max-h-[75vh] overflow-y-auto border-y border-[#E2E8F0] bg-white shadow-xl">
+                <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-5 sm:grid-cols-3 lg:grid-cols-5">
+                  {catNav.filter(cat => cat.parent_id === null).map(department => {
+                    const children = catNav.filter(category => category.parent_id === department.id)
+                    return (
+                      <section key={department.id}>
+                        <Link
+                          to={getCategoryUrl(catNav, department)}
+                          onClick={() => setShowCategoryMenu(false)}
+                          className="text-[12px] font-extrabold text-[#071A2B] hover:text-[#1E3A8A]"
+                        >
+                          {department.name}
+                        </Link>
+                        <div className="mt-2 space-y-1.5">
+                          {children.map(child => (
+                            <div key={child.id}>
+                              <Link
+                                to={getCategoryUrl(catNav, child)}
+                                onClick={() => setShowCategoryMenu(false)}
+                                className="block text-[11px] font-semibold text-[#475569] hover:text-[#1E3A8A]"
+                              >
+                                {child.name}
+                              </Link>
+                              {catNav.filter(category => category.parent_id === child.id).map(subcategory => (
+                                <Link
+                                  key={subcategory.id}
+                                  to={getCategoryUrl(catNav, subcategory)}
+                                  onClick={() => setShowCategoryMenu(false)}
+                                  className="ml-2 mt-1 block text-[10px] text-[#64748B] hover:text-[#1E3A8A]"
+                                >
+                                  {subcategory.name}
+                                </Link>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </nav>

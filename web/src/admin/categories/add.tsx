@@ -8,10 +8,13 @@ export default function AddCategory() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
+  const [description, setDescription] = useState('')
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [parentId, setParentId] = useState('')
+  const [position, setPosition] = useState('0')
+  const [isActive, setIsActive] = useState(true)
   const [attributes, setAttributes] = useState<ApiCategoryAttribute[]>([])
   const [attributeName, setAttributeName] = useState('')
   const [attributeType, setAttributeType] = useState<ApiCategoryAttribute['input_type']>('text')
@@ -46,7 +49,10 @@ export default function AddCategory() {
       const fd = new FormData()
       fd.append('name', name.trim())
       fd.append('slug', slug.trim())
+      fd.append('description', description.trim())
       fd.append('parent_id', parentId)
+      fd.append('position', position)
+      fd.append('is_active', String(isActive))
       fd.append('attributes', JSON.stringify(attributes))
       if (image) fd.append('image', image)
       await adminProductsApi.createCategory(fd)
@@ -124,11 +130,27 @@ export default function AddCategory() {
         </div>
 
         <div>
+          <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Description</label>
+          <textarea value={description} onChange={event => setDescription(event.target.value)} rows={3} placeholder="Optional description for shoppers" className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px]" />
+        </div>
+
+        <div>
           <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Parent category</label>
           <select value={parentId} onChange={event => setParentId(event.target.value)} className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px]">
             <option value="">Top-level category</option>
             {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
+        </div>
+
+        <div className="grid grid-cols-2 items-end gap-3">
+          <div>
+            <label className="mb-2 block text-[13px] font-bold text-[#071A2B]">Display order</label>
+            <input type="number" min="0" value={position} onChange={event => setPosition(event.target.value)} className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-3 text-[13px]" />
+          </div>
+          <label className="flex items-center gap-2 pb-3 text-[13px] font-semibold text-[#071A2B]">
+            <input type="checkbox" checked={isActive} onChange={event => setIsActive(event.target.checked)} />
+            Active in marketplace
+          </label>
         </div>
 
         <section className="rounded-xl border border-[#E2E8F0] bg-white p-4 space-y-3">

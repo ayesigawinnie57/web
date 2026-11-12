@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShoppingBag } from 'lucide-react'
-import { productsApi, type ApiCategory } from '../lib/api'
+import { getCategoryUrl, productsApi, type ApiCategory } from '../lib/api'
 import { trackCategoryVisit } from '../lib/behaviour'
 
 export default function ShopByCategory() {
@@ -32,10 +32,10 @@ export default function ShopByCategory() {
 
         {/* Scrollable row */}
         <div className="flex gap-4 overflow-x-auto scrollbar-none pb-2">
-          {categories.map((cat) => (
+          {categories.filter(cat => cat.parent_id === null).map((cat) => (
             <Link
               key={cat.slug}
-              to={`/shop?category=${cat.slug}`}
+              to={getCategoryUrl(categories, cat)}
               onClick={() => trackCategoryVisit(cat.slug)}
               className="group relative shrink-0 w-[calc((100%-48px)/3)] sm:w-[calc((100%-48px)/4)] lg:w-[calc((100%-64px)/5)] h-52 overflow-hidden rounded-3xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
             >

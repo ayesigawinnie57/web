@@ -5,6 +5,7 @@ import { adminProductsApi, type ApiCategory } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 import RichTextEditor from '../../components/RichTextEditor'
 import ProductVariantEditor, { type ProductVariantDraft } from '../../components/ProductVariantEditor'
+import CategoryCascadeSelect from '../../components/CategoryCascadeSelect'
 
 type Form = {
   name: string; price: string; originalPrice: string; stock: string
@@ -35,7 +36,6 @@ export default function AddProduct() {
       .then(({ data }) => {
         const cats = Array.isArray(data) ? data : (data as any).results ?? []
         setCategories(cats)
-        if (cats.length) setForm(f => ({ ...f, categoryId: String(cats[0].id) }))
       })
       .catch(err => setError(parseError(err, 'Failed to load categories.')))
   }, [])
@@ -144,22 +144,7 @@ export default function AddProduct() {
               {categories.length === 0 && !error && (
                 <p className="text-[12px] text-[#94A3B8] mb-2">Loading categories...</p>
               )}
-              <div className="flex flex-wrap gap-2">
-                {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => set('categoryId')(String(cat.id))}
-                    className={`px-3 py-1.5 rounded-full border text-[12px] font-semibold capitalize transition-colors ${
-                      form.categoryId === String(cat.id)
-                        ? 'bg-[#22C55E] border-[#22C55E] text-white'
-                        : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#22C55E]'
-                    }`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
+              <CategoryCascadeSelect categories={categories} selectedId={form.categoryId} onChange={value => set('categoryId')(value)} required />
             </div>
           </div>
 

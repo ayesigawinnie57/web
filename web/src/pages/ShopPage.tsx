@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
-import { productsApi, toProduct, watchPageResume, type ApiCategory, type Product } from '../lib/api'
+import { getCategoryPath, productsApi, toProduct, watchPageResume, type ApiCategory, type Product } from '../lib/api'
 
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -18,6 +18,13 @@ export default function ShopPage() {
   const category = searchParams.get('category') ?? ''
   const saleOnly = searchParams.get('sale') === 'true'
   const topBought = searchParams.get('top_bought') === 'true'
+  const brand = searchParams.get('brand') ?? ''
+  const priceMin = searchParams.get('price_min') ?? ''
+  const priceMax = searchParams.get('price_max') ?? ''
+  const availableOnly = searchParams.get('available') === 'true'
+  const minRating = searchParams.get('min_rating') ?? ''
+  const seller = searchParams.get('seller') ?? ''
+  const ordering = searchParams.get('ordering') ?? ''
 
   useEffect(() => {
     setLoading(true)
@@ -26,6 +33,13 @@ export default function ShopPage() {
     if (query) params.set('search', query)
     if (category) params.set('category', category)
     if (topBought) params.set('top_bought', 'true')
+    if (brand) params.set('brand', brand)
+    if (priceMin) params.set('price_min', priceMin)
+    if (priceMax) params.set('price_max', priceMax)
+    if (availableOnly) params.set('available', 'true')
+    if (minRating) params.set('min_rating', minRating)
+    if (seller) params.set('seller', seller)
+    if (ordering) params.set('ordering', ordering)
 
     let active = true
     const loadProducts = () => {
@@ -64,7 +78,7 @@ export default function ShopPage() {
       active = false
       stopWatching()
     }
-  }, [query, category, saleOnly, topBought])
+  }, [query, category, saleOnly, topBought, brand, priceMin, priceMax, availableOnly, minRating, seller, ordering])
 
   const updateFilter = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams)
@@ -73,8 +87,10 @@ export default function ShopPage() {
     setSearchParams(next)
   }
 
-  const categoryName = categories.find(c => c.slug === category)?.name
-  const heading = topBought ? 'Top Bought Products' : saleOnly ? 'Deals' : categoryName ?? (query ? `Results for "${query}"` : 'Shop all products')
+  const selectedCategory = categories.find(c => c.slug === category)
+  const categoryPath = selectedCategory ? getCategoryPath(categories, selectedCategory) : []
+  const categoryName = categoryPath.map(item => item.name).join(' / ')
+  const heading = topBought ? 'Top Bought Products' : saleOnly ? 'Deals' : categoryName || (query ? `Results for "${query}"` : 'Shop all products')
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -93,15 +109,77 @@ export default function ShopPage() {
               <p className="text-[13px] text-[#64748B] mt-2">{products.length} product{products.length === 1 ? '' : 's'} available</p>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <select value={category} onChange={e => updateFilter('category', e.target.value)} className="h-10 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none">
-              <option value="">All categories</option>
-              {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+          <div className="grid w-full gap-2 sm:grid-cols-2 md:w-auto lg:grid-cols-4">
+            <select
+              aria-label="Department filter"
+              value={categoryPath[0]?.slug ?? ''}
+              onChange={event => updateFilter('category', event.target.value)}
+              className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none"
+            >
+              <option value="">All departments</option>
+              {categories.filter(item => item.parent_id === null).map(item => <option key={item.id} value={item.slug}>{item.name}</option>)}
             </select>
-            <select value={saleOnly ? 'sale' : ''} onChange={e => updateFilter('sale', e.target.value ? 'true' : '')} className="h-10 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none">
+            <select
+              aria-label="Category filter"
+              value={categoryPath[1]?.slug ?? ''}
+              onChange={event => updateFilter('category', event.target.value || categoryPath[0]?.slug || '')}
+              disabled={!categoryPath[0]}
+              className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none disabled:bg-[#F1F5F9]"
+            >
+              <option value="">All in department</option>
+              {categories.filter(item => item.parent_id === categoryPath[0]?.id).map(item => <option key={item.id} value={item.slug}>{item.name}</option>)}
+            </select>
+            <select
+              aria-label="Subcategory filter"
+              value={categoryPath[2]?.slug ?? ''}
+              onChange={event => updateFilter('category', event.target.value || categoryPath[1]?.slug || '')}
+              disabled={!categoryPath[1]}
+              className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none disabled:bg-[#F1F5F9]"
+            >
+              <option value="">All in category</option>
+              {categories.filter(item => item.parent_id === categoryPath[1]?.id).map(item => <option key={item.id} value={item.slug}>{item.name}</option>)}
+            </select>
+            <select value={saleOnly ? 'sale' : ''} onChange={event => updateFilter('sale', event.target.value ? 'true' : '')} className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] text-[#071A2B] outline-none">
               <option value="">All products</option>
               <option value="sale">On sale</option>
             </select>
+            <input aria-label="Brand filter" value={brand} onChange={event => updateFilter('brand', event.target.value)} placeholder="Brand" className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] outline-none" />
+            <input aria-label="Minimum price" type="number" min="0" value={priceMin} onChange={event => updateFilter('price_min', event.target.value)} placeholder="Min price" className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] outline-none" />
+            <input aria-label="Maximum price" type="number" min="0" value={priceMax} onChange={event => updateFilter('price_max', event.target.value)} placeholder="Max price" className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] outline-none" />
+            <select aria-label="Minimum rating filter" value={minRating} onChange={event => updateFilter('min_rating', event.target.value)} className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] outline-none">
+              <option value="">Any rating</option><option value="3">3+ stars</option><option value="4">4+ stars</option>
+            </select>
+            <input aria-label="Trader or store filter" value={seller} onChange={event => updateFilter('seller', event.target.value)} placeholder="Trader or store" className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] outline-none" />
+            <select aria-label="Sort products" value={ordering} onChange={event => updateFilter('ordering', event.target.value)} className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] outline-none">
+              <option value="">Newest first</option><option value="price">Price: low to high</option><option value="-price">Price: high to low</option><option value="-rating">Top rated</option>
+            </select>
+            <label className="flex h-10 items-center gap-2 border border-[#E2E8F0] bg-white px-3 text-[12px] text-[#334155]">
+              <input type="checkbox" checked={availableOnly} onChange={event => updateFilter('available', event.target.checked ? 'true' : '')} />
+              In stock
+            </label>
+            {selectedCategory?.attributes.filter(attribute => attribute.is_filterable).map(attribute => (
+              attribute.choices.length ? (
+                <select
+                  key={attribute.key}
+                  aria-label={attribute.name}
+                  value={searchParams.get(`attr_${attribute.key}`) ?? ''}
+                  onChange={event => updateFilter(`attr_${attribute.key}`, event.target.value)}
+                  className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] outline-none"
+                >
+                  <option value="">Any {attribute.name}</option>
+                  {attribute.choices.map(choice => <option key={choice} value={choice}>{choice}</option>)}
+                </select>
+              ) : (
+                <input
+                  key={attribute.key}
+                  aria-label={attribute.name}
+                  value={searchParams.get(`attr_${attribute.key}`) ?? ''}
+                  onChange={event => updateFilter(`attr_${attribute.key}`, event.target.value)}
+                  placeholder={attribute.name}
+                  className="h-10 min-w-0 px-3 bg-white border border-[#E2E8F0] text-[13px] outline-none"
+                />
+              )
+            ))}
           </div>
         </div>
 

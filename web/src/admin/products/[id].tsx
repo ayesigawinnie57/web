@@ -6,6 +6,7 @@ import { adminProductsApi, type ApiCategory } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 import RichTextEditor from '../../components/RichTextEditor'
 import ProductVariantEditor, { type ProductVariantDraft } from '../../components/ProductVariantEditor'
+import CategoryCascadeSelect from '../../components/CategoryCascadeSelect'
 
 type Form = { name: string; price: string; originalPrice: string; stock: string; deliveryFee: string; categoryId: string; shortDescription: string; longDescription: string; isFeatured: boolean; isNewDeal: boolean; isActive: boolean }
 
@@ -151,33 +152,7 @@ export default function EditProduct() {
 
             <div>
               <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Category</label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => set('categoryId')('')}
-                  className={`px-3 py-1.5 rounded-full border text-[12px] font-semibold transition-colors ${
-                    !form.categoryId
-                      ? 'bg-[#22C55E] border-[#22C55E] text-white'
-                      : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#22C55E]'
-                  }`}
-                >
-                  No category
-                </button>
-                {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => set('categoryId')(String(cat.id))}
-                    className={`px-3 py-1.5 rounded-full border text-[12px] font-semibold capitalize transition-colors ${
-                      form.categoryId === String(cat.id)
-                        ? 'bg-[#22C55E] border-[#22C55E] text-white'
-                        : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#22C55E]'
-                    }`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
+              <CategoryCascadeSelect categories={categories} selectedId={form.categoryId} onChange={value => set('categoryId')(value)} allowEmpty />
             </div>
           </div>
 

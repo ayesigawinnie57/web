@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Package, ArrowLeft, ImagePlus, X, Search } from '
 import axios from 'axios'
 import { adminProductsApi, tradersApi, productsApi, type ApiTraderProduct, type ApiCategory } from '../lib/api'
 import ProductVariantEditor, { type ProductVariantDraft } from '../components/ProductVariantEditor'
+import CategoryCascadeSelect from '../components/CategoryCascadeSelect'
 import RichTextEditor from '../components/RichTextEditor'
 
 const fmt = (n: string | number) => `UGX ${Number(n).toLocaleString()}`
@@ -239,8 +240,7 @@ export default function TraderProducts() {
   }, [traderUuid, reloadKey])
 
   const openAdd = () => {
-    const firstCat = categories[0]
-    setForm({ ...EMPTY, category_id: firstCat ? String(firstCat.id) : '' })
+    setForm(EMPTY)
     setSpecifications({})
     setVariantValues({})
     setVariantValueDrafts({})
@@ -472,23 +472,8 @@ export default function TraderProducts() {
 
             <div>
               <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Category</label>
-              {categories.length === 0 && <p className="text-[12px] text-[#94A3B8] mb-2">Loading categories...</p>}
-              <div className="flex flex-wrap gap-2">
-                {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => changeCategory(String(cat.id))}
-                    className={`px-3 py-1.5 rounded-full border text-[12px] font-semibold capitalize transition-colors ${
-                      form.category_id === String(cat.id)
-                        ? 'bg-[#22C55E] border-[#22C55E] text-white'
-                        : 'bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#22C55E]'
-                    }`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
+              <CategoryCascadeSelect categories={categories} selectedId={form.category_id} onChange={changeCategory} />
+              <p className="mt-1.5 text-[11px] text-[#64748B]">Choose a department, then narrow it to a category or subcategory.</p>
             </div>
           </div>
 

@@ -10,13 +10,13 @@ import SwitchTransition from './components/SwitchTransition'
 import AppLoadingScreen from './components/AppLoadingScreen'
 import LandingPage from './landing'
 
-const ProductPage            = lazy(() => import('./pages/ProductPage'))
 const CartPage               = lazy(() => import('./pages/CartPage'))
 const CheckoutPage           = lazy(() => import('./pages/CheckoutPage'))
 const LoginPage              = lazy(() => import('./pages/LoginPage'))
 const RegisterPage           = lazy(() => import('./pages/RegisterPage'))
 const ShopPage               = lazy(() => import('./pages/ShopPage'))
 const CategoryPage           = lazy(() => import('./pages/CategoryPage'))
+const ShopPathRoute          = lazy(() => import('./pages/ShopPathRoute'))
 const DealsPage              = lazy(() => import('./pages/DealsPage'))
 const WishlistPage           = lazy(() => import('./pages/WishlistPage'))
 const AccountPage            = lazy(() => import('./pages/AccountPage'))
@@ -180,9 +180,11 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/open" element={<Navigate to="/admin" replace />} />
           <Route path="/shop" element={<ShopPage />} />
+          <Route path="/shop/:department/:category/:subcategory" element={<ShopPathRoute />} />
+          <Route path="/shop/:department/:category" element={<ShopPathRoute />} />
+          <Route path="/shop/:slug" element={<ShopPathRoute />} />
           <Route path="/categories" element={<CategoryPage />} />
           <Route path="/deals" element={<DealsPage />} />
-          <Route path="/shop/:slug" element={<ProductPage />} />
           <Route path="/products/:slug" element={<ProductRedirect />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />

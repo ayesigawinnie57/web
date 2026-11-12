@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { productsApi, type ApiCategory } from '../lib/api'
+import { getCategoryUrl, productsApi, type ApiCategory } from '../lib/api'
 
 const emojis: Record<string, string> = {
   electronics: '📱', fashion: '👗', 'home-living': '🛋️',
@@ -26,10 +26,10 @@ export default function Categories() {
           <p className="text-gray-500 text-sm">Find exactly what you're looking for</p>
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
-          {cats.map(cat => (
+          {cats.filter(cat => cat.parent_id === null).map(cat => (
             <Link
               key={cat.slug}
-              to={`/shop?category=${cat.slug}`}
+              to={getCategoryUrl(cats, cat)}
               className="flex flex-col items-center gap-2 p-3 bg-white rounded-2xl border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all"
             >
               <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center overflow-hidden">
