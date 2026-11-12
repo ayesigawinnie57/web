@@ -155,8 +155,9 @@ export default function CategoryPage() {
                           <Link
                             key={item.id}
                             to={getCategoryUrl(categories, item)}
-                            className="rounded-full border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1.5 text-[11px] font-medium text-[#475569] transition hover:border-[#BFDBFE] hover:bg-[#EFF6FF] hover:text-[#1E3A8A]"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1.5 text-[11px] font-medium text-[#475569] transition hover:border-[#BFDBFE] hover:bg-[#EFF6FF] hover:text-[#1E3A8A]"
                           >
+                            {item.image && <img src={item.image} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />}
                             {item.name}
                           </Link>
                         ))}
