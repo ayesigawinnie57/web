@@ -30,8 +30,8 @@ export default function ShopByCategory() {
           </Link>
         </div>
 
-        {/* Scrollable row */}
-        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none pb-3 sm:gap-4">
+        {/* Two-row scrollable category grid */}
+        <div className="grid auto-cols-[156px] grid-flow-col grid-rows-2 snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none pb-3 sm:auto-cols-[190px] sm:gap-4 lg:auto-cols-[210px]">
           {categories.filter(cat => cat.parent_id === null).map((cat) => (
             <Link
               key={cat.slug}
