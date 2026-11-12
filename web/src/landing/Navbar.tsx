@@ -149,10 +149,23 @@ export default function Navbar() {
   const [hoveredDepartmentId, setHoveredDepartmentId] = useState<number | null>(null)
   const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(null)
   const departmentItems = catNav.filter(category => category.parent_id === null)
-  const categoryItems = catNav.filter(category => category.parent_id === hoveredDepartmentId)
-  const subcategoryItems = catNav.filter(category => category.parent_id === hoveredCategoryId)
+  const categoryItems = hoveredDepartmentId === null
+    ? []
+    : catNav.filter(category => category.parent_id === hoveredDepartmentId)
+  const subcategoryItems = hoveredCategoryId === null
+    ? []
+    : catNav.filter(category => category.parent_id === hoveredCategoryId)
+  const categoryMenuWidth = hoveredDepartmentId === null
+    ? 'w-[260px]'
+    : subcategoryItems.length > 0
+      ? 'w-[820px]'
+      : 'w-[540px]'
 
   const openCategoryMenu = () => {
+    if (!showCategoryMenu) {
+      setHoveredDepartmentId(null)
+      setHoveredCategoryId(null)
+    }
     setShowCategoryMenu(true)
   }
 
@@ -424,8 +437,8 @@ export default function Navbar() {
                   <ShoppingBag size={15} /> All Categories <ChevronRight className={`h-3.5 w-3.5 transition-transform ${showCategoryMenu ? 'rotate-90' : ''}`} />
                 </button>
                 {showCategoryMenu && (
-                  <div className="absolute left-0 top-full z-[70] flex h-[calc(100dvh-8.25rem)] w-[min(850px,calc(100vw-2rem))] overflow-hidden rounded-b-2xl border border-t-0 border-[#E2E8F0] bg-white shadow-2xl">
-                    <div className="w-[30%] min-w-[220px] overflow-y-auto border-r border-[#E2E8F0] bg-[#F8FAFC] py-2">
+                  <div className={`absolute left-0 top-full z-[70] flex h-[calc(100dvh-8.25rem)] ${categoryMenuWidth} overflow-hidden rounded-b-2xl border border-t-0 border-[#E2E8F0] bg-white shadow-2xl`}>
+                    <div className="w-[260px] shrink-0 overflow-y-auto border-r border-[#E2E8F0] bg-[#F8FAFC] py-2">
                       <p className="px-4 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Departments</p>
                       {departmentItems.map(department => (
                         <div
@@ -459,7 +472,7 @@ export default function Navbar() {
                       </Link>
                     </div>
                     {hoveredDepartmentId !== null && (
-                      <div className="w-[35%] min-w-[240px] overflow-y-auto border-r border-[#E2E8F0] py-2">
+                      <div className="w-[280px] shrink-0 overflow-y-auto border-r border-[#E2E8F0] py-2">
                         <p className="px-4 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Categories</p>
                         {categoryItems.length ? categoryItems.map(category => {
                           const hasSubcategories = catNav.some(item => item.parent_id === category.id)
@@ -483,8 +496,8 @@ export default function Navbar() {
                         }) : <p className="px-4 py-3 text-[12px] text-[#94A3B8]">No categories yet.</p>}
                       </div>
                     )}
-                    {subcategoryItems.length > 0 && (
-                      <div className="min-w-[220px] flex-1 overflow-y-auto bg-white py-2">
+                    {hoveredDepartmentId !== null && subcategoryItems.length > 0 && (
+                      <div className="w-[280px] shrink-0 overflow-y-auto bg-white py-2">
                         <p className="px-4 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Subcategories</p>
                         {subcategoryItems.map(subcategory => (
                           <Link
