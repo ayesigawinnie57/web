@@ -9,6 +9,46 @@ import { getCategoryUrl, productsApi, watchPageResume, type ApiCategory } from '
 const icons = [Grid2X2, ShoppingBag, Sparkles, BookOpen, Home, Trophy]
 const colors = ['#1E3A8A', '#E11D48', '#D97706', '#7C3AED', '#0F766E', '#15803D']
 
+function normalizeSearchText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function isNearMatch(query: string, word: string) {
+  if (word.includes(query)) return true
+  const maxDistance = query.length >= 8 ? 2 : query.length >= 4 ? 1 : 0
+  if (!maxDistance || Math.abs(query.length - word.length) > maxDistance) return false
+
+  let previous = Array.from({ length: word.length + 1 }, (_, index) => index)
+  for (let queryIndex = 1; queryIndex <= query.length; queryIndex += 1) {
+    const current = [queryIndex]
+    let rowMinimum = queryIndex
+    for (let wordIndex = 1; wordIndex <= word.length; wordIndex += 1) {
+      const cost = query[queryIndex - 1] === word[wordIndex - 1] ? 0 : 1
+      const distance = Math.min(
+        previous[wordIndex] + 1,
+        current[wordIndex - 1] + 1,
+        previous[wordIndex - 1] + cost,
+      )
+      current.push(distance)
+      rowMinimum = Math.min(rowMinimum, distance)
+    }
+    if (rowMinimum > maxDistance) return false
+    previous = current
+  }
+  return previous[word.length] <= maxDistance
+}
+
+function matchesCategorySearch(category: ApiCategory, queryTokens: string[]) {
+  const searchableText = normalizeSearchText(`${category.name} ${category.slug} ${category.description}`)
+  const words = searchableText.split(' ')
+  return queryTokens.every(token => words.some(word => isNearMatch(token, word)))
+}
+
 export default function CategoryPage() {
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,18 +79,19 @@ export default function CategoryPage() {
   }, [])
 
   const departments = useMemo(() => {
-    const term = search.trim().toLowerCase()
+    const queryTokens = normalizeSearchText(search).split(' ').filter(Boolean)
     return categories
       .filter(category => category.parent_id === null)
       .map(category => {
         const children = categories.filter(item => item.parent_id === category.id)
-        const descendants = [
-          ...children,
-          ...children.flatMap(child => categories.filter(item => item.parent_id === child.id)),
-        ]
-        const matchesDepartment = !term || category.name.toLowerCase().includes(term)
-        const matchingDescendants = term
-          ? descendants.filter(item => item.name.toLowerCase().includes(term))
+        const getDescendants = (parentId: number): ApiCategory[] => {
+          const directChildren = categories.filter(item => item.parent_id === parentId)
+          return directChildren.flatMap(child => [child, ...getDescendants(child.id)])
+        }
+        const descendants = getDescendants(category.id)
+        const matchesDepartment = queryTokens.length === 0 || matchesCategorySearch(category, queryTokens)
+        const matchingDescendants = queryTokens.length > 0
+          ? descendants.filter(item => matchesCategorySearch(item, queryTokens))
           : children
 
         return {
@@ -88,8 +129,8 @@ export default function CategoryPage() {
                 type="search"
                 value={search}
                 onChange={event => setSearch(event.target.value)}
-                placeholder="Search departments or categories"
-                aria-label="Search departments or categories"
+                placeholder="Search departments, categories, or keywords"
+                aria-label="Search departments, categories, or keywords"
                 className="h-12 w-full rounded-xl border border-white/30 bg-white pl-11 pr-4 text-[13px] text-[#071A2B] outline-none placeholder:text-[#94A3B8] focus:ring-4 focus:ring-white/20"
               />
             </label>
