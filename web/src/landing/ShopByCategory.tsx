@@ -25,49 +25,48 @@ export default function ShopByCategory() {
             <h2 className="text-[22px] font-extrabold text-[#071A2B]">Shop by Category</h2>
             <p className="mt-0.5 text-[12px] text-[#64748B]">Browse our wide range of product categories</p>
           </div>
-          <Link to="/categories" className="text-[13px] font-bold text-[#1E3A8A] hover:underline">
+          <Link to="/categories" className="rounded-full border border-[#DBEAFE] bg-white px-3.5 py-2 text-[12px] font-bold text-[#1E3A8A] transition hover:border-[#1E3A8A] hover:bg-[#EFF6FF]">
             View All →
           </Link>
         </div>
 
         {/* Scrollable row */}
-        <div className="flex gap-4 overflow-x-auto scrollbar-none pb-2">
+        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none pb-3 sm:gap-4">
           {categories.filter(cat => cat.parent_id === null).map((cat) => (
             <Link
               key={cat.slug}
               to={getCategoryUrl(categories, cat)}
               onClick={() => trackCategoryVisit(cat.slug)}
-              className="group relative shrink-0 w-[calc((100%-48px)/3)] sm:w-[calc((100%-48px)/4)] lg:w-[calc((100%-64px)/5)] h-52 overflow-hidden rounded-3xl shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              className="group relative h-48 w-[156px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#DCE5F0] bg-[#E8EEF7] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-white hover:shadow-xl sm:h-56 sm:w-[190px] sm:rounded-3xl lg:h-60 lg:w-[210px]"
             >
               {/* Background */}
               {cat.image
-                ? <img src={cat.image} alt={cat.name} className="absolute inset-0 w-full h-full object-contain transition duration-500 group-hover:scale-110" />
-                : <div className="absolute inset-0 bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] flex items-center justify-center">
-                    <ShoppingBag size={40} className="text-white/40" strokeWidth={1.5} />
+                ? <img src={cat.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-105" />
+                : <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#12344A] via-[#1E3A8A] to-[#4F7FE8]">
+                    <ShoppingBag size={42} className="text-white/50 transition-transform duration-500 group-hover:scale-110" strokeWidth={1.4} />
                   </div>
               }
 
               {/* Gradient overlay — stronger at bottom */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 transition duration-300 group-hover:from-black/95" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#071A2B]/95 via-[#071A2B]/25 to-transparent transition duration-300 group-hover:from-[#071A2B]/90" />
 
               {/* Shine effect on hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500 bg-gradient-to-br from-white/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-br from-white/15 via-transparent to-transparent opacity-0 transition duration-500 group-hover:opacity-100" />
 
               {/* Label */}
-              <div className="absolute bottom-0 left-0 right-0 px-3 pb-4">
-                <span className="block text-[13px] font-extrabold text-white leading-snug text-center tracking-wide line-clamp-2" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
+              <div className="absolute inset-x-0 bottom-0 px-3 pb-3.5 sm:px-4 sm:pb-4">
+                <span className="block text-left text-[13px] font-extrabold leading-snug tracking-wide text-white line-clamp-2 sm:text-[15px]" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
                   {cat.name}
                 </span>
-                <span className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-bold text-[#F97316] uppercase tracking-widest" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
+                <span className="mt-1.5 flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[#FDBA74] sm:text-[10px]" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
                   Shop now
-                  <svg className="w-3 h-3 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </span>
               </div>
 
-              {/* Top-right badge glow ring */}
-              <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-white/40 ring-2 ring-white/20 group-hover:bg-white/70 transition duration-300" />
+              <div className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-white/15" />
             </Link>
           ))}
         </div>
