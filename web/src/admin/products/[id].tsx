@@ -5,6 +5,7 @@ import axios from 'axios'
 import { adminProductsApi, type ApiCategory } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 import RichTextEditor from '../../components/RichTextEditor'
+import ProductVariantEditor, { type ProductVariantDraft } from '../../components/ProductVariantEditor'
 
 type Form = { name: string; price: string; originalPrice: string; stock: string; deliveryFee: string; categoryId: string; shortDescription: string; longDescription: string; isFeatured: boolean; isNewDeal: boolean; isActive: boolean }
 
@@ -26,6 +27,8 @@ export default function EditProduct() {
   const [existingImage, setExistingImage] = useState<string | null>(null)
   const [newImage, setNewImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [variants, setVariants] = useState<ProductVariantDraft[]>([])
+  const initialVariants = useRef('')
   const [initialForm, setInitialForm] = useState<Form>({ name: '', price: '', originalPrice: '', stock: '', deliveryFee: '', categoryId: '', shortDescription: '', longDescription: '', isFeatured: false, isNewDeal: false, isActive: true })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -43,6 +46,19 @@ export default function EditProduct() {
         const loaded = { name: p.name, price: p.price, originalPrice: p.original_price ?? '', stock: String(p.stock), deliveryFee: p.delivery_fee ?? '0', categoryId: String(p.category?.id ?? ''), shortDescription: p.short_description ?? '', longDescription: p.long_description ?? '', isFeatured: p.is_featured, isNewDeal: p.is_new_deal ?? false, isActive: p.is_active }
         setForm(loaded)
         setInitialForm(loaded)
+        const loadedVariants = (p.variants ?? []).map(variant => ({
+          sku: variant.sku,
+          options: variant.options,
+          price: variant.listed_price,
+          compare_at_price: variant.compare_at_listed_price ?? '',
+          stock: String(variant.stock),
+          weight: variant.weight ?? '',
+          is_active: variant.is_active,
+          image_url: variant.image_url,
+          image_file: null,
+        }))
+        setVariants(loadedVariants)
+        initialVariants.current = JSON.stringify(loadedVariants.map(({ image_file, ...variant }) => variant))
       })
       .catch(err => setError(parseError(err, 'Failed to load product.')))
       .finally(() => setLoading(false))
@@ -73,6 +89,23 @@ export default function EditProduct() {
       fd.append('short_description', form.shortDescription)
       fd.append('long_description', form.longDescription)
       if (newImage) fd.append('image', newImage)
+      const variantSnapshot = variants.map(({ image_file, ...variant }) => variant)
+      const variantsDirty = variants.some(variant => variant.image_file !== null)
+        || JSON.stringify(variantSnapshot) !== initialVariants.current
+      if (variantsDirty) {
+        fd.append('variants', JSON.stringify(variants.map(variant => ({
+          sku: variant.sku.trim(),
+          options: variant.options,
+          price: Number(variant.price),
+          compare_at_price: variant.compare_at_price ? Number(variant.compare_at_price) : null,
+          stock: Number(variant.stock || 0),
+          weight: variant.weight ? Number(variant.weight) : null,
+          is_active: variant.is_active,
+        }))))
+        variants.forEach((variant, index) => {
+          if (variant.image_file) fd.append(`variant_image_${index}`, variant.image_file)
+        })
+      }
       await adminProductsApi.update(Number(id), fd)
       navigate('/admin/products')
     } catch (err) {
@@ -180,10 +213,19 @@ export default function EditProduct() {
                 placeholder="Full product details..."
               />
             </div>
+            <ProductVariantEditor
+              variants={variants}
+              onChange={setVariants}
+              basePrice={form.price}
+              baseOriginalPrice={form.originalPrice}
+            />
 
             <div className="flex justify-end gap-3 pt-2">
               {(() => {
-                const isDirty = newImage !== null || (Object.keys(form) as (keyof Form)[]).some(k => form[k] !== initialForm[k])
+                const variantSnapshot = variants.map(({ image_file, ...variant }) => variant)
+                const variantsDirty = variants.some(variant => variant.image_file !== null)
+                  || JSON.stringify(variantSnapshot) !== initialVariants.current
+                const isDirty = newImage !== null || variantsDirty || (Object.keys(form) as (keyof Form)[]).some(k => form[k] !== initialForm[k])
                 return (
                   <>
                     <button type="button" onClick={() => navigate('/admin/products')} className="px-6 py-2.5 rounded-lg text-[13px] font-bold border border-[#E2E8F0] text-[#64748B] hover:border-[#071A2B] hover:text-[#071A2B] transition-colors">

@@ -344,7 +344,33 @@ export default function ProductPage() {
   const allImages = [
     ...(product.image ? [product.image] : []),
     ...product.images.map(i => i.url).filter(u => u !== product.image),
-  ]
+    ...activeVariants.map(variant => variant.image_url).filter((image): image is string => Boolean(image)),
+  ].filter((image, index, images) => images.indexOf(image) === index)
+  const variantImageChoices = activeVariants.filter(variant => Boolean(variant.image_url))
+
+  const selectVariant = (variant: typeof activeVariants[number]) => {
+    setSelectedOptions(Object.fromEntries(
+      Object.entries(variant.options).map(([key, value]) => [key, String(value)]),
+    ))
+    setQty(1)
+    if (variant.image_url) {
+      const imageIndex = allImages.indexOf(variant.image_url)
+      if (imageIndex >= 0) setActiveImg(imageIndex)
+    }
+  }
+
+  const selectOption = (key: string, value: string) => {
+    const nextOptions = { ...selectedOptions, [key]: value }
+    setSelectedOptions(nextOptions)
+    setQty(1)
+    const matchingVariant = activeVariants.find(variant =>
+      optionKeys.every(optionKey => String(variant.options[optionKey]) === nextOptions[optionKey]),
+    )
+    if (matchingVariant?.image_url) {
+      const imageIndex = allImages.indexOf(matchingVariant.image_url)
+      if (imageIndex >= 0) setActiveImg(imageIndex)
+    }
+  }
 
   const savings = currentOriginalPrice ? currentOriginalPrice - currentPrice : 0
   const shortDescription = product.shortDescription.trim() || 'A quality product from Majo Gadgets, selected for reliable everyday use and great value.'
@@ -529,7 +555,11 @@ export default function ProductPage() {
                   {allImages.map((img, i) => (
                     <button
                       key={i}
-                      onClick={() => setActiveImg(i)}
+                      onClick={() => {
+                        setActiveImg(i)
+                        const imageVariant = activeVariants.find(variant => variant.image_url === img)
+                        if (imageVariant) selectVariant(imageVariant)
+                      }}
                       className={`shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden transition-all ${i === activeImg ? 'border-[#1E3A8A] shadow-md' : 'border-[#E2E8F0] opacity-70 hover:opacity-100'}`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
@@ -592,6 +622,30 @@ export default function ProductPage() {
               {hasVariants && (
                 <div className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-4">
                   <h2 className="text-[13px] font-extrabold text-[#071A2B]">Choose options</h2>
+                  {variantImageChoices.length > 0 && (
+                    <fieldset>
+                      <legend className="mb-2 text-[12px] font-bold text-[#334155]">Choose a version</legend>
+                      <div className="flex flex-wrap gap-3">
+                        {variantImageChoices.map(variant => {
+                          const label = Object.values(variant.options).map(String).join(' · ') || 'Option'
+                          const selected = selectedVariant?.id === variant.id
+                          return (
+                            <button
+                              key={variant.id}
+                              type="button"
+                              aria-label={`Select ${label}`}
+                              aria-pressed={selected}
+                              onClick={() => selectVariant(variant)}
+                              className={`w-24 overflow-hidden rounded-xl border-2 text-left transition-colors ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
+                            >
+                              <img src={variant.image_url ?? ''} alt="" className="h-20 w-full object-cover" />
+                              <span className="block truncate px-2 py-1.5 text-[11px] font-semibold text-[#334155]">{label}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </fieldset>
+                  )}
                   {optionKeys.length === 0 ? (
                     <p className="text-[12px] text-amber-700">No options are currently available.</p>
                   ) : optionKeys.map(key => {
@@ -619,10 +673,7 @@ export default function ProductPage() {
                                   type="button"
                                   disabled={!hasAvailableOptionValue(key, value)}
                                   aria-pressed={selected}
-                                  onClick={() => {
-                                    setSelectedOptions(current => ({ ...current, [key]: value }))
-                                    setQty(1)
-                                  }}
+                                  onClick={() => selectOption(key, value)}
                                   className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0]'}`}
                                 >
                                   <span className="h-4 w-4 rounded-full border border-black/10" style={color ? { backgroundColor: color } : undefined} />
@@ -639,10 +690,7 @@ export default function ProductPage() {
                                 type="button"
                                 disabled={!hasAvailableOptionValue(key, value)}
                                 aria-pressed={selectedOptions[key] === value}
-                                onClick={() => {
-                                  setSelectedOptions(current => ({ ...current, [key]: value }))
-                                  setQty(1)
-                                }}
+                                onClick={() => selectOption(key, value)}
                                 className={`min-w-12 rounded-lg border px-3 py-2 text-[12px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${selectedOptions[key] === value ? 'border-[#1E3A8A] bg-blue-50 text-[#1E3A8A]' : 'border-[#E2E8F0] text-[#334155]'}`}
                               >{value}</button>
                             ))}
@@ -650,10 +698,7 @@ export default function ProductPage() {
                         ) : (
                           <select
                             value={selectedOptions[key] ?? ''}
-                            onChange={event => {
-                              setSelectedOptions(current => ({ ...current, [key]: event.target.value }))
-                              setQty(1)
-                            }}
+                            onChange={event => selectOption(key, event.target.value)}
                             className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-[13px] text-[#071A2B]"
                           >
                             <option value="">Select {optionLabel(key).toLowerCase()}</option>

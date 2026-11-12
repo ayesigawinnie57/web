@@ -4,6 +4,7 @@ import { ArrowLeft, ImagePlus, X } from 'lucide-react'
 import { adminProductsApi, type ApiCategory } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 import RichTextEditor from '../../components/RichTextEditor'
+import ProductVariantEditor, { type ProductVariantDraft } from '../../components/ProductVariantEditor'
 
 type Form = {
   name: string; price: string; originalPrice: string; stock: string
@@ -22,6 +23,7 @@ export default function AddProduct() {
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
+  const [variants, setVariants] = useState<ProductVariantDraft[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -72,6 +74,20 @@ export default function AddProduct() {
       fd.append('is_new_deal', String(form.isNewDeal))
       if (images[0]) fd.append('image', images[0])
       for (const img of images) fd.append('images', img)
+      if (variants.length) {
+        fd.append('variants', JSON.stringify(variants.map(variant => ({
+          sku: variant.sku.trim(),
+          options: variant.options,
+          price: Number(variant.price),
+          compare_at_price: variant.compare_at_price ? Number(variant.compare_at_price) : null,
+          stock: Number(variant.stock || 0),
+          weight: variant.weight ? Number(variant.weight) : null,
+          is_active: variant.is_active,
+        }))))
+        variants.forEach((variant, index) => {
+          if (variant.image_file) fd.append(`variant_image_${index}`, variant.image_file)
+        })
+      }
       await adminProductsApi.create(fd)
       navigate('/admin/products')
     } catch (err) {
@@ -157,6 +173,12 @@ export default function AddProduct() {
               <Field label="Delivery Fee (UGX)" value={form.deliveryFee} onChange={set('deliveryFee')} placeholder="e.g. 5000" type="number" />
             </div>
             <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} placeholder="Brief summary" />
+            <ProductVariantEditor
+              variants={variants}
+              onChange={setVariants}
+              basePrice={form.price}
+              baseOriginalPrice={form.originalPrice}
+            />
             <div>
               <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
               <RichTextEditor

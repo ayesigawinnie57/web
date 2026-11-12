@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Package, ArrowLeft, ImagePlus, X, Search } from 'lucide-react'
 import axios from 'axios'
 import { adminProductsApi, tradersApi, productsApi, type ApiTraderProduct, type ApiCategory } from '../lib/api'
+import ProductVariantEditor, { type ProductVariantDraft } from '../components/ProductVariantEditor'
 import RichTextEditor from '../components/RichTextEditor'
 
 const fmt = (n: string | number) => `UGX ${Number(n).toLocaleString()}`
@@ -50,15 +51,7 @@ const EMPTY: Form = {
   category_id: '', is_active: true, is_featured: false, is_new_deal: false,
 }
 
-type VariantDraft = {
-  sku: string
-  options: Record<string, string | number | boolean>
-  price: string
-  compare_at_price: string
-  stock: string
-  weight: string
-  is_active: boolean
-}
+type VariantDraft = ProductVariantDraft
 
 function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -154,6 +147,8 @@ export default function TraderProducts() {
       stock: '0',
       weight: '',
       is_active: true,
+      image_url: null,
+      image_file: null,
     })))
     setError('')
   }
@@ -249,6 +244,8 @@ export default function TraderProducts() {
       stock: String(variant.stock),
       weight: variant.weight ?? '',
       is_active: variant.is_active,
+      image_url: variant.image_url,
+      image_file: null,
     })))
     setImages([]); setPreviews([])
     setExistingImage(p.image_url || null)
@@ -275,15 +272,17 @@ export default function TraderProducts() {
 
   const handleSave = async (submitForReview: boolean) => {
     if (!form.name.trim() || !form.price) { setError('Name and price are required.'); return }
-    const variantPayload = variants.map(variant => ({
-      sku: variant.sku.trim(),
-      options: variant.options,
-      price: Number(variant.price),
-      compare_at_price: variant.compare_at_price ? Number(variant.compare_at_price) : null,
-      stock: Number(variant.stock || 0),
-      weight: variant.weight ? Number(variant.weight) : null,
-      is_active: variant.is_active,
-    }))
+    const variantPayload = variants.map((variant) => {
+      return {
+        sku: variant.sku.trim(),
+        options: variant.options,
+        price: Number(variant.price),
+        compare_at_price: variant.compare_at_price ? Number(variant.compare_at_price) : null,
+        stock: Number(variant.stock || 0),
+        weight: variant.weight ? Number(variant.weight) : null,
+        is_active: variant.is_active,
+      }
+    })
     if (variantPayload.some(variant => !Number.isFinite(variant.price) || variant.price <= 0)) {
       setError('Every variant needs a price greater than zero.')
       return
@@ -291,6 +290,9 @@ export default function TraderProducts() {
     setSaving(true); setError('')
     try {
       const fd = new FormData()
+      variants.forEach((variant, index) => {
+        if (variant.image_file) fd.append(`variant_image_${index}`, variant.image_file)
+      })
       fd.append('name', form.name.trim())
       fd.append('price', variants.length ? String(Math.min(...variantPayload.map(variant => variant.price))) : form.price)
       if (form.original_price) fd.append('original_price', form.original_price)
@@ -529,7 +531,7 @@ export default function TraderProducts() {
             {variantAttributes.length > 0 && (
               <section className="rounded-xl border border-[#E2E8F0] bg-white p-4 space-y-4">
                 <div>
-                  <h2 className="text-[14px] font-extrabold text-[#071A2B]">Options &amp; variants</h2>
+                  <h2 className="text-[14px] font-extrabold text-[#071A2B]">Category option values</h2>
                   <p className="text-[11px] text-[#64748B] mt-1">Add option values, then generate editable product combinations.</p>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
@@ -553,18 +555,15 @@ export default function TraderProducts() {
                     Generate variants
                   </button>
                 </div>
-                {variants.map((variant, index) => (
-                  <div key={`${index}-${JSON.stringify(variant.options)}`} className="grid grid-cols-2 md:grid-cols-5 gap-2 border-t border-[#F1F5F9] pt-3">
-                    <p className="col-span-2 md:col-span-5 text-[11px] font-bold text-[#071A2B]">{Object.values(variant.options).join(' / ')}</p>
-                    <input aria-label="Variant SKU" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="SKU" value={variant.sku} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, sku: event.target.value } : item))} />
-                    <input aria-label="Variant price" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="Price" type="number" value={variant.price} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, price: event.target.value } : item))} />
-                    <input aria-label="Variant compare-at price" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="Compare-at" type="number" value={variant.compare_at_price} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, compare_at_price: event.target.value } : item))} />
-                    <input aria-label="Variant stock" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="Stock" type="number" value={variant.stock} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, stock: event.target.value } : item))} />
-                    <input aria-label="Variant weight" className="px-2 py-2 border border-[#E2E8F0] rounded-lg text-[11px]" placeholder="Weight (kg)" type="number" step="0.001" value={variant.weight} onChange={event => setVariants(current => current.map((item, i) => i === index ? { ...item, weight: event.target.value } : item))} />
-                  </div>
-                ))}
               </section>
             )}
+
+            <ProductVariantEditor
+              variants={variants}
+              onChange={setVariants}
+              basePrice={form.price}
+              baseOriginalPrice={form.original_price}
+            />
 
             <div className="flex justify-end gap-3 pt-2">
               <button
