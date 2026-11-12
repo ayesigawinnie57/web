@@ -154,7 +154,12 @@ export default function Navbar() {
 
   const openCategoryMenu = () => {
     setShowCategoryMenu(true)
-    setHoveredDepartmentId(current => current ?? departmentItems[0]?.id ?? null)
+  }
+
+  const closeCategoryMenu = () => {
+    setShowCategoryMenu(false)
+    setHoveredDepartmentId(null)
+    setHoveredCategoryId(null)
   }
 
   useEffect(() => {
@@ -398,13 +403,13 @@ export default function Navbar() {
               <div
                 className="relative mr-2 hidden shrink-0 lg:block"
                 onMouseEnter={openCategoryMenu}
-                onMouseLeave={() => setShowCategoryMenu(false)}
+                onMouseLeave={closeCategoryMenu}
                 onKeyDown={event => {
-                  if (event.key === 'Escape') setShowCategoryMenu(false)
+                  if (event.key === 'Escape') closeCategoryMenu()
                 }}
                 onBlur={event => {
                   if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                    setShowCategoryMenu(false)
+                    closeCategoryMenu()
                   }
                 }}
               >
@@ -413,13 +418,13 @@ export default function Navbar() {
                   aria-expanded={showCategoryMenu}
                   aria-haspopup="true"
                   onFocus={openCategoryMenu}
-                  onClick={() => showCategoryMenu ? setShowCategoryMenu(false) : openCategoryMenu()}
+                  onClick={() => showCategoryMenu ? closeCategoryMenu() : openCategoryMenu()}
                   className="flex items-center gap-2 !rounded-lg bg-[#071A2B] px-3.5 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#12344A]"
                 >
                   <ShoppingBag size={15} /> All Categories <ChevronRight className={`h-3.5 w-3.5 transition-transform ${showCategoryMenu ? 'rotate-90' : ''}`} />
                 </button>
                 {showCategoryMenu && (
-                  <div className="absolute left-0 top-full z-[70] flex max-h-[min(70vh,560px)] w-[min(850px,calc(100vw-2rem))] overflow-hidden rounded-b-2xl border border-t-0 border-[#E2E8F0] bg-white shadow-2xl">
+                  <div className="absolute left-0 top-full z-[70] flex h-[calc(100dvh-8.25rem)] w-[min(850px,calc(100vw-2rem))] overflow-hidden rounded-b-2xl border border-t-0 border-[#E2E8F0] bg-white shadow-2xl">
                     <div className="w-[30%] min-w-[220px] overflow-y-auto border-r border-[#E2E8F0] bg-[#F8FAFC] py-2">
                       <p className="px-4 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Departments</p>
                       {departmentItems.map(department => (
@@ -437,7 +442,7 @@ export default function Navbar() {
                         >
                           <Link
                             to={getCategoryUrl(catNav, department)}
-                            onClick={() => setShowCategoryMenu(false)}
+                            onClick={closeCategoryMenu}
                             className="min-w-0 flex-1 truncate"
                           >
                             {department.name}
@@ -447,7 +452,7 @@ export default function Navbar() {
                       ))}
                       <Link
                         to="/categories"
-                        onClick={() => setShowCategoryMenu(false)}
+                        onClick={closeCategoryMenu}
                         className="mt-2 flex items-center gap-2 border-t border-[#E2E8F0] px-4 pt-3 text-[11px] font-bold text-[#1E3A8A] hover:text-[#F97316]"
                       >
                         Browse all departments <ArrowRight size={13} />
@@ -467,7 +472,7 @@ export default function Navbar() {
                             >
                               <Link
                                 to={getCategoryUrl(catNav, category)}
-                                onClick={() => setShowCategoryMenu(false)}
+                                onClick={closeCategoryMenu}
                                 className="min-w-0 flex-1 truncate"
                               >
                                 {category.name}
@@ -485,7 +490,7 @@ export default function Navbar() {
                           <Link
                             key={subcategory.id}
                             to={getCategoryUrl(catNav, subcategory)}
-                            onClick={() => setShowCategoryMenu(false)}
+                            onClick={closeCategoryMenu}
                             className="block px-4 py-2.5 text-[12px] text-[#475569] transition-colors hover:bg-[#F8FAFC] hover:text-[#1E3A8A]"
                           >
                             {subcategory.name}
