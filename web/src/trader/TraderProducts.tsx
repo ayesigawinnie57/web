@@ -179,7 +179,11 @@ export default function TraderProducts() {
       setCatalogSearchError('')
       productsApi.searchCatalog(query)
         .then(({ data }) => { if (active) setCatalogMatches(data) })
-        .catch(cause => { if (active) setCatalogSearchError(getLoadError(cause, 'catalog products')) })
+        .catch(cause => {
+          if (!active) return
+          setCatalogMatches([])
+          setCatalogSearchError(getLoadError(cause, 'catalog products'))
+        })
         .finally(() => { if (active) setCatalogSearchLoading(false) })
     }, 250)
 
@@ -673,16 +677,37 @@ export default function TraderProducts() {
           <input
             autoFocus
             value={catalogQuery}
-            onChange={event => setCatalogQuery(event.target.value)}
+            onChange={event => {
+              const query = event.target.value
+              setCatalogQuery(query)
+              setCatalogMatches([])
+              setCatalogSearchError('')
+              setCatalogSearchLoading(query.trim().length >= 2)
+            }}
             placeholder="Search product name, brand, model, barcode or GTIN"
-            className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3 pl-10 pr-4 text-[14px] outline-none focus:border-[#22C55E]"
+            className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3 pl-10 pr-11 text-[14px] outline-none focus:border-[#22C55E]"
           />
+          {catalogQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setCatalogQuery('')
+                setCatalogMatches([])
+                setCatalogSearchError('')
+                setCatalogSearchLoading(false)
+              }}
+              aria-label="Clear product search"
+              className="absolute right-3 top-3 rounded-full p-1 text-[#94A3B8] hover:bg-[#F1F5F9]"
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
 
         {catalogSearchLoading && <p className="mb-4 text-[13px] text-[#64748B]">Searching the shared catalog…</p>}
         {catalogSearchError && <p role="alert" className="mb-4 text-[13px] text-red-600">{catalogSearchError}</p>}
 
-        <div className="grid gap-3">
+        <div className="grid gap-3" aria-live="polite">
           {catalogMatches.map(product => {
             const imageUrl = product.image_references[0] ? cloudinaryUrl(product.image_references[0]) : null
             return (
@@ -712,6 +737,12 @@ export default function TraderProducts() {
             )
           })}
         </div>
+
+        {catalogQuery.trim().length >= 2 && !catalogSearchLoading && !catalogSearchError && catalogMatches.length === 0 && (
+          <p className="mt-4 rounded-xl bg-[#F8FAFC] p-4 text-[13px] text-[#64748B]">
+            No approved catalog products match “{catalogQuery.trim()}”. You can request it below.
+          </p>
+        )}
 
         <section className="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -754,10 +785,6 @@ export default function TraderProducts() {
           ) : !myCatalogRequestsLoading && <p className="mt-3 text-[12px] text-[#94A3B8]">No product requests yet.</p>}
         </section>
 
-        {catalogQuery.trim().length >= 2 && !catalogSearchLoading && !catalogSearchError && catalogMatches.length === 0 && (
-          <p className="mt-5 rounded-xl bg-[#F8FAFC] p-4 text-[13px] text-[#64748B]">No approved catalog products match this search.</p>
-        )}
-
         <section className="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -782,8 +809,8 @@ export default function TraderProducts() {
           </div>
 
           {requestNewCatalogProduct && (
-            <div className="mt-4 space-y-6">
-              <div>
+            <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(190px,240px)_minmax(0,1fr)]">
+              <div className="lg:col-start-2 lg:row-start-1">
                 <h3 className="mb-3 text-[12px] font-extrabold uppercase tracking-wide text-[#475569]">Product identity</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Official product name *" value={catalogRequestForm.name} onChange={name => setCatalogRequestForm(current => ({ ...current, name }))} placeholder="e.g. ANENG M118A Digital Multimeter" />
@@ -804,7 +831,7 @@ export default function TraderProducts() {
                 </div>
               </div>
 
-              <div>
+              <div className="lg:col-start-2 lg:row-start-2">
                 <h3 className="mb-3 text-[12px] font-extrabold uppercase tracking-wide text-[#475569]">Your proposed offer</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Price (UGX) *" value={form.price} onChange={set('price')} type="number" placeholder="0" />
@@ -847,12 +874,16 @@ export default function TraderProducts() {
                 </div>
               </div>
 
-              <div>
+              <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
                 <h3 className="mb-3 text-[12px] font-extrabold uppercase tracking-wide text-[#475569]">Product and variant images</h3>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-start gap-3">
                   {catalogRequestImages.map((image, index) => (
-                    <div key={`${image.preview}-${index}`} className="relative">
-                      <img src={image.preview} alt="" className="h-20 w-20 rounded-lg border border-[#E2E8F0] object-cover" />
+                    <div key={`${image.preview}-${index}`} className={`relative ${index === 0 ? 'w-full' : ''}`}>
+                      <img
+                        src={image.preview}
+                        alt={index === 0 ? 'Main product image preview' : `Product image ${index + 1} preview`}
+                        className={`${index === 0 ? 'aspect-square w-full max-w-[240px]' : 'h-16 w-16'} rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] object-cover`}
+                      />
                       <button
                         type="button"
                         onClick={() => {
@@ -864,7 +895,7 @@ export default function TraderProducts() {
                       ><X size={12} /></button>
                     </div>
                   ))}
-                  <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-[#CBD5E1] text-[10px] font-bold text-[#64748B]">
+                  <label className="flex h-16 w-16 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-[#CBD5E1] text-[10px] font-bold text-[#64748B]">
                     <ImagePlus size={20} /> Add image
                     <input
                       type="file"
@@ -886,10 +917,10 @@ export default function TraderProducts() {
                     />
                   </label>
                 </div>
-                <p className="mt-2 text-[11px] text-[#64748B]">Add at least one clear product image. You may attach up to 12 images, including variant photos.</p>
+                <p className="mt-2 max-w-[240px] text-[11px] text-[#64748B]">The first image is the main product photo. Add up to 12 images, including variant photos.</p>
               </div>
 
-              <div>
+              <div className="lg:col-span-2">
                 <h3 className="mb-1 text-[12px] font-extrabold uppercase tracking-wide text-[#475569]">Variants</h3>
                 <p className="mb-2 text-[11px] text-[#64748B]">Add variant options, per-variant prices and stock, and an optional image for each variant.</p>
                 <ProductVariantEditor
@@ -901,7 +932,7 @@ export default function TraderProducts() {
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 border-t border-[#F1F5F9] pt-4">
+              <div className="flex flex-wrap items-center gap-3 border-t border-[#F1F5F9] pt-4 lg:col-span-2">
                 <button
                   type="button"
                   disabled={catalogRequestSaving}
