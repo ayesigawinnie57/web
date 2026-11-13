@@ -17,10 +17,14 @@ type Props = {
 export default function SponsoredProductsSection({ query, category, product, excludeProductIds = [], limit = 6, title = 'Sponsored Products', enableModal = false }: Props) {
   const [response, setResponse] = useState<{ key: string; placements: ApiLinkedAdvertisingPlacement[] } | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [modalResponse, setModalResponse] = useState<{ key: string; placements: ApiLinkedAdvertisingPlacement[] } | null>(null)
+  const [modalLoading, setModalLoading] = useState(false)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const excluded = excludeProductIds.join(',')
   const params = useMemo(() => ({ q: query, category, product, limit, exclude: excluded }), [query, category, product, limit, excluded])
+  const modalParams = useMemo(() => ({ ...params, limit: 50 }), [params])
   const requestKey = JSON.stringify(params)
+  const modalRequestKey = JSON.stringify(modalParams)
 
   useEffect(() => {
     if (!modalOpen) return
@@ -36,6 +40,36 @@ export default function SponsoredProductsSection({ query, category, product, exc
       window.removeEventListener('keydown', onKeyDown)
     }
   }, [modalOpen])
+
+  useEffect(() => {
+    if (!modalOpen) return
+    let active = true
+    setModalLoading(true)
+    advertisingApi.placements(modalParams)
+      .then(({ data }) => {
+        if (!active) return
+        const unique = new Map<number, ApiAdvertisingPlacement>()
+        data.results.forEach(placement => {
+          if (placement.public_product_id !== product) unique.set(placement.campaign_offer_id, placement)
+        })
+        const allPlacements = [...unique.values()]
+          .filter((placement): placement is ApiLinkedAdvertisingPlacement =>
+            placement.public_product_id !== null && Boolean(placement.slug))
+        setModalResponse({ key: modalRequestKey, placements: allPlacements })
+        if (allPlacements.length) {
+          advertisingApi.impressions(allPlacements.map(placement => placement.campaign_offer_id)).catch(error => {
+            console.error('Sponsored modal impressions could not be recorded.', error)
+          })
+        }
+      })
+      .catch(error => {
+        console.error('All sponsored products could not be loaded.', error)
+      })
+      .finally(() => {
+        if (active) setModalLoading(false)
+      })
+    return () => { active = false }
+  }, [modalOpen, modalParams, modalRequestKey, product])
 
   useEffect(() => {
     let active = true
@@ -67,6 +101,7 @@ export default function SponsoredProductsSection({ query, category, product, exc
 
   const placements = response?.key === requestKey ? response.placements : []
   if (!placements.length) return null
+  const modalPlacements = modalResponse?.key === modalRequestKey ? modalResponse.placements : placements
 
   return (
     <>
@@ -126,11 +161,11 @@ export default function SponsoredProductsSection({ query, category, product, exc
           </header>
           <div className="overflow-y-auto p-4 sm:p-6">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-[11px] font-semibold text-[#64748B]">{placements.length} promoted {placements.length === 1 ? 'offer' : 'offers'}</p>
+              <p className="text-[11px] font-semibold text-[#64748B]">{modalPlacements.length} promoted {modalPlacements.length === 1 ? 'offer' : 'offers'}{modalLoading ? ' · loading more' : ''}</p>
               <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-bold text-blue-800">Sponsored</span>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {placements.map(placement => (
+              {modalPlacements.map(placement => (
                 <ProductCard
                   key={placement.campaign_offer_id}
                   product={toSponsoredProduct(placement)}
