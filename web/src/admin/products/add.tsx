@@ -157,7 +157,7 @@ export default function AddProduct() {
               <Field label="Stock" value={form.stock} onChange={set('stock')} placeholder="e.g. 50" type="number" />
               <Field label="Delivery Fee (UGX)" value={form.deliveryFee} onChange={set('deliveryFee')} placeholder="e.g. 5000" type="number" />
             </div>
-            <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} placeholder="Brief summary" />
+            <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} placeholder="Brief summary" maxLength={300} />
             <ProductVariantEditor
               variants={variants}
               onChange={setVariants}
@@ -190,8 +190,8 @@ export default function AddProduct() {
   )
 }
 
-function Field({ label, value, onChange, placeholder, type = 'text' }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string
+function Field({ label, value, onChange, placeholder, type = 'text', maxLength }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; maxLength?: number
 }) {
   return (
     <div>
@@ -199,7 +199,8 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: {
       <input
         type={type}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={e => onChange(maxLength ? e.target.value.slice(0, maxLength) : e.target.value)}
+        maxLength={maxLength}
         onWheel={type === 'number' ? e => (e.target as HTMLInputElement).blur() : undefined}
         placeholder={placeholder}
         className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px] text-[#071A2B] outline-none focus:border-[#22C55E]"

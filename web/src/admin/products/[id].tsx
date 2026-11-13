@@ -181,7 +181,7 @@ export default function EditProduct() {
                 New deal
               </label>
             </div>
-            <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} fieldKey="shortDescription" />
+            <Field label="Short Description" value={form.shortDescription} onChange={set('shortDescription')} fieldKey="shortDescription" maxLength={300} />
             <div>
               <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
               <RichTextEditor
@@ -223,7 +223,7 @@ export default function EditProduct() {
   )
 }
 
-function Field({ label, value, onChange, type = 'text', fieldKey }: { label: string; value: string; onChange: (v: string) => void; type?: string; fieldKey?: string }) {
+function Field({ label, value, onChange, type = 'text', fieldKey, maxLength }: { label: string; value: string; onChange: (v: string) => void; type?: string; fieldKey?: string; maxLength?: number }) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!fieldKey) return
     if (e.key === 'ArrowDown') { e.preventDefault(); navigateField(fieldKey, 'down') }
@@ -235,7 +235,8 @@ function Field({ label, value, onChange, type = 'text', fieldKey }: { label: str
       <input
         type={type}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={e => onChange(maxLength ? e.target.value.slice(0, maxLength) : e.target.value)}
+        maxLength={maxLength}
         onWheel={type === 'number' ? e => (e.target as HTMLInputElement).blur() : undefined}
         onKeyDown={handleKeyDown}
         data-field={fieldKey}
