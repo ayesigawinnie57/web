@@ -1310,6 +1310,11 @@ export type ApiAdvertisingPlacement = {
   category_slug: string | null
 }
 
+export type ApiSponsoredOffer = {
+  campaign_offer_id: number
+  public_product_id: number
+}
+
 export type ApiLinkedAdvertisingPlacement = ApiAdvertisingPlacement & {
   public_product_id: number
   slug: string
@@ -1376,6 +1381,8 @@ export const advertisingApi = {
     api.patch<{ campaign: ApiAdvertisingCampaign }>(`/api/traders/${uuid}/advertising/campaigns/${id}/`, { action }),
   placements: (params: { q?: string; category?: string; product?: number; limit?: number; exclude?: string }) =>
     api.get<{ results: ApiAdvertisingPlacement[] }>('/api/advertising/placements/', { params }),
+  exactProduct: (product: number) =>
+    api.get<{ results: ApiSponsoredOffer[] }>('/api/advertising/placements/', { params: { exact_product: product, limit: 1 } }),
   impressions: (campaignOfferIds: number[]) =>
     api.post('/api/advertising/impressions/', { campaign_offer_ids: campaignOfferIds }),
   click: (campaignOfferId: number, idempotencyKey: string) =>

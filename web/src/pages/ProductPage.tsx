@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { BadgeCheck, ChevronDown, ChevronRight, Star, Users } from 'lucide-react'
-import { cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiPublicSeller, type CartItem, type Product, type ApiReview } from '../lib/api'
+import { advertisingApi, cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiPublicSeller, type CartItem, type Product, type ApiReview } from '../lib/api'
 import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
 import { sanitizeRichText } from '../lib/sanitizeRichText'
 import ProductCard from '../components/ProductCard'
@@ -145,6 +145,7 @@ export default function ProductPage() {
   const navigate = useNavigate()
 
   const [product, setProduct] = useState<Product | null>(null)
+  const [sponsoredProductId, setSponsoredProductId] = useState<number | null>(null)
   const [catalogOffers, setCatalogOffers] = useState<Product[]>([])
   const [related, setRelated] = useState<Product[]>([])
   const [alsoBy, setAlsoBy] = useState<Product[]>([])
@@ -205,6 +206,22 @@ export default function ProductPage() {
       window.clearInterval(refreshInterval)
     }
   }, [slug])
+
+  useEffect(() => {
+    if (!product) return
+    let active = true
+    advertisingApi.exactProduct(product.id)
+      .then(({ data }) => {
+        if (active) {
+          setSponsoredProductId(data.results.some(offer => offer.public_product_id === product.id) ? product.id : null)
+        }
+      })
+      .catch(error => {
+        console.error('Sponsored product status could not be loaded.', error)
+        if (active) setSponsoredProductId(null)
+      })
+    return () => { active = false }
+  }, [product])
 
   useEffect(() => {
     if (!slug) return
@@ -683,7 +700,14 @@ export default function ProductPage() {
                   <span className="text-[11px] font-bold text-[#1E3A8A] uppercase tracking-widest">{product.categoryName}</span>
                   {discount && <span className="text-[11px] font-extrabold text-[#DC2626] bg-red-50 px-2.5 py-1 rounded-full">Save {discount}%</span>}
                 </div>
-                <h1 className="text-[28px] sm:text-[32px] font-extrabold text-[#071A2B] leading-tight">{product.name}</h1>
+                <div className="flex items-start justify-between gap-3">
+                  <h1 className="min-w-0 text-[28px] sm:text-[32px] font-extrabold text-[#071A2B] leading-tight">{product.name}</h1>
+                  {sponsoredProductId === product.id && (
+                    <span className="mt-1 inline-flex shrink-0 items-center gap-1 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-[#1E40AF]" aria-label="Sponsored product">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" /> Sponsored
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Rating row */}

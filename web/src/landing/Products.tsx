@@ -9,7 +9,7 @@ export default function Products({ products }: { products: Product[] }) {
   return (
     <div className="bg-[#F8FAFC] px-4 py-8">
       <div className="max-w-7xl mx-auto">
-        <SponsoredProductsSection limit={6} excludeProductIds={slice.map(product => product.id)} />
+        <SponsoredProductsSection limit={6} excludeProductIds={slice.map(product => product.id)} enableModal />
         <div className="flex items-end justify-between mb-4">
           <div>
             <p className="text-[22px] font-extrabold tracking-tight text-[#071A2B]">Featured Products</p>
