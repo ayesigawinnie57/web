@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronDown, Filter, RotateCcw } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
 import ProductCard from '../components/ProductCard'
+import SponsoredProductsSection from '../components/SponsoredProductsSection'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 import { getCategoryPath, productsApi, toProduct, watchPageResume, type ApiCategory, type Product } from '../lib/api'
@@ -264,6 +265,8 @@ export default function ShopPage() {
             {!loading && <p className="mt-0.5 text-[12px] text-[#64748B]">{totalProductsCount.toLocaleString()} products</p>}
           </div>
         </div>
+
+        {!loading && !error && <SponsoredProductsSection query={query || undefined} category={category || undefined} excludeProductIds={products.map(product => product.id)} />}
 
         {error ? (
           <div className="py-20 text-center">

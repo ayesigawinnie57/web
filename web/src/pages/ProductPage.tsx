@@ -6,6 +6,7 @@ import { cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, not
 import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
 import { sanitizeRichText } from '../lib/sanitizeRichText'
 import ProductCard from '../components/ProductCard'
+import SponsoredProductsSection from '../components/SponsoredProductsSection'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
@@ -1086,6 +1087,8 @@ export default function ProductPage() {
             </div>
             {seller && <SellerInformationPanel seller={seller} followBusy={followBusy} followError={followError} onFollow={toggleSellerFollow} />}
           </div>
+
+          {product && <SponsoredProductsSection category={product.category} product={product.id} excludeProductIds={[product.id, ...related.map(item => item.id), ...alsoBy.map(item => item.id)]} title="Sponsored Products" />}
 
           {/* Related Products */}
           {related.length > 0 && (

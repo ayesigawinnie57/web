@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store, ArrowLeftRight, PackageCheck, RotateCcw, MessageCircle, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store, ArrowLeftRight, PackageCheck, RotateCcw, MessageCircle, ClipboardList, Megaphone } from 'lucide-react'
 import { LOGO, sessionApi, supportChatApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
@@ -19,6 +19,7 @@ const ALL_NAV = [
   { to: '/admin/users',       label: 'Users',      pageKey: 'Users',        icon: Users },
   { to: '/admin/payments',    label: 'Payments',   pageKey: 'Payments',     icon: CreditCard },
   { to: '/admin/traders',     label: 'Traders',    pageKey: 'Traders',      icon: Store },
+  { to: '/admin/advertising', label: 'Advertising', pageKey: 'Advertising', icon: Megaphone },
   { to: '/admin/inventory',   label: 'Inventory',  pageKey: 'Inventory',    icon: Boxes },
   { to: '/admin/accounting',  label: 'Accounting', pageKey: 'Accounting',   icon: DollarSign },
   { to: '/admin/data',        label: 'Data',       pageKey: 'Data Management', icon: Database },

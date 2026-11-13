@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
-import { Store, Menu, X, Settings, ArrowLeftRight, LayoutDashboard, Package, ShoppingBag, TrendingUp, DollarSign, CreditCard } from 'lucide-react'
+import { Store, Menu, X, Settings, ArrowLeftRight, LayoutDashboard, Package, ShoppingBag, TrendingUp, DollarSign, CreditCard, Megaphone } from 'lucide-react'
 import { LOGO, sessionApi } from '../lib/api'
 import { useSwitchPortal } from '../lib/SwitchContext'
 
@@ -13,6 +13,7 @@ const NAV: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
   { to: 'sales',      label: 'Sales',      icon: TrendingUp },
   { to: 'accounting', label: 'Accounting', icon: DollarSign },
   { to: 'payments',   label: 'Payments',   icon: CreditCard },
+  { to: 'advertising', label: 'Advertising', icon: Megaphone },
 ]
 
 const TRADER_EXTRA: { to: string; label: string }[] = [
@@ -48,7 +49,7 @@ export default function TraderLayout() {
     }`
 
   const tabClass = ({ isActive }: { isActive: boolean }) =>
-    `flex flex-1 flex-col items-center justify-center py-2 text-[10px] font-semibold transition-colors ${
+    `flex min-w-0 flex-1 flex-col items-center justify-center py-2 text-[10px] font-semibold transition-colors ${
       isActive ? 'text-[#22C55E]' : 'text-[#64748B]'
     }`
 
@@ -198,7 +199,7 @@ export default function TraderLayout() {
         {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={label} to={href(to)} end={end} className={tabClass}>
             <Icon size={18} />
-            <span>{label}</span>
+            <span className="max-w-full truncate px-0.5">{label}</span>
           </NavLink>
         ))}
       </nav>

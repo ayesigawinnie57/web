@@ -1231,6 +1231,97 @@ export type ApiTraderInventoryItem = {
   created_at: string
 }
 
+export type ApiAdvertisingOffer = {
+  id: number
+  name: string
+  price: string
+  image: string | null
+  stock: number
+  public_product_id: number | null
+  slug: string | null
+}
+
+export type ApiAdminAdvertisingTransaction = {
+  id: number
+  trader: { uuid: string; business_name: string }
+  amount: string
+  reference: string
+  kind: string
+  created_at: string
+  balance_after: string
+}
+
+export type ApiAdvertisingCampaign = {
+  id: number
+  name: string
+  status: 'draft' | 'pending_review' | 'active' | 'paused' | 'budget_exhausted' | 'scheduled' | 'completed' | 'rejected' | 'cancelled'
+  max_cpc: string
+  daily_budget: string
+  total_budget: string
+  spent: string
+  remaining_budget: string
+  impressions: number
+  clicks: number
+  ctr: number
+  average_cpc: string
+  starts_at: string
+  ends_at: string
+  pause_reason: string
+  offers: ApiAdvertisingOffer[]
+}
+
+export type ApiAdvertisingTransaction = {
+  id: number
+  kind: string
+  amount: string
+  balance_after: string
+  reference: string
+  description: string
+  created_at: string
+}
+
+export type ApiAdvertisingDashboard = {
+  wallet: { balance: string; dummy_payments_enabled: boolean }
+  stats: {
+    active_campaigns: number
+    pending_campaigns: number
+    paused_campaigns: number
+    completed_campaigns: number
+    rejected_campaigns: number
+    impressions: number
+    clicks: number
+    ctr: number
+    average_cpc: string
+    total_spent: string
+    remaining_budget: string
+  }
+  campaigns: ApiAdvertisingCampaign[]
+  transactions: ApiAdvertisingTransaction[]
+}
+
+export type ApiAdvertisingPlacement = {
+  campaign_offer_id: number
+  public_product_id: number | null
+  slug: string | null
+  name: string
+  image: string | null
+  price: string
+  category: string | null
+  category_slug: string | null
+}
+
+export type ApiLinkedAdvertisingPlacement = ApiAdvertisingPlacement & {
+  public_product_id: number
+  slug: string
+}
+
+export type ApiAdminAdvertisingCampaign = ApiAdvertisingCampaign & {
+  trader_name: string
+  wallet_balance: string
+  trader_uuid: string
+  suspicious_clicks?: number
+}
+
 export const tradersApi = {
   apply: (data: FormData) => api.post<ApiTraderApplication>('/api/traders/apply/', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   me: () => api.get<{ id: number; uuid: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; email: string; full_name: string; agreement_required: boolean; agreement_signed_at: string | null } | null>('/api/traders/me/').catch(() => ({ data: null })),
@@ -1269,6 +1360,35 @@ export const tradersApi = {
   updateInventoryItem: (uuid: string, id: number, data: object) => api.patch<ApiTraderInventoryItem>(`/api/traders/${uuid}/inventory/${id}/`, data),
   deleteInventoryItem: (uuid: string, id: number) => api.delete(`/api/traders/${uuid}/inventory/${id}/`),
   addStockMovement: (uuid: string, id: number, data: { type: string; quantity: number; note?: string }) => api.post<ApiTraderInventoryItem>(`/api/traders/${uuid}/inventory/${id}/movements/`, data),
+}
+
+export const advertisingApi = {
+  dashboard: (uuid: string) => api.get<ApiAdvertisingDashboard>(`/api/traders/${uuid}/advertising/`),
+  offers: (uuid: string) => api.get<ApiAdvertisingOffer[]>(`/api/traders/${uuid}/advertising/offers/`),
+  recharge: (uuid: string, data: { amount: string; card_number: string; expiry: string; cvv: string; cardholder_name: string }, idempotencyKey: string) =>
+    api.post<{
+      payment: { reference: string; status: string; amount: string }
+      wallet: { previous_balance: string; amount_added: string; balance: string; currency: string }
+    }>(`/api/traders/${uuid}/advertising/wallet/recharge/`, data, { headers: { 'Idempotency-Key': idempotencyKey } }),
+  createCampaign: (uuid: string, data: { name: string; offer_ids: number[]; max_cpc: string; daily_budget: string; total_budget: string; starts_at: string; ends_at: string }) =>
+    api.post<{ campaign: ApiAdvertisingCampaign }>(`/api/traders/${uuid}/advertising/campaigns/`, data),
+  updateCampaign: (uuid: string, id: number, action: 'pause' | 'resume' | 'cancel') =>
+    api.patch<{ campaign: ApiAdvertisingCampaign }>(`/api/traders/${uuid}/advertising/campaigns/${id}/`, { action }),
+  placements: (params: { q?: string; category?: string; product?: number; limit?: number; exclude?: string }) =>
+    api.get<{ results: ApiAdvertisingPlacement[] }>('/api/advertising/placements/', { params }),
+  impressions: (campaignOfferIds: number[]) =>
+    api.post('/api/advertising/impressions/', { campaign_offer_ids: campaignOfferIds }),
+  click: (campaignOfferId: number, idempotencyKey: string) =>
+    api.post<{ status: 'valid' | 'invalid' | 'suspicious'; slug: string; charged_amount: string }>('/api/advertising/clicks/', {
+      campaign_offer_id: campaignOfferId,
+      idempotency_key: idempotencyKey,
+    }),
+  adminCampaigns: () => api.get<{ results: ApiAdminAdvertisingCampaign[] }>('/api/advertising/admin/campaigns/'),
+  adminTransactions: () => api.get<{ results: ApiAdminAdvertisingTransaction[] }>('/api/advertising/admin/transactions/'),
+  adminUpdateCampaign: (id: number, action: 'approve' | 'reject' | 'pause' | 'resume' | 'cancel', reason = '') =>
+    api.patch<{ campaign: ApiAdminAdvertisingCampaign }>(`/api/advertising/admin/campaigns/${id}/`, { action, reason }),
+  adminAdjustWallet: (data: { trader_uuid: string; amount: string; reason: string }, idempotencyKey: string) =>
+    api.post('/api/advertising/admin/wallet-adjustments/', data, { headers: { 'Idempotency-Key': idempotencyKey } }),
 }
 
 export type ApiNotification = {

@@ -5,6 +5,7 @@ import { ChevronRight, Grid2X2 } from 'lucide-react'
 import Footer from '../landing/Footer'
 import Navbar from '../landing/Navbar'
 import ProductCard from '../components/ProductCard'
+import SponsoredProductsSection from '../components/SponsoredProductsSection'
 import {
   getCategoryPath,
   getCategoryUrl,
@@ -133,6 +134,8 @@ export default function CategoryBrowsePage({ categoryId }: { categoryId: number 
                 </div>
               </section>
             )}
+
+            <SponsoredProductsSection category={category.slug} excludeProductIds={products.map(product => product.id)} />
 
             <section>
               <h2 className="mb-4 text-lg font-extrabold text-[#071A2B]">

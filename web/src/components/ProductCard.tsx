@@ -1,17 +1,35 @@
-import { Link } from 'react-router-dom'
-import type { Product } from '../lib/api'
+import type { MouseEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { advertisingApi, type Product } from '../lib/api'
 import { trackProductClick } from '../lib/behaviour'
 import { cloudinaryImageUrl } from '../lib/api'
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product, sponsoredCampaignOfferId }: { product: Product; sponsoredCampaignOfferId?: number }) {
+  const navigate = useNavigate()
   const discount = product.originalPrice
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null
 
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    trackProductClick(product.id, product.category)
+    if (!sponsoredCampaignOfferId) return
+
+    const recordClick = () => advertisingApi.click(sponsoredCampaignOfferId, window.crypto.randomUUID()).catch(error => {
+      console.error('Sponsored click could not be recorded.', error)
+    })
+    if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+      event.preventDefault()
+      void recordClick()
+      navigate(`/shop/${encodeURIComponent(product.slug)}`)
+    } else {
+      void recordClick()
+    }
+  }
+
   return (
     <Link
       to={`/shop/${product.slug}`}
-      onClick={() => trackProductClick(product.id, product.category)}
+      onClick={handleClick}
       className="group overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#CBD5E1] hover:shadow-lg"
     >
       <div className="relative bg-[#F8FAFC] aspect-square overflow-hidden">
@@ -40,6 +58,11 @@ export default function ProductCard({ product }: { product: Product }) {
         {discount && (
           <div className="absolute left-2 top-2 rounded-md bg-[#EF4444] px-1.5 py-1">
             <span className="text-[9px] font-extrabold text-white">-{discount}%</span>
+          </div>
+        )}
+        {sponsoredCampaignOfferId && (
+          <div className="absolute right-2 top-2 rounded-md bg-white/95 px-1.5 py-1 shadow-sm">
+            <span className="text-[9px] font-bold text-[#475569]">Sponsored</span>
           </div>
         )}
       </div>

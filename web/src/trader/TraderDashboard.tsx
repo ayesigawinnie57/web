@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Store, ChevronRight } from 'lucide-react'
-import { tradersApi, type ApiTraderDashboard, type ApiTraderApplication, type ApiTraderSale, type ApiTraderExpense, type ApiTraderInventoryItem, type ApiTraderOrderItem, type ApiTraderProduct, type ApiTraderWallet } from '../lib/api'
+import { Store, ChevronRight, Megaphone } from 'lucide-react'
+import { advertisingApi, tradersApi, type ApiAdvertisingDashboard, type ApiTraderDashboard, type ApiTraderApplication, type ApiTraderSale, type ApiTraderExpense, type ApiTraderInventoryItem, type ApiTraderOrderItem, type ApiTraderProduct, type ApiTraderWallet } from '../lib/api'
 
 const fmt = (n: number) => `UGX ${Number(n).toLocaleString()}`
 const fmtShort = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n)
@@ -52,6 +52,8 @@ export default function TraderDashboard() {
   const [orders, setOrders] = useState<ApiTraderOrderItem[]>([])
   const [products, setProducts] = useState<ApiTraderProduct[]>([])
   const [wallet, setWallet] = useState<ApiTraderWallet | null>(null)
+  const [advertising, setAdvertising] = useState<ApiAdvertisingDashboard | null>(null)
+  const [advertisingError, setAdvertisingError] = useState(false)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
@@ -68,6 +70,20 @@ export default function TraderDashboard() {
       tradersApi.products(traderUuid!).then(r => setProducts(r.data)),
       tradersApi.wallet(traderUuid!).then(r => setWallet(r.data)),
     ]).finally(() => setLoading(false))
+  }, [traderUuid])
+
+  useEffect(() => {
+    if (!traderUuid) return
+    let active = true
+    advertisingApi.dashboard(traderUuid)
+      .then(({ data: result }) => {
+        if (active) {
+          setAdvertising(result)
+          setAdvertisingError(false)
+        }
+      })
+      .catch(() => { if (active) setAdvertisingError(true) })
+    return () => { active = false }
   }, [traderUuid])
 
   if (loading) return <div className="flex justify-center py-32"><div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" /></div>
@@ -138,6 +154,32 @@ export default function TraderDashboard() {
           <p className="mt-3 text-[11px] font-bold text-[#16A34A]">Open Payments to view release progress and request a withdrawal →</p>
         </button>
       )}
+
+      <button
+        type="button"
+        onClick={() => navigate(href('advertising'))}
+        className="mb-8 block w-full rounded-xl border border-[#E2E8F0] bg-white p-5 text-left transition-colors hover:border-[#22C55E]"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Megaphone size={18} className="text-[#1E3A8A]" />
+            <h2 className="text-[14px] font-extrabold text-[#071A2B]">Sponsored Products</h2>
+          </div>
+          <span className="text-[11px] font-bold text-[#1E3A8A]">Manage advertising →</span>
+        </div>
+        {advertising ? (
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Kpi label="Advertising Wallet" value={fmt(Number(advertising.wallet.balance))} />
+            <Kpi label="Active Campaigns" value={String(advertising.stats.active_campaigns)} />
+            <Kpi label="Impressions" value={advertising.stats.impressions.toLocaleString()} />
+            <Kpi label="Clicks" value={advertising.stats.clicks.toLocaleString()} />
+          </div>
+        ) : advertisingError ? (
+          <p role="status" className="mt-3 text-[11px] text-[#64748B]">Advertising summary is unavailable. Open Advertising to retry.</p>
+        ) : (
+          <p className="mt-3 text-[11px] text-[#64748B]">Loading advertising wallet and campaign summary…</p>
+        )}
+      </button>
 
       {/* P&L summary */}
       <div className="bg-[#071A2B] rounded-xl p-6 text-white mb-8">
