@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ImagePlus, Plus, X } from 'lucide-react'
+import type { ApiCategoryAttribute } from '../lib/api'
 
 export type ProductVariantDraft = {
   sku: string
@@ -134,46 +135,85 @@ export default function ProductVariantEditor({
   onChange,
   basePrice,
   baseOriginalPrice,
+  optionAttributes = [],
 }: {
   variants: ProductVariantDraft[]
   onChange: (variants: ProductVariantDraft[]) => void
   basePrice: string
   baseOriginalPrice: string
+  optionAttributes?: ApiCategoryAttribute[]
 }) {
   const [isAddingVariant, setIsAddingVariant] = useState(false)
-  const [optionName, setOptionName] = useState('color')
-  const [optionValue, setOptionValue] = useState('')
-  const normalizedOptionName = optionName.trim().toLowerCase()
-  const suggestedValues = normalizedOptionName.includes('size')
-    ? ['XS', 'S', 'M', 'L', 'XL', 'XXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46']
-    : normalizedOptionName.includes('gender')
-      ? ['Men', 'Women', 'Unisex', 'Boys', 'Girls']
-      : normalizedOptionName.includes('age')
-        ? ['Young', 'Old', 'Adult', 'Child']
-        : []
+  const [optionName, setOptionName] = useState('')
+  const [customOptionName, setCustomOptionName] = useState('')
+  const [selectedValuesByOption, setSelectedValuesByOption] = useState<Record<string, string[]>>({})
+  const [customValueDraft, setCustomValueDraft] = useState('')
+  const [valueMenuOpen, setValueMenuOpen] = useState(false)
   const [variantError, setVariantError] = useState('')
+  const selectedOptionKey = optionName === '__other__' ? customOptionName.trim() : optionName
+  const selectedAttribute = optionAttributes.find(attribute => attribute.key === selectedOptionKey)
+  const existingOptionValues = [...new Set(variants
+    .map(variant => variant.options[selectedOptionKey])
+    .filter(optionValue => optionValue !== undefined)
+    .map(String))]
+  const selectedOptionValues = selectedOptionKey
+    ? selectedValuesByOption[selectedOptionKey] ?? existingOptionValues
+    : []
+  const availableOptionValues = [...new Set([
+    ...(selectedAttribute?.choices ?? []),
+    ...existingOptionValues,
+    ...selectedOptionValues,
+  ])]
+  const availableOptionNames = [...new Map([
+    ...optionAttributes.map(attribute => attribute.key),
+    ...variants.flatMap(variant => Object.keys(variant.options)),
+    'Size', 'Gender', 'Age', 'Measurement', 'Color', 'Material',
+  ].map(value => [value.toLowerCase(), value])).values()]
+  const addCustomValue = () => {
+    const value = customValueDraft.trim()
+    if (!selectedOptionKey || !value) return
+    setSelectedValuesByOption(current => {
+      const currentValues = current[selectedOptionKey] ?? existingOptionValues
+      return {
+        ...current,
+        [selectedOptionKey]: currentValues.some(item => item.toLowerCase() === value.toLowerCase())
+          ? currentValues
+          : [...currentValues, value],
+      }
+    })
+    setCustomValueDraft('')
+  }
 
   const addVariant = () => {
-    const key = optionName.trim()
-    const value = optionValue.trim()
-    if (!key || !value) return
-    const currentValues = [...new Set(variants
-      .map(variant => variant.options[key])
-      .filter(optionValue => optionValue !== undefined)
-      .map(String))]
-    if (currentValues.some(current => current.toLowerCase() === value.toLowerCase())) {
-      setVariantError(`A ${key} variant named "${value}" already exists.`)
-      return
-    }
-
-    const optionKeys = [...new Set([...variants.flatMap(variant => Object.keys(variant.options)), key])]
+    const key = selectedOptionKey
+    const values = selectedOptionValues
+    if (!key || !values.length) return
+    const existingKey = [...optionAttributes.map(attribute => attribute.key), ...variants.flatMap(variant => Object.keys(variant.options))].find(
+      current => current.toLowerCase() === key.toLowerCase(),
+    )
+    const normalizedKey = existingKey ?? key
+    const optionKeys = [...new Set([
+      ...variants.flatMap(variant => Object.keys(variant.options)),
+      ...Object.entries(selectedValuesByOption)
+        .filter(([, optionValues]) => optionValues.length > 0)
+        .map(([optionKey]) => optionKey),
+      normalizedKey,
+    ])]
     const valuesByKey = Object.fromEntries(optionKeys.map(optionKey => [
       optionKey,
       [...new Set([
         ...variants.map(variant => variant.options[optionKey]).filter(optionValue => optionValue !== undefined).map(String),
-        ...(optionKey === key ? [value] : []),
+        ...(selectedValuesByOption[optionKey] ?? (optionKey === normalizedKey ? values : [])),
       ])],
     ])) as Record<string, string[]>
+    const missingRequired = optionAttributes
+      .filter(attribute => attribute.is_required && !valuesByKey[attribute.key]?.length)
+      .map(attribute => attribute.name)
+    if (missingRequired.length) {
+      setVariantError(`Add at least one value for required option${missingRequired.length === 1 ? '' : 's'}: ${missingRequired.join(', ')}.`)
+      return
+    }
+
     const combinations = optionKeys.reduce<Record<string, string>[]>(
       (current, optionKey) => current.flatMap(options =>
         valuesByKey[optionKey].map(optionValue => ({ ...options, [optionKey]: optionValue })),
@@ -197,7 +237,7 @@ export default function ProductVariantEditor({
 
       const sourceIndex = variants.findIndex(variant =>
         Object.entries(variant.options).every(([optionKey, optionValue]) =>
-          optionKey === key || String(options[optionKey]) === String(optionValue),
+          optionKey === normalizedKey || String(options[optionKey]) === String(optionValue),
         ),
       )
       const source = sourceIndex >= 0 ? variants[sourceIndex] : null
@@ -221,9 +261,7 @@ export default function ProductVariantEditor({
     })
 
     onChange(nextVariants)
-    setOptionValue('')
     setVariantError('')
-    setIsAddingVariant(false)
   }
 
   return (
@@ -260,45 +298,128 @@ export default function ProductVariantEditor({
       {isAddingVariant && (
         <div className="mt-4 space-y-4 border-t border-[#E2E8F0] pt-4">
           <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 sm:p-4">
-            <p className="mb-3 text-[12px] font-bold text-[#334155]">Add a value to an option</p>
+            <p className="mb-3 text-[12px] font-bold text-[#334155]">Choose an option and one or more values</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label htmlFor="product-variant-option-name" className="mb-1.5 block text-[12px] font-bold text-[#071A2B]">
                   Option name
                 </label>
-                <input
+                <select
                   id="product-variant-option-name"
                   aria-label="Variant option name"
                   className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-[13px] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE]"
-                  placeholder="e.g. Color, Size, Gender"
                   value={optionName}
-                  onChange={event => setOptionName(event.target.value)}
-                  list="product-variant-option-names"
-                />
-                <p className="mt-1 text-[11px] leading-4 text-[#64748B]">What kind of choice is this?</p>
-                <datalist id="product-variant-option-names">
-                  {['Size', 'Gender', 'Age', 'Measurement', 'Color', 'Material'].map(value => <option key={value} value={value} />)}
-                </datalist>
+                  onChange={event => {
+                    setOptionName(event.target.value)
+                    setCustomOptionName('')
+                    setVariantError('')
+                  }}
+                >
+                  <option value="">Select an option...</option>
+                  {availableOptionNames.map(value => (
+                    <option key={value} value={value}>{optionAttributes.find(attribute => attribute.key === value)?.name ?? value}</option>
+                  ))}
+                  <option value="__other__">Other (enter a name)</option>
+                </select>
+                {optionName === '__other__' && (
+                  <input
+                    className="mt-2 w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-[13px] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE]"
+                    placeholder="Enter a custom option name"
+                    value={customOptionName}
+                    onChange={event => setCustomOptionName(event.target.value)}
+                    aria-label="Custom variant option name"
+                  />
+                )}
+                {selectedAttribute?.is_required && (
+                  <p className="mt-1 text-[11px] font-semibold text-amber-700">Required option</p>
+                )}
               </div>
               <div>
-                <label htmlFor="product-variant-option-value" className="mb-1.5 block text-[12px] font-bold text-[#071A2B]">
-                  Option value
+                <label className="mb-1.5 block text-[12px] font-bold text-[#071A2B]">
+                  Option values
                 </label>
-                <input
-                  id="product-variant-option-value"
-                  aria-label="Variant option value"
-                  className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-[13px] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE]"
-                  placeholder={normalizedOptionName.includes('size') ? 'e.g. S, M, L, 42' : 'e.g. Red'}
-                  value={optionValue}
-                  onChange={event => setOptionValue(event.target.value)}
-                  list="product-variant-suggested-values"
-                />
-                <p className="mt-1 text-[11px] leading-4 text-[#64748B]">One choice at a time; add another value for each color or size.</p>
-                <datalist id="product-variant-suggested-values">
-                  {suggestedValues.map(value => <option key={value} value={value} />)}
-                </datalist>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setValueMenuOpen(open => !open)}
+                    disabled={!selectedOptionKey}
+                    aria-expanded={valueMenuOpen}
+                    className="w-full min-w-0 rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-left text-[13px] outline-none focus:border-[#2563EB] disabled:opacity-50"
+                  >
+                    <span className="block truncate">
+                      {selectedOptionValues.length
+                        ? selectedOptionValues.join(', ')
+                        : selectedOptionKey ? 'Select values...' : 'Select an option name first'}
+                    </span>
+                  </button>
+                  {valueMenuOpen && selectedOptionKey && (
+                    <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 w-full overflow-y-auto overscroll-contain rounded-lg border border-[#CBD5E1] bg-white p-2 shadow-lg">
+                      {availableOptionValues.length ? availableOptionValues.map(value => (
+                        <label key={value} className="flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-[#334155] hover:bg-[#F1F5F9]">
+                          <input
+                            type="checkbox"
+                            checked={selectedOptionValues.some(item => item.toLowerCase() === value.toLowerCase())}
+                            onChange={event => setSelectedValuesByOption(current => {
+                              const currentValues = current[selectedOptionKey] ?? existingOptionValues
+                              return {
+                                ...current,
+                                [selectedOptionKey]: event.target.checked
+                                  ? [...currentValues, value]
+                                  : currentValues.filter(item => item.toLowerCase() !== value.toLowerCase()),
+                              }
+                            })}
+                          />
+                          <span className="break-words">{value}</span>
+                        </label>
+                      )) : (
+                        <p className="px-2 py-1.5 text-[11px] text-[#64748B]">No saved values yet. Add a custom value below.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-[11px] leading-4 text-[#64748B]">Select multiple values to generate combinations.</p>
+                <div className="mt-2 flex min-w-0 gap-2">
+                  <input
+                    aria-label="Custom option value"
+                    className="min-w-0 flex-1 rounded-lg border border-[#CBD5E1] bg-white px-3 py-2 text-[12px] outline-none focus:border-[#2563EB]"
+                    placeholder="Other: enter a value"
+                    value={customValueDraft}
+                    onChange={event => setCustomValueDraft(event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        addCustomValue()
+                      }
+                    }}
+                    disabled={!selectedOptionKey}
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomValue}
+                    disabled={!selectedOptionKey || !customValueDraft.trim()}
+                    className="shrink-0 rounded-lg border border-[#CBD5E1] bg-white px-3 text-[11px] font-bold text-[#334155] disabled:opacity-50"
+                  >Add</button>
+                </div>
               </div>
             </div>
+            {selectedOptionValues.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {selectedOptionValues.map(value => (
+                  <span key={value} className="inline-flex max-w-full items-center gap-1 rounded-full bg-[#E2E8F0] px-2.5 py-1 text-[11px] font-semibold text-[#334155]">
+                    <span className="break-all">{value}</span>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${value}`}
+                      onClick={() => setSelectedValuesByOption(current => ({
+                        ...current,
+                        [selectedOptionKey]: selectedOptionValues.filter(item => item !== value),
+                      }))}
+                      className="shrink-0 text-[#64748B] hover:text-red-600"
+                    ><X size={12} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           {variantError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">{variantError}</p>}
         </div>
@@ -319,7 +440,7 @@ export default function ProductVariantEditor({
         <button
           type="button"
           onClick={() => isAddingVariant ? addVariant() : setIsAddingVariant(true)}
-          disabled={isAddingVariant && (!optionName.trim() || !optionValue.trim() || variants.length >= 100)}
+          disabled={isAddingVariant && (!selectedOptionKey || !selectedOptionValues.length || variants.length >= 100)}
           className="inline-flex items-center gap-1.5 rounded-lg bg-[#071A2B] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#12304A] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={14} /> Add Variant
