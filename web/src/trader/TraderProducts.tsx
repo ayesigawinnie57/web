@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Package, ArrowLeft, ImagePlus, X, Search } from 'lucide-react'
 import axios from 'axios'
-import { adminProductsApi, tradersApi, productsApi, type ApiTraderProduct, type ApiCategory } from '../lib/api'
+import {
+  tradersApi, productsApi, cloudinaryUrl,
+  type ApiTraderProduct, type ApiCategory, type ApiCatalogProduct, type ApiCatalogVariant,
+} from '../lib/api'
 import ProductVariantEditor, { type ProductVariantDraft } from '../components/ProductVariantEditor'
 import CategoryCascadeSelect from '../components/CategoryCascadeSelect'
 import RichTextEditor from '../components/RichTextEditor'
@@ -46,6 +49,11 @@ type Form = {
   name: string
   brand: string
   condition: 'new' | 'used' | 'refurbished'
+  availability: 'in_stock' | 'preorder' | 'made_to_order' | 'unavailable'
+  warranty: string
+  delivery_options: string
+  package_details: string
+  trader_sku: string
   tags: string
   short_description: string
   long_description: string
@@ -60,7 +68,8 @@ type Form = {
 }
 
 const EMPTY: Form = {
-  name: '', brand: '', condition: 'new', tags: '', short_description: '', long_description: '',
+  name: '', brand: '', condition: 'new', availability: 'in_stock', warranty: '',
+  delivery_options: '', package_details: '', trader_sku: '', tags: '', short_description: '', long_description: '',
   price: '', original_price: '', delivery_fee: '', stock: '',
   category_id: '', is_active: true, is_featured: false, is_new_deal: false,
 }
@@ -81,8 +90,8 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
   )
 }
 
-function Field({ label, value, onChange, placeholder, type = 'text', maxLength }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; maxLength?: number
+function Field({ label, value, onChange, placeholder, type = 'text', maxLength, disabled = false }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; maxLength?: number; disabled?: boolean
 }) {
   return (
     <div>
@@ -92,9 +101,10 @@ function Field({ label, value, onChange, placeholder, type = 'text', maxLength }
         value={value}
         onChange={e => onChange(maxLength ? e.target.value.slice(0, maxLength) : e.target.value)}
         maxLength={maxLength}
+        disabled={disabled}
         onWheel={type === 'number' ? e => (e.target as HTMLInputElement).blur() : undefined}
         placeholder={placeholder}
-        className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px] text-[#071A2B] outline-none focus:border-[#22C55E]"
+        className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px] text-[#071A2B] outline-none focus:border-[#22C55E] disabled:bg-[#F8FAFC] disabled:text-[#64748B]"
       />
     </div>
   )
@@ -109,6 +119,22 @@ export default function TraderProducts() {
   const [reloadKey, setReloadKey] = useState(0)
   const [view, setView] = useState<View>('list')
   const [editing, setEditing] = useState<ApiTraderProduct | null>(null)
+  const [selectedCatalogProduct, setSelectedCatalogProduct] = useState<ApiCatalogProduct | null>(null)
+  const [approvedVariantOptions, setApprovedVariantOptions] = useState<Array<{
+    options: ApiCatalogVariant['options']
+    image_url: string | null
+  }> | null>(null)
+  const [catalogQuery, setCatalogQuery] = useState('')
+  const [catalogMatches, setCatalogMatches] = useState<ApiCatalogProduct[]>([])
+  const [catalogSearchLoading, setCatalogSearchLoading] = useState(false)
+  const [catalogSearchError, setCatalogSearchError] = useState('')
+  const [selectedCatalogImages, setSelectedCatalogImages] = useState<string[]>([])
+  const [requestNewCatalogProduct, setRequestNewCatalogProduct] = useState(false)
+  const [catalogRequestForm, setCatalogRequestForm] = useState({
+    name: '', brand: '', model: '', product_type: '', barcode: '', gtin: '', mpn: '', category_id: '',
+  })
+  const [catalogRequestMessage, setCatalogRequestMessage] = useState('')
+  const [catalogRequestMatches, setCatalogRequestMatches] = useState<Array<Pick<ApiCatalogProduct, 'id' | 'name' | 'brand' | 'model' | 'product_type' | 'category_id' | 'category_name' | 'image_references'>>>([])
 
   const [form, setForm] = useState<Form>(EMPTY)
   const set = (k: keyof Form) => (v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
@@ -130,6 +156,32 @@ export default function TraderProducts() {
 
   const updateSpecification = (key: string, value: unknown) =>
     setSpecifications(current => ({ ...current, [key]: value }))
+
+  useEffect(() => {
+    if (view !== 'add' || selectedCatalogProduct) return
+    const query = catalogQuery.trim()
+    if (query.length < 2) {
+      setCatalogMatches([])
+      setCatalogSearchError('')
+      setCatalogSearchLoading(false)
+      return
+    }
+
+    let active = true
+    const timeout = window.setTimeout(() => {
+      setCatalogSearchLoading(true)
+      setCatalogSearchError('')
+      productsApi.searchCatalog(query)
+        .then(({ data }) => { if (active) setCatalogMatches(data) })
+        .catch(cause => { if (active) setCatalogSearchError(getLoadError(cause, 'catalog products')) })
+        .finally(() => { if (active) setCatalogSearchLoading(false) })
+    }, 250)
+
+    return () => {
+      active = false
+      window.clearTimeout(timeout)
+    }
+  }, [view, catalogQuery, selectedCatalogProduct])
 
   const changeCategory = (categoryId: string) => {
     set('category_id')(categoryId)
@@ -184,6 +236,16 @@ export default function TraderProducts() {
 
   const openAdd = () => {
     setForm(EMPTY)
+    setSelectedCatalogProduct(null)
+    setApprovedVariantOptions(null)
+    setCatalogQuery('')
+    setCatalogMatches([])
+    setCatalogSearchError('')
+    setSelectedCatalogImages([])
+    setRequestNewCatalogProduct(false)
+    setCatalogRequestForm({ name: '', brand: '', model: '', product_type: '', barcode: '', gtin: '', mpn: '', category_id: '' })
+    setCatalogRequestMessage('')
+    setCatalogRequestMatches([])
     setSpecifications({})
     setSpecificationValueDrafts({})
     setVariants([])
@@ -192,10 +254,23 @@ export default function TraderProducts() {
   }
 
   const openEdit = (p: ApiTraderProduct) => {
+    setSelectedCatalogProduct(null)
+    setApprovedVariantOptions(p.catalog_product
+      ? p.catalog_product.variants.map(variant => ({
+        options: variant.options,
+        image_url: variant.image_references[0] ? cloudinaryUrl(variant.image_references[0]) : null,
+      }))
+      : null)
+    setSelectedCatalogImages([])
     setForm({
       name: p.name,
       brand: p.brand ?? '',
       condition: p.condition ?? 'new',
+      availability: p.availability ?? 'in_stock',
+      warranty: p.warranty ?? '',
+      delivery_options: (p.delivery_options ?? []).join(', '),
+      package_details: p.package_details ?? '',
+      trader_sku: p.trader_sku ?? '',
       tags: (p.tags ?? []).join(', '),
       short_description: p.short_description ?? '',
       long_description: p.long_description ?? '',
@@ -227,6 +302,66 @@ export default function TraderProducts() {
     setImages([]); setPreviews([])
     setExistingImage(p.image_url || null)
     setError(''); setEditing(p); setView('edit')
+  }
+
+  const selectCatalogProduct = (product: ApiCatalogProduct) => {
+    setSelectedCatalogProduct(product)
+    setApprovedVariantOptions(product.variants.map(variant => ({
+      options: variant.options,
+      image_url: variant.image_references[0] ? cloudinaryUrl(variant.image_references[0]) : null,
+    })))
+    setSelectedCatalogImages(product.image_references ?? [])
+    setForm({
+      ...EMPTY,
+      name: product.name,
+      brand: product.brand,
+      tags: (product.tags ?? []).join(', '),
+      short_description: product.short_description ?? '',
+      long_description: product.long_description ?? '',
+      category_id: product.category_id ? String(product.category_id) : '',
+    })
+    setSpecifications(product.specifications ?? {})
+    setSpecificationValueDrafts({})
+    setVariants([])
+    setImages([])
+    setPreviews([])
+    setExistingImage(product.image_references?.[0] ? cloudinaryUrl(product.image_references[0]) : null)
+    setCatalogRequestMessage('')
+    setCatalogRequestMatches([])
+    setError('')
+  }
+
+  const submitCatalogProductRequest = async () => {
+    if (!catalogRequestForm.name.trim()) {
+      setCatalogRequestMessage('Enter the official product name first.')
+      return
+    }
+    setCatalogRequestMessage('')
+    setCatalogRequestMatches([])
+    try {
+      const { data } = await productsApi.requestCatalogProduct({
+        name: catalogRequestForm.name.trim(),
+        brand: catalogRequestForm.brand.trim(),
+        model: catalogRequestForm.model.trim(),
+        product_type: catalogRequestForm.product_type.trim(),
+        identifiers: {
+          barcode: catalogRequestForm.barcode.trim(),
+          gtin: catalogRequestForm.gtin.trim(),
+          mpn: catalogRequestForm.mpn.trim(),
+        },
+        category_id: catalogRequestForm.category_id ? Number(catalogRequestForm.category_id) : null,
+      })
+      setCatalogRequestMessage(data.detail)
+    } catch (cause) {
+      const payload = axios.isAxiosError(cause) ? cause.response?.data : undefined
+      if (axios.isAxiosError(cause) && cause.response?.status === 409 && payload && typeof payload === 'object') {
+        const data = payload as { detail?: string; matches?: typeof catalogRequestMatches }
+        setCatalogRequestMatches(data.matches ?? [])
+        setCatalogRequestMessage(data.detail ?? 'Similar products need review.')
+      } else {
+        setCatalogRequestMessage(getApiErrorDetails(payload).join(' ') || 'Failed to submit the product request.')
+      }
+    }
   }
 
   const handleFilesAdd = (files: FileList | null) => {
@@ -301,8 +436,13 @@ export default function TraderProducts() {
       if (form.original_price) fd.append('original_price', form.original_price)
       fd.append('delivery_fee', form.delivery_fee || '0')
       fd.append('stock', variants.length ? String(variantPayload.reduce((total, variant) => total + variant.stock, 0)) : form.stock || '0')
+      fd.append('trader_sku', form.trader_sku.trim())
       fd.append('brand', form.brand.trim())
       fd.append('condition', form.condition)
+      fd.append('availability', form.availability)
+      fd.append('warranty', form.warranty.trim())
+      fd.append('delivery_options', JSON.stringify(form.delivery_options.split(',').map(option => option.trim()).filter(Boolean)))
+      fd.append('package_details', form.package_details)
       fd.append('tags', JSON.stringify(form.tags.split(',').map(tag => tag.trim()).filter(Boolean)))
       fd.append('specifications', JSON.stringify(specifications))
       fd.append('variants', JSON.stringify(variantPayload))
@@ -313,15 +453,15 @@ export default function TraderProducts() {
       fd.append('is_active', form.is_active ? 'true' : 'false')
       fd.append('is_featured', form.is_featured ? 'true' : 'false')
       fd.append('is_new_deal', form.is_new_deal ? 'true' : 'false')
+      if (selectedCatalogProduct && view === 'add') {
+        fd.append('catalog_product_id', String(selectedCatalogProduct.id))
+        fd.append('catalog_image_references', JSON.stringify(selectedCatalogImages))
+      }
       if (images[0]) fd.append('image', images[0])
 
       if (view === 'add') {
         const r = await tradersApi.createProduct(traderUuid!, fd)
         setProducts(p => [r.data, ...p])
-      } else if (editing!.public_product_id !== null) {
-        await adminProductsApi.update(editing!.public_product_id, fd)
-        const { data } = await tradersApi.products(traderUuid!)
-        setProducts(data)
       } else {
         const r = await tradersApi.updateProduct(traderUuid!, editing!.uuid, fd)
         setProducts(p => p.map(x => x.uuid === r.data.uuid ? r.data : x))
@@ -365,6 +505,135 @@ export default function TraderProducts() {
     } finally { setDeleting(null) }
   }
 
+  if (view === 'add' && !selectedCatalogProduct) {
+    return (
+      <div className="p-8 max-w-5xl">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={() => setView('list')} className="p-1 hover:opacity-70" aria-label="Back to products">
+            <ArrowLeft size={20} color="#071A2B" />
+          </button>
+          <div>
+            <h1 className="text-xl font-extrabold text-[#071A2B]">Find a product to sell</h1>
+            <p className="text-[13px] text-[#64748B] mt-1">Choose a shared catalog product first. Its official details and images cannot be edited here.</p>
+          </div>
+        </div>
+
+        <div className="relative mb-5">
+          <Search size={18} className="absolute left-3 top-3.5 text-[#94A3B8]" />
+          <input
+            autoFocus
+            value={catalogQuery}
+            onChange={event => setCatalogQuery(event.target.value)}
+            placeholder="Search product name, brand, model, barcode or GTIN"
+            className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3 pl-10 pr-4 text-[14px] outline-none focus:border-[#22C55E]"
+          />
+        </div>
+
+        {catalogSearchLoading && <p className="mb-4 text-[13px] text-[#64748B]">Searching the shared catalog…</p>}
+        {catalogSearchError && <p role="alert" className="mb-4 text-[13px] text-red-600">{catalogSearchError}</p>}
+
+        <div className="grid gap-3">
+          {catalogMatches.map(product => {
+            const imageUrl = product.image_references[0] ? cloudinaryUrl(product.image_references[0]) : null
+            return (
+              <article key={product.id} className="flex items-center gap-4 rounded-xl border border-[#E2E8F0] bg-white p-4">
+                {imageUrl
+                  ? <img src={imageUrl} alt="" className="h-20 w-20 rounded-lg object-cover bg-[#F1F5F9]" />
+                  : <div className="h-20 w-20 rounded-lg bg-[#F1F5F9] flex items-center justify-center"><Package size={22} className="text-[#94A3B8]" /></div>
+                }
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-bold text-[#071A2B]">{product.name}</h2>
+                  <p className="mt-1 text-[12px] text-[#64748B]">
+                    {[product.brand, product.model, product.category_name].filter(Boolean).join(' · ')}
+                  </p>
+                  {product.short_description && <p className="mt-1 text-[12px] text-[#475569] line-clamp-2">{product.short_description}</p>}
+                  {Object.entries(product.specifications).slice(0, 3).map(([key, value]) => (
+                    <span key={key} className="mr-2 mt-1 inline-block text-[11px] text-[#64748B]">{key}: {String(value)}</span>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => selectCatalogProduct(product)}
+                  className="shrink-0 rounded-lg bg-[#22C55E] px-4 py-2.5 text-[12px] font-bold text-white"
+                >
+                  Sell this product
+                </button>
+              </article>
+            )
+          })}
+        </div>
+
+        {catalogQuery.trim().length >= 2 && !catalogSearchLoading && !catalogSearchError && catalogMatches.length === 0 && (
+          <p className="mt-5 rounded-xl bg-[#F8FAFC] p-4 text-[13px] text-[#64748B]">No approved catalog products match this search.</p>
+        )}
+
+        <section className="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold text-[#071A2B]">Product not found?</h2>
+              <p className="mt-1 text-[12px] text-[#64748B]">Request a new catalog product. An administrator reviews it before it can be listed.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setRequestNewCatalogProduct(current => !current)
+                setCatalogRequestForm(current => ({
+                  ...current,
+                  name: catalogQuery.trim() || current.name,
+                }))
+                setCatalogRequestMessage('')
+                setCatalogRequestMatches([])
+              }}
+              className="rounded-lg border border-[#22C55E] px-4 py-2 text-[12px] font-bold text-[#15803D]"
+            >
+              {requestNewCatalogProduct ? 'Hide request form' : 'Request a new product'}
+            </button>
+          </div>
+
+          {requestNewCatalogProduct && (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label="Official product name *" value={catalogRequestForm.name} onChange={name => setCatalogRequestForm(current => ({ ...current, name }))} placeholder="e.g. ANENG M118A Digital Multimeter" />
+              <Field label="Brand" value={catalogRequestForm.brand} onChange={brand => setCatalogRequestForm(current => ({ ...current, brand }))} />
+              <Field label="Model / manufacturer part number" value={catalogRequestForm.model} onChange={model => setCatalogRequestForm(current => ({ ...current, model }))} />
+              <Field label="Product type" value={catalogRequestForm.product_type} onChange={product_type => setCatalogRequestForm(current => ({ ...current, product_type }))} />
+              <Field label="Barcode" value={catalogRequestForm.barcode} onChange={barcode => setCatalogRequestForm(current => ({ ...current, barcode }))} />
+              <Field label="GTIN" value={catalogRequestForm.gtin} onChange={gtin => setCatalogRequestForm(current => ({ ...current, gtin }))} />
+              <Field label="Manufacturer part number" value={catalogRequestForm.mpn} onChange={mpn => setCatalogRequestForm(current => ({ ...current, mpn }))} />
+              <div>
+                <label className="mb-2 block text-[13px] font-bold text-[#071A2B]">Category</label>
+                <CategoryCascadeSelect
+                  categories={categories}
+                  selectedId={catalogRequestForm.category_id}
+                  onChange={category_id => setCatalogRequestForm(current => ({ ...current, category_id }))}
+                />
+              </div>
+              <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+                <button type="button" onClick={submitCatalogProductRequest} className="rounded-lg bg-[#071A2B] px-4 py-2.5 text-[12px] font-bold text-white">
+                  Submit for catalog review
+                </button>
+                {catalogRequestMessage && <p role="status" className="text-[12px] text-[#475569]">{catalogRequestMessage}</p>}
+              </div>
+              {catalogRequestMatches.length > 0 && (
+                <div className="sm:col-span-2 rounded-lg bg-amber-50 p-4">
+                  <p className="text-[12px] font-bold text-amber-900">Possible existing catalog products:</p>
+                  {catalogRequestMatches.map(product => (
+                    <div key={product.id} className="mt-2 flex items-center justify-between gap-3 text-[12px] text-amber-900">
+                      <span>{[product.name, product.brand, product.model].filter(Boolean).join(' · ')}</span>
+                      <button type="button" className="underline" onClick={() => {
+                        setCatalogQuery(product.model || product.name)
+                        setRequestNewCatalogProduct(false)
+                      }}>Search product</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+    )
+  }
+
   // ── Add / Edit view ────────────────────────────────────────────────────────
   if (view === 'add' || view === 'edit') {
     const isEdit = view === 'edit'
@@ -391,7 +660,43 @@ export default function TraderProducts() {
           {/* Left column */}
           <div className="space-y-4 lg:sticky lg:top-0 lg:self-start">
 
-            {isEdit ? (
+            {selectedCatalogProduct && !isEdit ? (
+              <div>
+                <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Approved catalog images</label>
+                {selectedCatalogProduct.image_references.length ? (
+                  <div className="space-y-2">
+                    {selectedCatalogProduct.image_references.map(reference => {
+                      const imageUrl = cloudinaryUrl(reference)
+                      const checked = selectedCatalogImages.includes(reference)
+                      return (
+                        <label key={reference} className="flex items-center gap-3 rounded-lg border border-[#E2E8F0] p-2">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={event => setSelectedCatalogImages(current => event.target.checked
+                              ? [...current, reference]
+                              : current.filter(item => item !== reference))}
+                          />
+                          {imageUrl && <img src={imageUrl} alt="" className="h-14 w-14 rounded-md object-cover" />}
+                          <span className="min-w-0 flex-1 truncate text-[11px] text-[#64748B]">{reference}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="rounded-lg bg-[#F8FAFC] p-3 text-[12px] text-[#64748B]">This catalog product has no approved images yet.</p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-[#E2E8F0] px-3 py-2 text-[11px] font-semibold text-[#64748B]"
+                >
+                  <ImagePlus size={15} /> Add actual-item photo (optional)
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileEdit(e.target.files)} />
+                {previews[0] && <img src={previews[0]} alt="Trader item photo preview" className="mt-3 h-24 w-24 rounded-lg object-cover" />}
+              </div>
+            ) : isEdit ? (
               <>
                 <button
                   type="button"
@@ -438,41 +743,93 @@ export default function TraderProducts() {
 
             <div>
               <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Category</label>
-              <CategoryCascadeSelect categories={categories} selectedId={form.category_id} onChange={changeCategory} />
-              <p className="mt-1.5 text-[11px] text-[#64748B]">Choose a department, then narrow it to a category or subcategory.</p>
+              {selectedCatalogProduct
+                ? <p className="rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-3 text-[13px] text-[#475569]">{selectedCategory?.name ?? 'Uncategorized'}</p>
+                : <CategoryCascadeSelect categories={categories} selectedId={form.category_id} onChange={changeCategory} />
+              }
+              {!selectedCatalogProduct && <p className="mt-1.5 text-[11px] text-[#64748B]">Choose a department, then narrow it to a category or subcategory.</p>}
             </div>
           </div>
 
           {/* Right columns */}
           <div className="lg:col-span-2 space-y-4">
-            <Field label="Product Name *" value={form.name} onChange={set('name')} placeholder="e.g. Wireless Earbuds" />
+            {selectedCatalogProduct && (
+              <div className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-[#15803D]">Shared catalog product</p>
+                <p className="mt-1 font-extrabold text-[#071A2B]">{selectedCatalogProduct.name}</p>
+                <p className="mt-1 text-[12px] text-[#475569]">
+                  {[selectedCatalogProduct.brand, selectedCatalogProduct.model, selectedCatalogProduct.product_type].filter(Boolean).join(' · ')}
+                </p>
+                <button type="button" onClick={() => {
+                  setSelectedCatalogProduct(null)
+                  setSelectedCatalogImages([])
+                  setExistingImage(null)
+                  setForm(EMPTY)
+                }} className="mt-2 text-[11px] font-bold text-[#15803D] underline">
+                  Choose a different catalog product
+                </button>
+              </div>
+            )}
+            <Field label="Product Name *" value={form.name} onChange={set('name')} placeholder="e.g. Wireless Earbuds" disabled={Boolean(selectedCatalogProduct)} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Brand" value={form.brand} onChange={set('brand')} placeholder="e.g. Apple" />
+              <Field label="Brand" value={form.brand} onChange={set('brand')} placeholder="e.g. Apple" disabled={Boolean(selectedCatalogProduct)} />
               <div>
                 <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Condition</label>
                 <select value={form.condition} onChange={event => set('condition')(event.target.value as Form['condition'])} className="w-full px-3 py-3 bg-white border border-[#E2E8F0] rounded-xl text-[13px]">
                   <option value="new">New</option><option value="used">Used</option><option value="refurbished">Refurbished</option>
                 </select>
               </div>
-              <Field label="Tags (comma separated)" value={form.tags} onChange={set('tags')} placeholder="e.g. electronics, repair" />
+              {!selectedCatalogProduct && <Field label="Tags (comma separated)" value={form.tags} onChange={set('tags')} placeholder="e.g. electronics, repair" />}
             </div>
+            <Field label="Trader SKU (optional)" value={form.trader_sku} onChange={set('trader_sku')} placeholder="Your stock keeping reference" maxLength={100} />
             <div className="grid grid-cols-2 gap-4">
               <Field label="Price (UGX) *" value={form.price} onChange={set('price')} placeholder="e.g. 29000" type="number" />
               <Field label="Original Price (UGX)" value={form.original_price} onChange={set('original_price')} placeholder="e.g. 59000" type="number" />
               <Field label="Stock" value={form.stock} onChange={set('stock')} placeholder="e.g. 50" type="number" />
               <Field label="Delivery Fee (UGX)" value={form.delivery_fee} onChange={set('delivery_fee')} placeholder="e.g. 5000" type="number" />
             </div>
-            <Field label="Short Description" value={form.short_description} onChange={set('short_description')} placeholder="Brief summary" maxLength={300} />
-            <div>
-              <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
-              <RichTextEditor
-                value={form.long_description}
-                onChange={v => set('long_description')(v)}
-                placeholder="Full product details..."
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-[13px] font-bold text-[#071A2B]">Availability</label>
+                <select value={form.availability} onChange={event => set('availability')(event.target.value as Form['availability'])} className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-3 text-[13px]">
+                  <option value="in_stock">In stock</option>
+                  <option value="preorder">Pre-order</option>
+                  <option value="made_to_order">Made to order</option>
+                  <option value="unavailable">Unavailable</option>
+                </select>
+              </div>
+              <Field label="Warranty" value={form.warranty} onChange={set('warranty')} placeholder="e.g. 12-month manufacturer warranty" maxLength={255} />
+              <Field label="Delivery options (comma separated)" value={form.delivery_options} onChange={set('delivery_options')} placeholder="e.g. Pickup, Kampala delivery" />
+              <Field label="Package / bundle details" value={form.package_details} onChange={set('package_details')} placeholder="What is included in this offer?" />
             </div>
+            <Field label="Short Description" value={form.short_description} onChange={set('short_description')} placeholder="Brief summary" maxLength={300} disabled={Boolean(selectedCatalogProduct)} />
+            {selectedCatalogProduct
+              ? <div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+                  <p className="mb-2 text-[13px] font-bold text-[#071A2B]">Shared product description</p>
+                  <p className="whitespace-pre-wrap text-[12px] text-[#475569]">{form.long_description}</p>
+                </div>
+              : <div>
+                  <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
+                  <RichTextEditor
+                    value={form.long_description}
+                    onChange={v => set('long_description')(v)}
+                    placeholder="Full product details..."
+                  />
+                </div>
+            }
 
-            {!!selectedCategory?.attributes.filter(attribute => !attribute.is_variant).length && (
+            {selectedCatalogProduct && Object.keys(specifications).length > 0 && (
+              <section className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+                <h2 className="text-[14px] font-extrabold text-[#071A2B]">Shared product specifications</h2>
+                <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {Object.entries(specifications).map(([key, value]) => (
+                    <div key={key} className="text-[12px] text-[#475569]"><dt className="font-bold">{key}</dt><dd>{String(value)}</dd></div>
+                  ))}
+                </dl>
+              </section>
+            )}
+
+            {!selectedCatalogProduct && !!selectedCategory?.attributes.filter(attribute => !attribute.is_variant).length && (
               <section className="rounded-xl border border-[#E2E8F0] bg-white p-4 space-y-4">
                 <div>
                   <h2 className="text-[14px] font-extrabold text-[#071A2B]">Product specifications</h2>
@@ -577,12 +934,13 @@ export default function TraderProducts() {
             )}
 
             <ProductVariantEditor
-              key={`${editing?.uuid ?? 'new'}:${form.category_id}`}
+              key={`${editing?.uuid ?? 'new'}:${form.category_id}:${selectedCatalogProduct?.id ?? 'existing'}`}
               variants={variants}
               onChange={setVariants}
               basePrice={form.price}
               baseOriginalPrice={form.original_price}
               optionAttributes={variantAttributes}
+              approvedVariantOptions={approvedVariantOptions ?? undefined}
             />
 
             <div className="flex justify-end gap-3 pt-2">

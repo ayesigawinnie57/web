@@ -143,6 +143,7 @@ export default function ProductPage() {
   const navigate = useNavigate()
 
   const [product, setProduct] = useState<Product | null>(null)
+  const [catalogOffers, setCatalogOffers] = useState<Product[]>([])
   const [related, setRelated] = useState<Product[]>([])
   const [alsoBy, setAlsoBy] = useState<Product[]>([])
   const [sellerProducts, setSellerProducts] = useState<Product[]>([])
@@ -174,7 +175,16 @@ export default function ProductPage() {
       refreshing = true
       productsApi.bySlug(slug)
         .then(({ data }) => {
-          if (active) setProduct(toProduct(data))
+          if (!active) return
+          const refreshedProduct = { ...toProduct(data), slug }
+          setCatalogOffers(current => current.map(offer =>
+            offer.id === refreshedProduct.id ? refreshedProduct : offer,
+          ))
+          setProduct(current =>
+            current?.catalogProductId && current.id !== refreshedProduct.id
+              ? current
+              : refreshedProduct,
+          )
         })
         .catch(error => {
           if (active) console.error('Failed to refresh product details.', error)
@@ -204,6 +214,7 @@ export default function ProductPage() {
     setWishlisted(false)
     setProductDetailsExpanded(false)
     setReviews([])
+    setCatalogOffers([])
     setSellerProducts([])
     setSeller(null)
     setSummary(null)
@@ -215,8 +226,21 @@ export default function ProductPage() {
         .catch(() => undefined)
     }
 
-    productsApi.bySlug(slug).then(({ data }) => {
-      const p = toProduct(data)
+    productsApi.bySlug(slug).then(async ({ data }) => {
+      let p = { ...toProduct(data), slug }
+      if (data.catalog_product_id) {
+        try {
+          const { data: offerData } = await productsApi.catalogOffers(data.catalog_product_id)
+          const offers = offerData.map(offer => ({ ...toProduct(offer), slug }))
+          setCatalogOffers(offers)
+          p = offers.find(offer => offer.stock > 0) ?? offers[0] ?? p
+        } catch (error) {
+          console.error('Failed to load sellers for the catalog product.', error)
+          setCatalogOffers([p])
+        }
+      } else {
+        setCatalogOffers([p])
+      }
       setProduct(p)
       if (p.sellerUuid) {
         publicSellerApi.profile(p.sellerUuid).then(({ data: sellerData }) => setSeller(sellerData)).catch(() => setSeller(null))
@@ -296,6 +320,38 @@ export default function ProductPage() {
       setFollowError('Could not update your follow. Please try again.')
     } finally {
       setFollowBusy(false)
+    }
+  }
+
+  const selectCatalogOffer = (offer: Product) => {
+    setProduct({ ...offer, slug: slug ?? offer.slug })
+    setQty(1)
+    setSelectedOptions({})
+    setActiveImg(0)
+    setCartToast(null)
+    if (offer.sellerUuid) {
+      publicSellerApi.profile(offer.sellerUuid)
+        .then(({ data }) => setSeller(data))
+        .catch(() => setSeller(null))
+    } else {
+      setSeller({
+        uuid: '',
+        business_name: 'Majo Gadgets',
+        bio: 'Official Majo Gadgets store.',
+        is_verified: false,
+        is_official: true,
+        follower_count: null,
+        is_following: false,
+        customer_rating: null,
+        review_count: 0,
+        quality_rating: null,
+        quality_review_count: 0,
+        shipping_speed_score: null,
+        shipping_sample_count: 0,
+        cancellation_rate: null,
+        order_item_count: 0,
+        seller_score: null,
+      })
     }
   }
 
@@ -658,12 +714,41 @@ export default function ProductPage() {
                     You save UGX {savings.toLocaleString()} ({discount}%)
                   </p>
                 )}
+                {catalogOffers.length > 1 && (
+                  <section className="mt-4 rounded-xl border border-[#E2E8F0] bg-white p-3">
+                    <h2 className="mb-2 text-[12px] font-extrabold text-[#071A2B]">Other sellers</h2>
+                    <div className="space-y-2">
+                      {catalogOffers.map(offer => (
+                        <button
+                          key={offer.id}
+                          type="button"
+                          aria-pressed={offer.id === product.id}
+                          onClick={() => selectCatalogOffer(offer)}
+                          className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left ${offer.id === product.id ? 'border-[#1E3A8A] bg-blue-50' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-[12px] font-bold text-[#334155]">{offer.sellerName || 'Marketplace seller'}</span>
+                            <span className="mt-0.5 block text-[10px] text-[#64748B]">{offer.stock > 0 ? `${offer.stock} available` : 'Out of stock'}</span>
+                          </span>
+                          <span className="shrink-0 text-[12px] font-extrabold text-[#1E3A8A]">UGX {offer.price.toLocaleString()}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
 
               {/* Description */}
               <div className="pt-1">
                 <h2 className="text-[14px] font-extrabold text-[#071A2B] mb-1.5">About this product</h2>
                 <p className="text-[13px] text-[#475569] leading-relaxed whitespace-pre-line">{shortDescription}</p>
+                {(product.warranty || product.deliveryOptions.length > 0 || product.packageDetails) && (
+                  <dl className="mt-3 grid gap-2 rounded-xl border border-[#E2E8F0] bg-white p-3 text-[12px] sm:grid-cols-2">
+                    {product.warranty && <div><dt className="font-semibold text-[#64748B]">Warranty</dt><dd className="mt-0.5 text-[#071A2B]">{product.warranty}</dd></div>}
+                    {product.deliveryOptions.length > 0 && <div><dt className="font-semibold text-[#64748B]">Delivery options</dt><dd className="mt-0.5 text-[#071A2B]">{product.deliveryOptions.join(', ')}</dd></div>}
+                    {product.packageDetails && <div className="sm:col-span-2"><dt className="font-semibold text-[#64748B]">Package details</dt><dd className="mt-0.5 text-[#071A2B]">{product.packageDetails}</dd></div>}
+                  </dl>
+                )}
               </div>
 
               {productDetails.length > 0 && (

@@ -57,7 +57,7 @@ export default function LoginPage() {
       const guestCart = JSON.parse(localStorage.getItem('majo_guest_cart') ?? '[]')
       if (guestCart.length > 0) {
         await Promise.all(guestCart.map((item: any) =>
-          cartApi.add({ id: item.product_id, slug: item.product_slug, name: item.product_name, price: Number(item.product_price), image: item.product_image, images: [], rating: Number(item.product_rating), reviewsCount: 0, stock: 99, deliveryFee: 0, shortDescription: '', longDescription: '', brand: '', condition: 'new', tags: [], specifications: {}, reviewStatus: 'approved', reviewNote: '', variants: [], category: item.product_category, categoryName: '' }, item.quantity, item.variant_id ?? undefined)
+          cartApi.add({ id: item.product_id, catalogProductId: null, slug: item.product_slug, name: item.product_name, price: Number(item.product_price), image: item.product_image, images: [], rating: Number(item.product_rating), reviewsCount: 0, sellerName: null, stock: 99, deliveryFee: 0, availability: 'in_stock', warranty: '', deliveryOptions: [], packageDetails: '', shortDescription: '', longDescription: '', brand: '', condition: 'new', tags: [], specifications: {}, reviewStatus: 'approved', reviewNote: '', variants: [], category: item.product_category, categoryName: '' }, item.quantity, item.variant_id ?? undefined)
         ))
         localStorage.removeItem('majo_guest_cart')
         notifyCartUpdated()

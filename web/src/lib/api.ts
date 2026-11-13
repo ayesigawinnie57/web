@@ -143,6 +143,7 @@ api.interceptors.response.use(
 
 export type ApiProduct = {
   id: number
+  catalog_product_id?: number | null
   slug: string
   name: string
   price: string
@@ -155,6 +156,10 @@ export type ApiProduct = {
   reviews_count: number
   seller_uuid?: string | null
   seller_name: string | null
+  availability?: 'in_stock' | 'preorder' | 'made_to_order' | 'unavailable'
+  warranty?: string
+  delivery_options?: string[]
+  package_details?: string
   stock: number
   delivery_fee: string
   short_description: string
@@ -171,6 +176,30 @@ export type ApiProduct = {
   is_new_deal?: boolean
   images: { id: number; url: string; order: number }[]
   category: { id: number; name: string; slug: string; attributes?: ApiCategoryAttribute[] }
+}
+
+export type ApiCatalogProduct = {
+  id: number
+  name: string
+  brand: string
+  model: string
+  product_type: string
+  category_id: number | null
+  category_name: string | null
+  short_description: string
+  long_description: string
+  tags: string[]
+  specifications: Record<string, unknown>
+  attributes: Record<string, unknown>
+  identifiers: Record<string, unknown>
+  variant_options: Record<string, string | number | boolean>[]
+  variants: ApiCatalogVariant[]
+  image_references: string[]
+}
+
+export type ApiCatalogVariant = {
+  options: Record<string, string | number | boolean>
+  image_references: string[]
 }
 
 export type ApiProductVariant = {
@@ -233,6 +262,7 @@ export function getCategoryUrl(categories: ApiCategory[], category: ApiCategory)
 
 export type Product = {
   id: number
+  catalogProductId: number | null
   slug: string
   name: string
   price: number
@@ -242,8 +272,13 @@ export type Product = {
   rating: number
   reviewsCount: number
   sellerUuid?: string | null
+  sellerName: string | null
   stock: number
   deliveryFee: number
+  availability: 'in_stock' | 'preorder' | 'made_to_order' | 'unavailable'
+  warranty: string
+  deliveryOptions: string[]
+  packageDetails: string
   shortDescription: string
   longDescription: string
   brand: string
@@ -269,6 +304,7 @@ function unescapeHtml(str: string): string {
 
 export const toProduct = (p: ApiProduct): Product => ({
   id: p.id,
+  catalogProductId: p.catalog_product_id ?? null,
   slug: p.slug,
   name: p.name,
   price: Number(p.price),
@@ -278,8 +314,13 @@ export const toProduct = (p: ApiProduct): Product => ({
   rating: Number(p.rating),
   reviewsCount: p.reviews_count ?? 0,
   sellerUuid: p.seller_uuid ?? null,
+  sellerName: p.seller_name ?? null,
   stock: p.stock ?? 0,
   deliveryFee: Number(p.delivery_fee ?? 0),
+  availability: p.availability ?? 'in_stock',
+  warranty: p.warranty ?? '',
+  deliveryOptions: p.delivery_options ?? [],
+  packageDetails: p.package_details ?? '',
   shortDescription: p.short_description?.trim() || DEFAULT_PRODUCT_DESCRIPTION,
   longDescription: unescapeHtml(p.long_description?.trim() || DEFAULT_LONG_DESCRIPTION),
   brand: p.brand ?? '',
@@ -417,6 +458,19 @@ export const productsApi = {
   byCategory: (categorySlug: string, page = 1) =>
     productsApi.list(`category=${encodeURIComponent(categorySlug)}&page=${page}`),
   categories: () => cachedRequest('products:categories:v4', () => api.get<ApiCategory[]>('/api/products/categories/')),
+  searchCatalog: (query: string) =>
+    api.get<ApiCatalogProduct[]>('/api/products/catalog/', { params: { q: query } }),
+  requestCatalogProduct: (data: {
+    name: string
+    brand: string
+    model: string
+    product_type?: string
+    identifiers?: Record<string, string>
+    category_id?: number | null
+    short_description?: string
+  }) => api.post<{ id: number; name: string; review_status: string; detail: string }>('/api/products/catalog/', data),
+  catalogOffers: (catalogProductId: number) =>
+    api.get<ApiProduct[]>(`/api/products/catalog/${catalogProductId}/offers/`),
   flashSales: () => api.get<ApiFlashSale[]>('/api/products/flash-sales/', {
     params: { active: 1, _refresh: Date.now() },
   }),
@@ -1029,6 +1083,8 @@ export type ApiTraderFinance = {
 export type ApiTraderProduct = {
   id: number
   public_product_id: number | null
+  catalog_product: Pick<ApiCatalogProduct, 'id' | 'name' | 'brand' | 'model' | 'product_type' | 'category_id' | 'variant_options' | 'variants' | 'image_references'> | null
+  catalog_image_references: string[]
   uuid: string
   name: string
   short_description: string
@@ -1046,6 +1102,11 @@ export type ApiTraderProduct = {
   original_price: string | null
   delivery_fee: string
   stock: number
+  trader_sku: string
+  availability: 'in_stock' | 'preorder' | 'made_to_order' | 'unavailable'
+  warranty: string
+  delivery_options: string[]
+  package_details: string
   category_id: number | null
   category_name: string | null
   image_url: string | null

@@ -16,6 +16,14 @@ export type ProductVariantDraft = {
   has_inventory_item?: boolean
 }
 
+type ApprovedVariantOption = {
+  options: Record<string, string | number | boolean>
+  image_url: string | null
+}
+
+const getOptionsKey = (options: Record<string, string | number | boolean>) =>
+  JSON.stringify(Object.entries(options).sort(([left], [right]) => left.localeCompare(right)))
+
 function VariantRow({
   variant,
   index,
@@ -136,12 +144,14 @@ export default function ProductVariantEditor({
   basePrice,
   baseOriginalPrice,
   optionAttributes = [],
+  approvedVariantOptions,
 }: {
   variants: ProductVariantDraft[]
   onChange: (variants: ProductVariantDraft[]) => void
   basePrice: string
   baseOriginalPrice: string
   optionAttributes?: ApiCategoryAttribute[]
+  approvedVariantOptions?: ApprovedVariantOption[]
 }) {
   const [isAddingVariant, setIsAddingVariant] = useState(false)
   const [optionName, setOptionName] = useState('')
@@ -152,6 +162,23 @@ export default function ProductVariantEditor({
   const [variantError, setVariantError] = useState('')
   const selectedOptionKey = optionName === '__other__' ? customOptionName.trim() : optionName
   const selectedAttribute = optionAttributes.find(attribute => attribute.key === selectedOptionKey)
+  const hasApprovedVariantOptions = approvedVariantOptions !== undefined
+  const availableApprovedVariants = (approvedVariantOptions ?? []).filter(option =>
+    !variants.some(variant => getOptionsKey(variant.options) === getOptionsKey(option.options)),
+  )
+  const addApprovedVariant = (option: ApprovedVariantOption) => {
+    onChange([...variants, {
+      sku: '',
+      options: option.options,
+      price: basePrice,
+      compare_at_price: baseOriginalPrice,
+      stock: '0',
+      weight: '',
+      is_active: true,
+      image_url: option.image_url,
+      image_file: null,
+    }])
+  }
   const existingOptionValues = [...new Set(variants
     .map(variant => variant.options[selectedOptionKey])
     .filter(optionValue => optionValue !== undefined)
@@ -270,7 +297,9 @@ export default function ProductVariantEditor({
         <div>
           <h2 className="text-[14px] font-extrabold text-[#071A2B]">Options &amp; variants</h2>
           <p className="mt-1 text-[12px] leading-5 text-[#64748B]">
-            Optional product choices such as color or size. Shoppers select a combination before adding it to their cart.
+            {hasApprovedVariantOptions
+              ? 'Choose from the approved shared catalog combinations, then set your own SKU, price, and stock.'
+              : 'Optional product choices such as color or size. Shoppers select a combination before adding it to their cart.'}
           </p>
         </div>
         <span className="shrink-0 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[11px] font-bold text-[#475569]">
@@ -295,7 +324,7 @@ export default function ProductVariantEditor({
           No variants yet. If you skip variants, the product keeps its regular settings.
         </p>
       )}
-      {isAddingVariant && (
+      {isAddingVariant && !hasApprovedVariantOptions && (
         <div className="mt-4 space-y-4 border-t border-[#E2E8F0] pt-4">
           <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 sm:p-4">
             <p className="mb-3 text-[12px] font-bold text-[#334155]">Choose an option and one or more values</p>
@@ -425,26 +454,46 @@ export default function ProductVariantEditor({
         </div>
       )}
       <div className="mt-4 flex justify-end border-t border-[#E2E8F0] pt-3">
-        {isAddingVariant && (
-          <button
-            type="button"
-            onClick={() => {
-              setIsAddingVariant(false)
-              setVariantError('')
-            }}
-            className="mr-2 rounded-lg border border-[#CBD5E1] px-4 py-2 text-[12px] font-bold text-[#475569] hover:bg-[#F8FAFC]"
-          >
-            Close
-          </button>
+        {hasApprovedVariantOptions ? (
+          <div className="flex flex-wrap justify-end gap-2">
+            {availableApprovedVariants.map((options, index) => (
+              <button
+                key={`${index}-${JSON.stringify(options)}`}
+                type="button"
+                onClick={() => addApprovedVariant(options)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#071A2B] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#12304A]"
+              >
+                <Plus size={14} /> Add {Object.values(options.options).map(String).join(' / ')}
+              </button>
+            ))}
+            {!approvedVariantOptions?.length && (
+              <p className="text-[11px] text-[#64748B]">The catalog has no approved variants for this product.</p>
+            )}
+          </div>
+        ) : (
+          <>
+            {isAddingVariant && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingVariant(false)
+                  setVariantError('')
+                }}
+                className="mr-2 rounded-lg border border-[#CBD5E1] px-4 py-2 text-[12px] font-bold text-[#475569] hover:bg-[#F8FAFC]"
+              >
+                Close
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => isAddingVariant ? addVariant() : setIsAddingVariant(true)}
+              disabled={isAddingVariant && (!selectedOptionKey || !selectedOptionValues.length || variants.length >= 100)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#071A2B] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#12304A] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus size={14} /> Add Variant
+            </button>
+          </>
         )}
-        <button
-          type="button"
-          onClick={() => isAddingVariant ? addVariant() : setIsAddingVariant(true)}
-          disabled={isAddingVariant && (!selectedOptionKey || !selectedOptionValues.length || variants.length >= 100)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#071A2B] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#12304A] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Plus size={14} /> Add Variant
-        </button>
       </div>
     </section>
   )
