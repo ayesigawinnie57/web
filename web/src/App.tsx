@@ -47,6 +47,7 @@ const AdminGuard      = lazy(() => import('./admin/AdminGuard'))
 const AdminLayout     = lazy(() => import('./admin/AdminLayout'))
 const AdminDashboard  = lazy(() => import('./admin/AdminDashboard'))
 const AdminProducts   = lazy(() => import('./admin/products/index'))
+const AdminCatalogRequests = lazy(() => import('./admin/catalog-requests'))
 const AddProduct      = lazy(() => import('./admin/products/add'))
 const EditProduct     = lazy(() => import('./admin/products/[id]'))
 const AdminCategories = lazy(() => import('./admin/categories/index'))
@@ -229,6 +230,7 @@ export default function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="products" element={<AdminProducts />} />
+              <Route path="catalog-requests" element={<AdminCatalogRequests />} />
               <Route path="products/add" element={<AddProduct />} />
               <Route path="products/:id" element={<EditProduct />} />
               <Route path="categories" element={<AdminCategories />} />

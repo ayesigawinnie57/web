@@ -202,6 +202,57 @@ export type ApiCatalogVariant = {
   image_references: string[]
 }
 
+export type CatalogRequestVariant = {
+  sku: string
+  options: Record<string, string | number | boolean>
+  price: string
+  compare_at_price: string | null
+  stock: number
+  weight?: string | null
+  is_active: boolean
+}
+
+export type CatalogRequestOfferDetails = {
+  price: string
+  original_price?: string | null
+  delivery_fee?: string
+  stock?: number
+  trader_sku?: string
+  condition: 'new' | 'used' | 'refurbished'
+  availability: 'in_stock' | 'preorder' | 'made_to_order' | 'unavailable'
+  warranty?: string
+  delivery_options?: string[]
+  package_details?: string
+  variants: CatalogRequestVariant[]
+  variant_image_indexes?: Array<number | null>
+}
+
+export type ApiCatalogRequest = {
+  id: number
+  name: string
+  brand: string
+  model: string
+  product_type: string
+  category_id: number | null
+  category_name: string | null
+  short_description: string
+  long_description: string
+  tags: string[]
+  specifications: Record<string, unknown>
+  attributes: Record<string, unknown>
+  identifiers: Record<string, unknown>
+  variant_options: Record<string, string | number | boolean>[]
+  variants: ApiCatalogVariant[]
+  image_references: string[]
+  request_offer_details: CatalogRequestOfferDetails
+  images: { id: number; url: string | null; variant_options: Record<string, string | number | boolean> }[]
+  review_status: 'pending_review' | 'approved' | 'rejected' | 'changes_required' | 'disabled'
+  review_note: string
+  requester_email?: string
+  requester_name?: string
+  created_at: string
+}
+
 export type ApiProductVariant = {
   id: number
   sku: string
@@ -460,15 +511,11 @@ export const productsApi = {
   categories: () => cachedRequest('products:categories:v4', () => api.get<ApiCategory[]>('/api/products/categories/')),
   searchCatalog: (query: string) =>
     api.get<ApiCatalogProduct[]>('/api/products/catalog/', { params: { q: query } }),
-  requestCatalogProduct: (data: {
-    name: string
-    brand: string
-    model: string
-    product_type?: string
-    identifiers?: Record<string, string>
-    category_id?: number | null
-    short_description?: string
-  }) => api.post<{ id: number; name: string; review_status: string; detail: string }>('/api/products/catalog/', data),
+  requestCatalogProduct: (data: FormData) =>
+    api.post<{ id: number; name: string; review_status: string; detail: string }>('/api/products/catalog/', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  myCatalogRequests: () => api.get<ApiCatalogRequest[]>('/api/products/catalog/requests/'),
   catalogOffers: (catalogProductId: number) =>
     api.get<ApiProduct[]>(`/api/products/catalog/${catalogProductId}/offers/`),
   flashSales: () => api.get<ApiFlashSale[]>('/api/products/flash-sales/', {
@@ -479,6 +526,14 @@ export const productsApi = {
   checkEligibility: (slug: string, orderCode?: string) => api.get<{ eligible: boolean; reason?: string; order_id?: number; order_item_id?: number; order_code?: string; existing_review_id?: number | null }>(`/api/products/${slug}/reviews/eligibility/`, { params: orderCode ? { order_code: orderCode } : undefined }),
   submitReview: (slug: string, data: FormData) => api.post(`/api/products/${slug}/reviews/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   shareUrl: (slug: string) => `https://www.majogadgets.com/shop/${slug}`,
+}
+
+export const adminCatalogRequestsApi = {
+  list: () => api.get<ApiCatalogRequest[]>('/api/products/catalog/admin/requests/'),
+  update: (id: number, data: Partial<ApiCatalogRequest> & {
+    offer_details?: CatalogRequestOfferDetails
+    review_status?: ApiCatalogRequest['review_status']
+  }) => api.patch<ApiCatalogRequest>(`/api/products/catalog/requests/${id}/`, data),
 }
 
 export type ApiPublicSeller = {

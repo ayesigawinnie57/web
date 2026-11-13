@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store, ArrowLeftRight, PackageCheck, RotateCcw, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Package, Grid2X2, ShoppingBag, Zap, Users, CreditCard, Menu, X, Search, Bell, Settings, UserCircle, Database, DollarSign, Boxes, Store, ArrowLeftRight, PackageCheck, RotateCcw, MessageCircle, ClipboardList } from 'lucide-react'
 import { LOGO, sessionApi, supportChatApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
@@ -9,6 +9,7 @@ import { ASSIGNED_PAGES_KEY } from './AdminGuard'
 const ALL_NAV = [
   { to: '/admin',             label: 'Dashboard',  pageKey: null,           icon: LayoutDashboard, end: true },
   { to: '/admin/products',    label: 'Products',   pageKey: 'Products',     icon: Package },
+  { to: '/admin/catalog-requests', label: 'Request Products', pageKey: 'Products', icon: ClipboardList },
   { to: '/admin/flashsales',  label: 'Flash Sales',pageKey: 'Flash Sales',  icon: Zap },
   { to: '/admin/categories',  label: 'Categories', pageKey: 'Categories',   icon: Grid2X2 },
   { to: '/admin/orders',      label: 'Orders',     pageKey: 'Orders',       icon: ShoppingBag },

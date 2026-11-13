@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2, Package, ArrowLeft, ImagePlus, X, Search } from '
 import axios from 'axios'
 import {
   tradersApi, productsApi, cloudinaryUrl,
-  type ApiTraderProduct, type ApiCategory, type ApiCatalogProduct, type ApiCatalogVariant,
+  type ApiTraderProduct, type ApiCategory, type ApiCatalogProduct, type ApiCatalogVariant, type ApiCatalogRequest,
 } from '../lib/api'
 import ProductVariantEditor, { type ProductVariantDraft } from '../components/ProductVariantEditor'
 import CategoryCascadeSelect from '../components/CategoryCascadeSelect'
@@ -134,6 +134,11 @@ export default function TraderProducts() {
     name: '', brand: '', model: '', product_type: '', barcode: '', gtin: '', mpn: '', category_id: '',
   })
   const [catalogRequestMessage, setCatalogRequestMessage] = useState('')
+  const [catalogRequestSaving, setCatalogRequestSaving] = useState(false)
+  const [catalogRequestImages, setCatalogRequestImages] = useState<Array<{ file: File; preview: string }>>([])
+  const [catalogRequestSpecificationsText, setCatalogRequestSpecificationsText] = useState('{}')
+  const [myCatalogRequests, setMyCatalogRequests] = useState<ApiCatalogRequest[]>([])
+  const [myCatalogRequestsLoading, setMyCatalogRequestsLoading] = useState(false)
   const [catalogRequestMatches, setCatalogRequestMatches] = useState<Array<Pick<ApiCatalogProduct, 'id' | 'name' | 'brand' | 'model' | 'product_type' | 'category_id' | 'category_name' | 'image_references'>>>([])
 
   const [form, setForm] = useState<Form>(EMPTY)
@@ -141,6 +146,7 @@ export default function TraderProducts() {
   const [specifications, setSpecifications] = useState<Record<string, unknown>>({})
   const [specificationValueDrafts, setSpecificationValueDrafts] = useState<Record<string, string>>({})
   const [variants, setVariants] = useState<VariantDraft[]>([])
+  const requestCategory = categories.find(category => String(category.id) === catalogRequestForm.category_id)
 
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
@@ -182,6 +188,16 @@ export default function TraderProducts() {
       window.clearTimeout(timeout)
     }
   }, [view, catalogQuery, selectedCatalogProduct])
+
+  useEffect(() => {
+    if (view !== 'add' || selectedCatalogProduct) return
+    let active = true
+    productsApi.myCatalogRequests()
+      .then(({ data }) => { if (active) setMyCatalogRequests(data) })
+      .catch(cause => { if (active) setCatalogRequestMessage(getLoadError(cause, 'your product requests')) })
+      .finally(() => { if (active) setMyCatalogRequestsLoading(false) })
+    return () => { active = false }
+  }, [view, selectedCatalogProduct])
 
   const changeCategory = (categoryId: string) => {
     set('category_id')(categoryId)
@@ -235,6 +251,7 @@ export default function TraderProducts() {
   }, [traderUuid, reloadKey])
 
   const openAdd = () => {
+    catalogRequestImages.forEach(image => URL.revokeObjectURL(image.preview))
     setForm(EMPTY)
     setSelectedCatalogProduct(null)
     setApprovedVariantOptions(null)
@@ -246,6 +263,10 @@ export default function TraderProducts() {
     setCatalogRequestForm({ name: '', brand: '', model: '', product_type: '', barcode: '', gtin: '', mpn: '', category_id: '' })
     setCatalogRequestMessage('')
     setCatalogRequestMatches([])
+    setCatalogRequestImages([])
+    setMyCatalogRequestsLoading(true)
+    setCatalogRequestSpecificationsText('{}')
+    setMyCatalogRequests([])
     setSpecifications({})
     setSpecificationValueDrafts({})
     setVariants([])
@@ -331,27 +352,154 @@ export default function TraderProducts() {
     setError('')
   }
 
+  const sellApprovedCatalogRequest = (request: ApiCatalogRequest) => {
+    const product: ApiCatalogProduct = {
+      id: request.id,
+      name: request.name,
+      brand: request.brand,
+      model: request.model,
+      product_type: request.product_type,
+      category_id: request.category_id,
+      category_name: request.category_name,
+      short_description: request.short_description,
+      long_description: request.long_description,
+      tags: request.tags ?? [],
+      specifications: request.specifications ?? {},
+      attributes: request.attributes ?? {},
+      identifiers: request.identifiers ?? {},
+      variant_options: request.variant_options ?? [],
+      variants: request.variants ?? [],
+      image_references: request.image_references ?? [],
+    }
+    selectCatalogProduct(product)
+    const offer = request.request_offer_details
+    setForm({
+      ...EMPTY,
+      name: request.name,
+      brand: request.brand,
+      condition: offer.condition,
+      availability: offer.availability,
+      warranty: offer.warranty ?? '',
+      delivery_options: (offer.delivery_options ?? []).join(', '),
+      package_details: offer.package_details ?? '',
+      trader_sku: offer.trader_sku ?? '',
+      tags: (request.tags ?? []).join(', '),
+      short_description: request.short_description ?? '',
+      long_description: request.long_description ?? '',
+      price: offer.price,
+      original_price: offer.original_price ?? '',
+      delivery_fee: offer.delivery_fee ?? '0',
+      stock: String(offer.stock ?? 0),
+      category_id: request.category_id ? String(request.category_id) : '',
+      is_active: true,
+      is_featured: false,
+      is_new_deal: false,
+    })
+    setSpecifications(request.specifications ?? {})
+    setVariants(offer.variants.map(variant => {
+      const catalogVariant = request.variants.find(item =>
+        JSON.stringify(Object.entries(item.options).sort()) === JSON.stringify(Object.entries(variant.options).sort()),
+      )
+      const imageReference = catalogVariant?.image_references[0]
+      return {
+        sku: variant.sku,
+        options: variant.options,
+        price: variant.price,
+        compare_at_price: variant.compare_at_price ?? '',
+        stock: String(variant.stock),
+        weight: variant.weight ?? '',
+        is_active: variant.is_active,
+        image_url: imageReference ? cloudinaryUrl(imageReference) : null,
+        image_file: null,
+      }
+    }))
+    setView('add')
+  }
+
   const submitCatalogProductRequest = async () => {
     if (!catalogRequestForm.name.trim()) {
       setCatalogRequestMessage('Enter the official product name first.')
       return
     }
+    if (!form.price || Number(form.price) <= 0) {
+      setCatalogRequestMessage('Enter a product price greater than zero.')
+      return
+    }
+    if (!catalogRequestImages.length) {
+      setCatalogRequestMessage('Add at least one product image for the admin to review.')
+      return
+    }
+    if (catalogRequestImages.length + variants.filter(variant => variant.image_file).length > 12) {
+      setCatalogRequestMessage('A request can include up to 12 images, including variant photos.')
+      return
+    }
+    let requestSpecifications: Record<string, unknown>
+    try {
+      const parsed: unknown = JSON.parse(catalogRequestSpecificationsText)
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Specifications must be a JSON object.')
+      requestSpecifications = parsed as Record<string, unknown>
+    } catch {
+      setCatalogRequestMessage('Specifications must be a valid JSON object.')
+      return
+    }
     setCatalogRequestMessage('')
     setCatalogRequestMatches([])
+    setCatalogRequestSaving(true)
     try {
-      const { data } = await productsApi.requestCatalogProduct({
-        name: catalogRequestForm.name.trim(),
-        brand: catalogRequestForm.brand.trim(),
-        model: catalogRequestForm.model.trim(),
-        product_type: catalogRequestForm.product_type.trim(),
-        identifiers: {
-          barcode: catalogRequestForm.barcode.trim(),
-          gtin: catalogRequestForm.gtin.trim(),
-          mpn: catalogRequestForm.mpn.trim(),
-        },
-        category_id: catalogRequestForm.category_id ? Number(catalogRequestForm.category_id) : null,
+      const requestImages = catalogRequestImages.map(image => image.file)
+      const variantImageIndexes = variants.map(variant => {
+        if (!variant.image_file) return null
+        const index = requestImages.length
+        requestImages.push(variant.image_file)
+        return index
       })
+      const fd = new FormData()
+      fd.append('name', catalogRequestForm.name.trim())
+      fd.append('brand', catalogRequestForm.brand.trim())
+      fd.append('model', catalogRequestForm.model.trim())
+      fd.append('product_type', catalogRequestForm.product_type.trim())
+      fd.append('identifiers', JSON.stringify({
+        barcode: catalogRequestForm.barcode.trim(),
+        gtin: catalogRequestForm.gtin.trim(),
+        mpn: catalogRequestForm.mpn.trim(),
+      }))
+      if (catalogRequestForm.category_id) fd.append('category_id', catalogRequestForm.category_id)
+      fd.append('short_description', form.short_description.slice(0, 300))
+      fd.append('long_description', form.long_description)
+      fd.append('tags', JSON.stringify(form.tags.split(',').map(tag => tag.trim()).filter(Boolean)))
+      fd.append('specifications', JSON.stringify(requestSpecifications))
+      fd.append('variant_options', JSON.stringify(variants.map(variant => variant.options)))
+      fd.append('offer_details', JSON.stringify({
+        price: form.price,
+        original_price: form.original_price || null,
+        delivery_fee: form.delivery_fee || '0',
+        stock: Number(form.stock || 0),
+        trader_sku: form.trader_sku.trim(),
+        condition: form.condition,
+        availability: form.availability,
+        warranty: form.warranty.trim(),
+        delivery_options: form.delivery_options.split(',').map(option => option.trim()).filter(Boolean),
+        package_details: form.package_details,
+        variants: variants.map(variant => ({
+          sku: variant.sku.trim(),
+          options: variant.options,
+          price: variant.price || form.price,
+          compare_at_price: variant.compare_at_price || null,
+          stock: Number(variant.stock || 0),
+          weight: variant.weight || null,
+          is_active: variant.is_active,
+        })),
+        variant_image_indexes: variantImageIndexes,
+      }))
+      requestImages.forEach((image, index) => fd.append(`images[${index}]`, image))
+      const { data } = await productsApi.requestCatalogProduct(fd)
       setCatalogRequestMessage(data.detail)
+      try {
+        const requests = await productsApi.myCatalogRequests()
+        setMyCatalogRequests(requests.data)
+      } catch (cause) {
+        setCatalogRequestMessage(`${data.detail} ${getLoadError(cause, 'your product request list')}`)
+      }
     } catch (cause) {
       const payload = axios.isAxiosError(cause) ? cause.response?.data : undefined
       if (axios.isAxiosError(cause) && cause.response?.status === 409 && payload && typeof payload === 'object') {
@@ -361,6 +509,8 @@ export default function TraderProducts() {
       } else {
         setCatalogRequestMessage(getApiErrorDetails(payload).join(' ') || 'Failed to submit the product request.')
       }
+    } finally {
+      setCatalogRequestSaving(false)
     }
   }
 
@@ -563,6 +713,47 @@ export default function TraderProducts() {
           })}
         </div>
 
+        <section className="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold text-[#071A2B]">My product requests</h2>
+              <p className="mt-1 text-[12px] text-[#64748B]">Track review status. Approved requests can be listed with your saved offer details.</p>
+            </div>
+            {myCatalogRequestsLoading && <span className="text-[11px] text-[#64748B]">Loading…</span>}
+          </div>
+          {myCatalogRequests.length > 0 ? (
+            <div className="mt-4 grid gap-2">
+              {myCatalogRequests.map(request => (
+                <article key={request.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-[#E2E8F0] p-3">
+                  {request.images[0]?.url
+                    ? <img src={request.images[0].url} alt="" className="h-12 w-12 rounded-md object-cover" />
+                    : <div className="h-12 w-12 rounded-md bg-[#F1F5F9]" />
+                  }
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12px] font-bold text-[#071A2B]">{request.name}</p>
+                    <p className="mt-0.5 text-[10px] capitalize text-[#64748B]">
+                      {request.review_status.replace('_', ' ')} · UGX {Number(request.request_offer_details.price).toLocaleString()}
+                    </p>
+                    {request.review_note && <p className="mt-1 text-[10px] text-amber-700">Admin note: {request.review_note}</p>}
+                  </div>
+                  {request.review_status === 'approved' && Number(request.request_offer_details?.price) > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => sellApprovedCatalogRequest(request)}
+                      className="rounded-lg bg-[#22C55E] px-3 py-2 text-[11px] font-bold text-white"
+                    >
+                      Sell this product
+                    </button>
+                  )}
+                  {request.review_status === 'approved' && !(Number(request.request_offer_details?.price) > 0) && (
+                    <span className="text-[10px] font-semibold text-[#64748B]">Approved — select it in the catalog to create an offer</span>
+                  )}
+                </article>
+              ))}
+            </div>
+          ) : !myCatalogRequestsLoading && <p className="mt-3 text-[12px] text-[#94A3B8]">No product requests yet.</p>}
+        </section>
+
         {catalogQuery.trim().length >= 2 && !catalogSearchLoading && !catalogSearchError && catalogMatches.length === 0 && (
           <p className="mt-5 rounded-xl bg-[#F8FAFC] p-4 text-[13px] text-[#64748B]">No approved catalog products match this search.</p>
         )}
@@ -591,7 +782,10 @@ export default function TraderProducts() {
           </div>
 
           {requestNewCatalogProduct && (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-4 space-y-6">
+              <div>
+                <h3 className="mb-3 text-[12px] font-extrabold uppercase tracking-wide text-[#475569]">Product identity</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Official product name *" value={catalogRequestForm.name} onChange={name => setCatalogRequestForm(current => ({ ...current, name }))} placeholder="e.g. ANENG M118A Digital Multimeter" />
               <Field label="Brand" value={catalogRequestForm.brand} onChange={brand => setCatalogRequestForm(current => ({ ...current, brand }))} />
               <Field label="Model / manufacturer part number" value={catalogRequestForm.model} onChange={model => setCatalogRequestForm(current => ({ ...current, model }))} />
@@ -607,12 +801,118 @@ export default function TraderProducts() {
                   onChange={category_id => setCatalogRequestForm(current => ({ ...current, category_id }))}
                 />
               </div>
-              <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
-                <button type="button" onClick={submitCatalogProductRequest} className="rounded-lg bg-[#071A2B] px-4 py-2.5 text-[12px] font-bold text-white">
-                  Submit for catalog review
+                </div>
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-[12px] font-extrabold uppercase tracking-wide text-[#475569]">Your proposed offer</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Price (UGX) *" value={form.price} onChange={set('price')} type="number" placeholder="0" />
+                  <Field label="Original price (UGX)" value={form.original_price} onChange={set('original_price')} type="number" placeholder="Optional" />
+                  <Field label="Stock" value={form.stock} onChange={set('stock')} type="number" placeholder="0" />
+                  <Field label="Delivery fee (UGX)" value={form.delivery_fee} onChange={set('delivery_fee')} type="number" placeholder="0" />
+                  <Field label="Trader SKU" value={form.trader_sku} onChange={set('trader_sku')} placeholder="Optional" />
+                  <Field label="Warranty" value={form.warranty} onChange={set('warranty')} placeholder="e.g. 12 months" />
+                  <Field label="Delivery options (comma separated)" value={form.delivery_options} onChange={set('delivery_options')} placeholder="Pickup, Courier" />
+                  <Field label="Package details" value={form.package_details} onChange={set('package_details')} placeholder="What is included?" />
+                  <div>
+                    <label className="mb-2 block text-[13px] font-bold text-[#071A2B]">Condition</label>
+                    <select value={form.condition} onChange={event => set('condition')(event.target.value as Form['condition'])} className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-3 text-[13px]">
+                      <option value="new">New</option><option value="used">Used</option><option value="refurbished">Refurbished</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-[13px] font-bold text-[#071A2B]">Availability</label>
+                    <select value={form.availability} onChange={event => set('availability')(event.target.value as Form['availability'])} className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-3 text-[13px]">
+                      <option value="in_stock">In stock</option><option value="preorder">Pre-order</option><option value="made_to_order">Made to order</option><option value="unavailable">Unavailable</option>
+                    </select>
+                  </div>
+                  <Field label="Tags (comma separated)" value={form.tags} onChange={set('tags')} placeholder="e.g. tools, digital" />
+                  <label className="block text-[13px] font-bold text-[#071A2B] sm:col-span-2">
+                    Short description <span className="font-normal text-[#94A3B8]">(max 300 characters)</span>
+                    <textarea maxLength={300} value={form.short_description} onChange={event => set('short_description')(event.target.value)} className="mt-2 min-h-20 w-full rounded-xl border border-[#E2E8F0] px-3 py-3 text-[13px] font-normal" />
+                  </label>
+                  <label className="block text-[13px] font-bold text-[#071A2B] sm:col-span-2">
+                    Full product details
+                    <textarea value={form.long_description} onChange={event => set('long_description')(event.target.value)} className="mt-2 min-h-28 w-full rounded-xl border border-[#E2E8F0] px-3 py-3 text-[13px] font-normal" />
+                  </label>
+                  <label className="block text-[13px] font-bold text-[#071A2B] sm:col-span-2">
+                    Specifications (JSON)
+                    <textarea
+                      value={catalogRequestSpecificationsText}
+                      onChange={event => setCatalogRequestSpecificationsText(event.target.value)}
+                      className="mt-2 min-h-24 w-full rounded-xl border border-[#E2E8F0] px-3 py-3 font-mono text-[11px] font-normal"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-[12px] font-extrabold uppercase tracking-wide text-[#475569]">Product and variant images</h3>
+                <div className="flex flex-wrap items-center gap-3">
+                  {catalogRequestImages.map((image, index) => (
+                    <div key={`${image.preview}-${index}`} className="relative">
+                      <img src={image.preview} alt="" className="h-20 w-20 rounded-lg border border-[#E2E8F0] object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          URL.revokeObjectURL(image.preview)
+                          setCatalogRequestImages(current => current.filter((_, itemIndex) => itemIndex !== index))
+                        }}
+                        className="absolute -right-2 -top-2 rounded-full bg-[#071A2B] p-1 text-white"
+                        aria-label={`Remove product image ${index + 1}`}
+                      ><X size={12} /></button>
+                    </div>
+                  ))}
+                  <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-[#CBD5E1] text-[10px] font-bold text-[#64748B]">
+                    <ImagePlus size={20} /> Add image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={event => {
+                        const selected = Array.from(event.target.files ?? []).map(file => ({
+                          file,
+                          preview: URL.createObjectURL(file),
+                        }))
+                        setCatalogRequestImages(current => {
+                          const added = selected.slice(0, Math.max(0, 12 - current.length))
+                          selected.slice(added.length).forEach(image => URL.revokeObjectURL(image.preview))
+                          return [...current, ...added]
+                        })
+                        event.target.value = ''
+                      }}
+                    />
+                  </label>
+                </div>
+                <p className="mt-2 text-[11px] text-[#64748B]">Add at least one clear product image. You may attach up to 12 images, including variant photos.</p>
+              </div>
+
+              <div>
+                <h3 className="mb-1 text-[12px] font-extrabold uppercase tracking-wide text-[#475569]">Variants</h3>
+                <p className="mb-2 text-[11px] text-[#64748B]">Add variant options, per-variant prices and stock, and an optional image for each variant.</p>
+                <ProductVariantEditor
+                  variants={variants}
+                  onChange={setVariants}
+                  basePrice={form.price}
+                  baseOriginalPrice={form.original_price}
+                  optionAttributes={requestCategory?.attributes.filter(attribute => attribute.is_variant) ?? []}
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 border-t border-[#F1F5F9] pt-4">
+                <button
+                  type="button"
+                  disabled={catalogRequestSaving}
+                  onClick={submitCatalogProductRequest}
+                  className="rounded-lg bg-[#071A2B] px-4 py-2.5 text-[12px] font-bold text-white disabled:opacity-50"
+                >
+                  {catalogRequestSaving ? 'Submitting…' : 'Submit complete product request'}
                 </button>
                 {catalogRequestMessage && <p role="status" className="text-[12px] text-[#475569]">{catalogRequestMessage}</p>}
               </div>
+
               {catalogRequestMatches.length > 0 && (
                 <div className="sm:col-span-2 rounded-lg bg-amber-50 p-4">
                   <p className="text-[12px] font-bold text-amber-900">Possible existing catalog products:</p>
