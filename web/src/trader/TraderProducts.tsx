@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Package, ArrowLeft, ImagePlus, X, Search } from 'lucide-react'
 import axios from 'axios'
 import {
@@ -110,14 +110,39 @@ function Field({ label, value, onChange, placeholder, type = 'text', maxLength, 
   )
 }
 
+function CatalogResultImage({ references, name }: { references: string[]; name: string }) {
+  const [failedUrls, setFailedUrls] = useState<string[]>([])
+  const imageUrls = references
+    .map(reference => cloudinaryUrl(reference))
+    .filter((url): url is string => Boolean(url))
+  const imageUrl = imageUrls.find(url => !failedUrls.includes(url))
+
+  return (
+    <div className="flex aspect-square h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#F1F5F9]">
+      {imageUrl
+        ? <img
+          src={imageUrl}
+          alt={name}
+          loading="eager"
+          onError={() => setFailedUrls(current => [...current, imageUrl])}
+          className="h-full w-full object-contain"
+        />
+        : <Package size={28} className="text-[#94A3B8]" />}
+    </div>
+  )
+}
+
 export default function TraderProducts() {
   const { traderUuid } = useParams<{ traderUuid: string }>()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isCatalogRequestPage = location.pathname.endsWith('/products/request')
   const [products, setProducts] = useState<ApiTraderProduct[]>([])
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [productsLoadFailed, setProductsLoadFailed] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
-  const [view, setView] = useState<View>('list')
+  const [view, setView] = useState<View>(isCatalogRequestPage ? 'add' : 'list')
   const [editing, setEditing] = useState<ApiTraderProduct | null>(null)
   const [selectedCatalogProduct, setSelectedCatalogProduct] = useState<ApiCatalogProduct | null>(null)
   const [approvedVariantOptions, setApprovedVariantOptions] = useState<Array<{
@@ -129,10 +154,10 @@ export default function TraderProducts() {
   const [catalogSearchLoading, setCatalogSearchLoading] = useState(false)
   const [catalogSearchError, setCatalogSearchError] = useState('')
   const [selectedCatalogImages, setSelectedCatalogImages] = useState<string[]>([])
-  const [requestNewCatalogProduct, setRequestNewCatalogProduct] = useState(false)
-  const [catalogRequestForm, setCatalogRequestForm] = useState({
-    name: '', brand: '', model: '', product_type: '', barcode: '', gtin: '', mpn: '', category_id: '',
-  })
+  const [catalogRequestForm, setCatalogRequestForm] = useState(() => ({
+    name: (location.state as { requestProductName?: string } | null)?.requestProductName ?? '',
+    brand: '', model: '', product_type: '', barcode: '', gtin: '', mpn: '', category_id: '',
+  }))
   const [catalogRequestMessage, setCatalogRequestMessage] = useState('')
   const [catalogRequestSaving, setCatalogRequestSaving] = useState(false)
   const [catalogRequestImages, setCatalogRequestImages] = useState<Array<{ file: File; preview: string }>>([])
@@ -164,7 +189,7 @@ export default function TraderProducts() {
     setSpecifications(current => ({ ...current, [key]: value }))
 
   useEffect(() => {
-    if (view !== 'add' || selectedCatalogProduct) return
+    if (view !== 'add' || selectedCatalogProduct || isCatalogRequestPage) return
     const query = catalogQuery.trim()
     if (query.length < 2) {
       setCatalogMatches([])
@@ -191,17 +216,17 @@ export default function TraderProducts() {
       active = false
       window.clearTimeout(timeout)
     }
-  }, [view, catalogQuery, selectedCatalogProduct])
+  }, [view, catalogQuery, selectedCatalogProduct, isCatalogRequestPage])
 
   useEffect(() => {
-    if (view !== 'add' || selectedCatalogProduct) return
+    if (view !== 'add' || selectedCatalogProduct || isCatalogRequestPage) return
     let active = true
     productsApi.myCatalogRequests()
       .then(({ data }) => { if (active) setMyCatalogRequests(data) })
       .catch(cause => { if (active) setCatalogRequestMessage(getLoadError(cause, 'your product requests')) })
       .finally(() => { if (active) setMyCatalogRequestsLoading(false) })
     return () => { active = false }
-  }, [view, selectedCatalogProduct])
+  }, [view, selectedCatalogProduct, isCatalogRequestPage])
 
   const changeCategory = (categoryId: string) => {
     set('category_id')(categoryId)
@@ -263,7 +288,6 @@ export default function TraderProducts() {
     setCatalogMatches([])
     setCatalogSearchError('')
     setSelectedCatalogImages([])
-    setRequestNewCatalogProduct(false)
     setCatalogRequestForm({ name: '', brand: '', model: '', product_type: '', barcode: '', gtin: '', mpn: '', category_id: '' })
     setCatalogRequestMessage('')
     setCatalogRequestMatches([])
@@ -661,18 +685,35 @@ export default function TraderProducts() {
 
   if (view === 'add' && !selectedCatalogProduct) {
     return (
-      <div className="p-8 max-w-5xl">
+      <div className="mx-auto max-w-6xl p-4 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => setView('list')} className="p-1 hover:opacity-70" aria-label="Back to products">
+          <button
+            onClick={() => {
+              if (isCatalogRequestPage) {
+                setView('add')
+                navigate(`/trader/${traderUuid}/products`)
+              } else {
+                setView('list')
+              }
+            }}
+            className="p-1 hover:opacity-70"
+            aria-label={isCatalogRequestPage ? 'Back to product search' : 'Back to products'}
+          >
             <ArrowLeft size={20} color="#071A2B" />
           </button>
           <div>
-            <h1 className="text-xl font-extrabold text-[#071A2B]">Find a product to sell</h1>
-            <p className="text-[13px] text-[#64748B] mt-1">Choose a shared catalog product first. Its official details and images cannot be edited here.</p>
+            <h1 className="text-xl font-extrabold text-[#071A2B]">
+              {isCatalogRequestPage ? 'Request a product' : 'Find a product to sell'}
+            </h1>
+            <p className="text-[13px] text-[#64748B] mt-1">
+              {isCatalogRequestPage
+                ? 'Submit the product and your proposed offer for admin review.'
+                : 'Choose a shared catalog product first. Its official details and images cannot be edited here.'}
+            </p>
           </div>
         </div>
 
-        <div className="relative mb-5">
+        {!isCatalogRequestPage && <div className="relative mb-5">
           <Search size={18} className="absolute left-3 top-3.5 text-[#94A3B8]" />
           <input
             autoFocus
@@ -702,21 +743,17 @@ export default function TraderProducts() {
               <X size={15} />
             </button>
           )}
-        </div>
+        </div>}
 
-        {catalogSearchLoading && <p className="mb-4 text-[13px] text-[#64748B]">Searching the shared catalog…</p>}
-        {catalogSearchError && <p role="alert" className="mb-4 text-[13px] text-red-600">{catalogSearchError}</p>}
+        {!isCatalogRequestPage && catalogSearchLoading && <p className="mb-4 text-[13px] text-[#64748B]">Searching the shared catalog…</p>}
+        {!isCatalogRequestPage && catalogSearchError && <p role="alert" className="mb-4 text-[13px] text-red-600">{catalogSearchError}</p>}
 
-        <div className="grid gap-3" aria-live="polite">
+        {!isCatalogRequestPage && <div className="grid gap-3" aria-live="polite">
           {catalogMatches.map(product => {
-            const imageUrl = product.image_references[0] ? cloudinaryUrl(product.image_references[0]) : null
             return (
-              <article key={product.id} className="flex items-center gap-4 rounded-xl border border-[#E2E8F0] bg-white p-4">
-                {imageUrl
-                  ? <img src={imageUrl} alt="" className="h-20 w-20 rounded-lg object-cover bg-[#F1F5F9]" />
-                  : <div className="h-20 w-20 rounded-lg bg-[#F1F5F9] flex items-center justify-center"><Package size={22} className="text-[#94A3B8]" /></div>
-                }
-                <div className="min-w-0 flex-1">
+              <article key={product.id} className="grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-4 rounded-xl border border-[#E2E8F0] bg-white p-4 sm:grid-cols-[7rem_minmax(0,1fr)]">
+                <CatalogResultImage references={product.image_references ?? []} name={product.name} />
+                <div className="min-w-0">
                   <h2 className="font-bold text-[#071A2B]">{product.name}</h2>
                   <p className="mt-1 text-[12px] text-[#64748B]">
                     {[product.brand, product.model, product.category_name].filter(Boolean).join(' · ')}
@@ -725,91 +762,63 @@ export default function TraderProducts() {
                   {Object.entries(product.specifications).slice(0, 3).map(([key, value]) => (
                     <span key={key} className="mr-2 mt-1 inline-block text-[11px] text-[#64748B]">{key}: {String(value)}</span>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => selectCatalogProduct(product)}
+                    className="mt-3 rounded-lg bg-[#22C55E] px-4 py-2.5 text-[12px] font-bold text-white"
+                  >
+                    Sell this product
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => selectCatalogProduct(product)}
-                  className="shrink-0 rounded-lg bg-[#22C55E] px-4 py-2.5 text-[12px] font-bold text-white"
-                >
-                  Sell this product
-                </button>
               </article>
             )
           })}
-        </div>
+        </div>}
 
-        {catalogQuery.trim().length >= 2 && !catalogSearchLoading && !catalogSearchError && catalogMatches.length === 0 && (
+        {!isCatalogRequestPage && catalogQuery.trim().length >= 2 && !catalogSearchLoading && !catalogSearchError && catalogMatches.length === 0 && (
           <p className="mt-4 rounded-xl bg-[#F8FAFC] p-4 text-[13px] text-[#64748B]">
             No approved catalog products match “{catalogQuery.trim()}”. You can request it below.
           </p>
         )}
 
-        <section className="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="font-bold text-[#071A2B]">My product requests</h2>
-              <p className="mt-1 text-[12px] text-[#64748B]">Track review status. Approved requests can be listed with your saved offer details.</p>
-            </div>
-            {myCatalogRequestsLoading && <span className="text-[11px] text-[#64748B]">Loading…</span>}
-          </div>
-          {myCatalogRequests.length > 0 ? (
-            <div className="mt-4 grid gap-2">
-              {myCatalogRequests.map(request => (
-                <article key={request.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-[#E2E8F0] p-3">
-                  {request.images[0]?.url
-                    ? <img src={request.images[0].url} alt="" className="h-12 w-12 rounded-md object-cover" />
-                    : <div className="h-12 w-12 rounded-md bg-[#F1F5F9]" />
-                  }
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12px] font-bold text-[#071A2B]">{request.name}</p>
-                    <p className="mt-0.5 text-[10px] capitalize text-[#64748B]">
-                      {request.review_status.replace('_', ' ')} · UGX {Number(request.request_offer_details.price).toLocaleString()}
-                    </p>
-                    {request.review_note && <p className="mt-1 text-[10px] text-amber-700">Admin note: {request.review_note}</p>}
-                  </div>
-                  {request.review_status === 'approved' && Number(request.request_offer_details?.price) > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => sellApprovedCatalogRequest(request)}
-                      className="rounded-lg bg-[#22C55E] px-3 py-2 text-[11px] font-bold text-white"
-                    >
-                      Sell this product
-                    </button>
-                  )}
-                  {request.review_status === 'approved' && !(Number(request.request_offer_details?.price) > 0) && (
-                    <span className="text-[10px] font-semibold text-[#64748B]">Approved — select it in the catalog to create an offer</span>
-                  )}
-                </article>
-              ))}
-            </div>
-          ) : !myCatalogRequestsLoading && <p className="mt-3 text-[12px] text-[#94A3B8]">No product requests yet.</p>}
-        </section>
-
-        <section className="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-5">
+        {!isCatalogRequestPage && <section className="mt-4 rounded-xl border border-[#E2E8F0] bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-bold text-[#071A2B]">Product not found?</h2>
-              <p className="mt-1 text-[12px] text-[#64748B]">Request a new catalog product. An administrator reviews it before it can be listed.</p>
+              <p className="mt-1 text-[12px] text-[#64748B]">Submit a new product request for admin review.</p>
             </div>
             <button
               type="button"
               onClick={() => {
-                setRequestNewCatalogProduct(current => !current)
+                const requestProductName = catalogQuery.trim()
                 setCatalogRequestForm(current => ({
                   ...current,
-                  name: catalogQuery.trim() || current.name,
+                  name: requestProductName || current.name,
                 }))
                 setCatalogRequestMessage('')
                 setCatalogRequestMatches([])
+                setView('add')
+                navigate(`/trader/${traderUuid}/products/request`, {
+                  state: { requestProductName },
+                })
               }}
-              className="rounded-lg border border-[#22C55E] px-4 py-2 text-[12px] font-bold text-[#15803D]"
+              className="rounded-lg bg-[#22C55E] px-4 py-2.5 text-[12px] font-bold text-white"
             >
-              {requestNewCatalogProduct ? 'Hide request form' : 'Request a new product'}
+              Request Product
             </button>
           </div>
+        </section>
+        }
 
-          {requestNewCatalogProduct && (
-            <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(190px,240px)_minmax(0,1fr)]">
+        {isCatalogRequestPage && <section className="mt-2 rounded-xl border border-[#E2E8F0] bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-bold text-[#071A2B]">Product request details</h2>
+              <p className="mt-1 text-[12px] text-[#64748B]">Your request is separate from your listed products and will be reviewed by an administrator.</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(190px,240px)_minmax(0,1fr)]">
               <div className="lg:col-start-2 lg:row-start-1">
                 <h3 className="mb-3 text-[12px] font-extrabold uppercase tracking-wide text-[#475569]">Product identity</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -952,15 +961,59 @@ export default function TraderProducts() {
                       <span>{[product.name, product.brand, product.model].filter(Boolean).join(' · ')}</span>
                       <button type="button" className="underline" onClick={() => {
                         setCatalogQuery(product.model || product.name)
-                        setRequestNewCatalogProduct(false)
+                        setView('add')
+                        navigate(`/trader/${traderUuid}/products`)
                       }}>Search product</button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          )}
         </section>
+        }
+
+        {!isCatalogRequestPage && (
+          <section className="mt-6 rounded-xl border border-[#E2E8F0] bg-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-bold text-[#071A2B]">My product requests</h2>
+                <p className="mt-1 text-[12px] text-[#64748B]">Track review status. Approved requests can be listed with your saved offer details.</p>
+              </div>
+              {myCatalogRequestsLoading && <span className="text-[11px] text-[#64748B]">Loading…</span>}
+            </div>
+            {myCatalogRequests.length > 0 ? (
+              <div className="mt-4 grid gap-2">
+                {myCatalogRequests.map(request => (
+                  <article key={request.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-[#E2E8F0] p-3">
+                    {request.images[0]?.url
+                      ? <img src={request.images[0].url} alt={request.name} className="h-12 w-12 rounded-md object-cover" />
+                      : <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[#F1F5F9]"><Package size={18} className="text-[#94A3B8]" /></div>
+                    }
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[12px] font-bold text-[#071A2B]">{request.name}</p>
+                      <p className="mt-0.5 text-[10px] capitalize text-[#64748B]">
+                        {request.review_status.replace('_', ' ')} · UGX {Number(request.request_offer_details.price).toLocaleString()}
+                      </p>
+                      {request.review_note && <p className="mt-1 text-[10px] text-amber-700">Admin note: {request.review_note}</p>}
+                    </div>
+                    {request.review_status === 'approved' && Number(request.request_offer_details?.price) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => sellApprovedCatalogRequest(request)}
+                        className="rounded-lg bg-[#22C55E] px-3 py-2 text-[11px] font-bold text-white"
+                      >
+                        Sell this product
+                      </button>
+                    )}
+                    {request.review_status === 'approved' && !(Number(request.request_offer_details?.price) > 0) && (
+                      <span className="text-[10px] font-semibold text-[#64748B]">Approved — select it in the catalog to create an offer</span>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : !myCatalogRequestsLoading && <p className="mt-3 text-[12px] text-[#94A3B8]">No product requests yet.</p>}
+          </section>
+        )}
       </div>
     )
   }

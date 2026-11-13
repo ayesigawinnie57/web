@@ -216,6 +216,7 @@ export default function App() {
           <Route element={<TraderGuard />}>
             <Route path="/trader/:traderUuid" element={<TraderLayout />}>
               <Route index element={<TraderDashboard />} />
+              <Route path="products/request" element={<TraderProducts />} />
               <Route path="products" element={<TraderProducts />} />
               <Route path="orders" element={<TraderOrders />} />
               <Route path="account" element={<TraderAccount />} />
