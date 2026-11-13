@@ -27,6 +27,19 @@ const getLoadError = (cause: unknown, resource: string) => {
   return requestId ? `${message} Request ID: ${requestId}` : message
 }
 
+const getApiErrorDetails = (value: unknown): string[] => {
+  if (typeof value === 'string') return [value]
+  if (Array.isArray(value)) return value.flatMap(getApiErrorDetails)
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([field, detail]) =>
+      getApiErrorDetails(detail).map(message => field === 'detail' || field === 'non_field_errors'
+        ? message
+        : `${field}: ${message}`),
+    )
+  }
+  return []
+}
+
 type View = 'list' | 'add' | 'edit'
 
 type Form = {
@@ -235,6 +248,19 @@ export default function TraderProducts() {
 
   const handleSave = async (submitForReview: boolean) => {
     if (!form.name.trim() || !form.price) { setError('Name and price are required.'); return }
+    const requiredSpecifications = selectedCategory?.attributes.filter(attribute =>
+      attribute.is_required && !attribute.is_variant,
+    ) ?? []
+    const missingSpecification = requiredSpecifications.find(attribute => {
+      const value = specifications[attribute.key]
+      return value === undefined || value === null || value === ''
+        || (Array.isArray(value) && value.length === 0)
+    })
+    if (missingSpecification) {
+      setError(`${missingSpecification.name} is required for ${selectedCategory?.name ?? 'this category'}.`)
+      return
+    }
+
     const variantPayload = variants.map((variant) => {
       return {
         sku: variant.sku.trim(),
@@ -246,6 +272,19 @@ export default function TraderProducts() {
         is_active: variant.is_active,
       }
     })
+    const requiredVariantAttributes = selectedCategory?.attributes.filter(attribute =>
+      attribute.is_required && attribute.is_variant,
+    ) ?? []
+    const missingVariantAttribute = requiredVariantAttributes.find(attribute =>
+      !variantPayload.length || variantPayload.some(variant => {
+        const value = variant.options[attribute.key]
+        return value === undefined || value === null || String(value).trim() === ''
+      }),
+    )
+    if (missingVariantAttribute) {
+      setError(`Every variant needs a value for ${missingVariantAttribute.name}.`)
+      return
+    }
     if (variantPayload.some(variant => !Number.isFinite(variant.price) || variant.price <= 0)) {
       setError('Every variant needs a price greater than zero.')
       return
@@ -288,18 +327,14 @@ export default function TraderProducts() {
       }
       setView('list')
     } catch (cause) {
-      try {
-        const { data } = await tradersApi.products(traderUuid!)
-        setProducts(data)
-        setView('list')
-      } catch {
-        setError('Saving failed and the product list could not be refreshed.')
-        return
-      }
-
-      const detail = axios.isAxiosError(cause) && cause.response?.data?.detail
+      const responseData = axios.isAxiosError(cause) ? cause.response?.data : undefined
       const status = axios.isAxiosError(cause) ? cause.response?.status : undefined
-      const message = typeof detail === 'string' ? detail : status ? `Failed to save product (server returned ${status}).` : 'Failed to save product.'
+      const details = getApiErrorDetails(responseData)
+      const message = details.length
+        ? details.join(' ')
+        : status
+          ? `Failed to save product (server returned ${status}).`
+          : 'Failed to save product.'
       const requestId = getRequestId(cause)
       setError(requestId ? `${message} Request ID: ${requestId}` : message)
     }
