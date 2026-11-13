@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { AlertCircle, LoaderCircle, Megaphone, Plus, Wallet } from 'lucide-react'
 import {
   advertisingApi,
@@ -15,8 +15,17 @@ const inputClass = 'w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2
 
 function errorMessage(error: unknown, fallback: string) {
   if (typeof error === 'object' && error !== null && 'response' in error) {
-    const response = (error as { response?: { data?: { detail?: string } } }).response
-    if (response?.data?.detail) return response.data.detail
+    const response = (error as { response?: { data?: Record<string, unknown> } }).response
+    const data = response?.data
+    if (typeof data?.detail === 'string') return data.detail
+    if (data) {
+      for (const [field, value] of Object.entries(data)) {
+        if (typeof value === 'string') return `${field.replaceAll('_', ' ')}: ${value}`
+        if (Array.isArray(value) && typeof value[0] === 'string') {
+          return `${field.replaceAll('_', ' ')}: ${value[0]}`
+        }
+      }
+    }
   }
   return fallback
 }
@@ -44,13 +53,18 @@ function Status({ value }: { value: ApiAdvertisingCampaign['status'] }) {
 
 export default function TraderAdvertising() {
   const { traderUuid } = useParams<{ traderUuid: string }>()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const advertisingPath = `/trader/${traderUuid}/advertising`
+  const isCreatePage = location.pathname.endsWith('/advertising/campaigns/new')
   const [dashboard, setDashboard] = useState<ApiAdvertisingDashboard | null>(null)
   const [offers, setOffers] = useState<ApiAdvertisingOffer[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState(() => (
+    (location.state as { advertisingNotice?: string } | null)?.advertisingNotice ?? ''
+  ))
   const [busy, setBusy] = useState(false)
-  const [showCampaignForm, setShowCampaignForm] = useState(false)
   const [showRechargeForm, setShowRechargeForm] = useState(false)
   const [campaignName, setCampaignName] = useState('')
   const [selectedOfferIds, setSelectedOfferIds] = useState<number[]>([])
@@ -126,13 +140,12 @@ export default function TraderAdvertising() {
       setTotalBudget('')
       setStartsAt('')
       setEndsAt('')
-      setShowCampaignForm(false)
-      setNotice(campaign.status === 'pending_review'
+      const campaignNotice = campaign.status === 'pending_review'
         ? 'Campaign submitted for review.'
         : campaign.status === 'active'
           ? 'Campaign created and activated.'
-          : 'Campaign created.')
-      await load()
+          : 'Campaign created.'
+      navigate(advertisingPath, { state: { advertisingNotice: campaignNotice } })
     } catch (saveError) {
       setError(errorMessage(saveError, 'Campaign could not be created. Check the campaign details and try again.'))
     } finally {
@@ -198,6 +211,54 @@ export default function TraderAdvertising() {
   const stats = dashboard.stats
   const canRecharge = dashboard.wallet.dummy_payments_enabled
 
+  if (isCreatePage) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-5 p-4 pb-8 md:p-8">
+        <Link to={advertisingPath} className="text-[12px] font-bold text-[#1E3A8A] hover:underline">← Sponsored Products</Link>
+        <header className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#071A2B] text-[#22C55E]"><Megaphone size={21} /></div>
+          <div>
+            <h1 className="text-xl font-extrabold text-[#071A2B]">Create campaign</h1>
+            <p className="text-[12px] text-[#64748B]">Set up a campaign for your eligible marketplace offers.</p>
+          </div>
+        </header>
+        {error && <div role="alert" className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] text-red-700"><AlertCircle size={16} className="shrink-0" />{error}</div>}
+        <form onSubmit={createCampaign} className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-5">
+          <p className="text-[11px] text-[#64748B]">Only eligible offers you own are available. Campaigns may require admin review.</p>
+          <label className="block text-[11px] font-bold text-[#475569]">Campaign name<input required maxLength={120} value={campaignName} onChange={event => setCampaignName(event.target.value)} className={`${inputClass} mt-1`} /></label>
+          <fieldset>
+            <legend className="mb-2 text-[11px] font-bold text-[#475569]">Choose products to promote</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {offers.map(offer => (
+                <label key={offer.id} className={`flex cursor-pointer gap-3 rounded-lg border p-3 ${selectedOfferIds.includes(offer.id) ? 'border-[#22C55E] bg-green-50' : 'border-[#E2E8F0]'}`}>
+                  <input type="checkbox" checked={selectedOfferIds.includes(offer.id)} onChange={() => toggleOffer(offer.id)} className="mt-1 accent-[#22C55E]" />
+                  {offer.image && <img src={offer.image} alt="" className="h-12 w-12 rounded-md object-cover" />}
+                  <span className="min-w-0">
+                    <span className="block truncate text-[12px] font-bold text-[#071A2B]">{offer.name}</span>
+                    <span className="mt-1 block text-[10px] text-[#64748B]">{money(offer.price)} · {offer.stock} in stock</span>
+                  </span>
+                </label>
+              ))}
+              {!offers.length && <p className="text-[12px] text-[#64748B]">No eligible in-stock offers are available for advertising.</p>}
+            </div>
+          </fieldset>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-[11px] font-bold text-[#475569]">Maximum CPC (UGX)<input required type="number" min="1" step="1" value={maxCpc} onChange={event => setMaxCpc(event.target.value)} className={`${inputClass} mt-1`} /></label>
+            <label className="text-[11px] font-bold text-[#475569]">Daily budget (UGX)<input required type="number" min={maxCpc || '1'} step="1" value={dailyBudget} onChange={event => setDailyBudget(event.target.value)} className={`${inputClass} mt-1`} /></label>
+            <label className="text-[11px] font-bold text-[#475569]">Total budget (UGX)<input required type="number" min={maxCpc || '1'} step="1" value={totalBudget} onChange={event => setTotalBudget(event.target.value)} className={`${inputClass} mt-1`} /></label>
+            <p className="self-center text-[11px] text-[#64748B] sm:col-span-2">Both daily and total budgets must be at least one maximum CPC click ({maxCpc ? money(maxCpc) : 'set your CPC above'}).</p>
+            <label className="text-[11px] font-bold text-[#475569]">Starts at<input required type="datetime-local" value={startsAt} onChange={event => setStartsAt(event.target.value)} className={`${inputClass} mt-1`} /></label>
+            <label className="text-[11px] font-bold text-[#475569]">Ends at<input required type="datetime-local" min={startsAt} value={endsAt} onChange={event => setEndsAt(event.target.value)} className={`${inputClass} mt-1`} /></label>
+          </div>
+          <div className="flex gap-2">
+            <button disabled={busy || !selectedOfferIds.length} className="rounded-lg bg-[#071A2B] px-4 py-2.5 text-[12px] font-bold text-white disabled:opacity-50">{busy ? 'Submitting...' : 'Submit campaign'}</button>
+            <Link to={advertisingPath} className="rounded-lg border border-[#E2E8F0] px-4 py-2.5 text-[12px] font-bold text-[#475569]">Cancel</Link>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 pb-8 md:p-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -213,10 +274,10 @@ export default function TraderAdvertising() {
             className="inline-flex items-center gap-2 rounded-lg border border-[#CBD5E1] bg-white px-4 py-2.5 text-[12px] font-bold text-[#071A2B] disabled:cursor-not-allowed disabled:opacity-50">
             <Wallet size={15} /> Add funds
           </button>
-          <button type="button" onClick={() => setShowCampaignForm(current => !current)} disabled={!offers.length}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#071A2B] px-4 py-2.5 text-[12px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+          <Link to={`${advertisingPath}/campaigns/new`} aria-disabled={!offers.length}
+            className={`inline-flex items-center gap-2 rounded-lg bg-[#071A2B] px-4 py-2.5 text-[12px] font-bold text-white ${!offers.length ? 'pointer-events-none opacity-50' : ''}`}>
             <Plus size={15} /> Create campaign
-          </button>
+          </Link>
         </div>
       </header>
 
@@ -269,40 +330,6 @@ export default function TraderAdvertising() {
         <Stat label="Completed campaigns" value={String(stats.completed_campaigns)} />
         <Stat label="Rejected campaigns" value={String(stats.rejected_campaigns)} />
       </section>
-
-      {showCampaignForm && (
-        <form onSubmit={createCampaign} className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-5">
-          <div>
-            <h2 className="font-extrabold text-[#071A2B]">Create campaign</h2>
-            <p className="mt-1 text-[11px] text-[#64748B]">Only eligible offers you own are available. Campaigns may require admin review.</p>
-          </div>
-          <label className="block text-[11px] font-bold text-[#475569]">Campaign name<input required maxLength={120} value={campaignName} onChange={event => setCampaignName(event.target.value)} className={`${inputClass} mt-1`} /></label>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {offers.map(offer => (
-              <label key={offer.id} className={`flex cursor-pointer gap-3 rounded-lg border p-3 ${selectedOfferIds.includes(offer.id) ? 'border-[#22C55E] bg-green-50' : 'border-[#E2E8F0]'}`}>
-                <input type="checkbox" checked={selectedOfferIds.includes(offer.id)} onChange={() => toggleOffer(offer.id)} className="mt-1 accent-[#22C55E]" />
-                {offer.image && <img src={offer.image} alt="" className="h-12 w-12 rounded-md object-cover" />}
-                <span className="min-w-0">
-                  <span className="block truncate text-[12px] font-bold text-[#071A2B]">{offer.name}</span>
-                  <span className="mt-1 block text-[10px] text-[#64748B]">{money(offer.price)} · {offer.stock} in stock</span>
-                </span>
-              </label>
-            ))}
-            {!offers.length && <p className="text-[12px] text-[#64748B]">No eligible in-stock offers are available for advertising.</p>}
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="text-[11px] font-bold text-[#475569]">Maximum CPC (UGX)<input required type="number" min="1" step="1" value={maxCpc} onChange={event => setMaxCpc(event.target.value)} className={`${inputClass} mt-1`} /></label>
-            <label className="text-[11px] font-bold text-[#475569]">Daily budget (UGX)<input required type="number" min="1" step="1" value={dailyBudget} onChange={event => setDailyBudget(event.target.value)} className={`${inputClass} mt-1`} /></label>
-            <label className="text-[11px] font-bold text-[#475569]">Total budget (UGX)<input required type="number" min="1" step="1" value={totalBudget} onChange={event => setTotalBudget(event.target.value)} className={`${inputClass} mt-1`} /></label>
-            <label className="text-[11px] font-bold text-[#475569]">Starts at<input required type="datetime-local" value={startsAt} onChange={event => setStartsAt(event.target.value)} className={`${inputClass} mt-1`} /></label>
-            <label className="text-[11px] font-bold text-[#475569]">Ends at<input required type="datetime-local" min={startsAt} value={endsAt} onChange={event => setEndsAt(event.target.value)} className={`${inputClass} mt-1`} /></label>
-          </div>
-          <div className="flex gap-2">
-            <button disabled={busy || !selectedOfferIds.length} className="rounded-lg bg-[#071A2B] px-4 py-2.5 text-[12px] font-bold text-white disabled:opacity-50">{busy ? 'Submitting...' : 'Submit campaign'}</button>
-            <button type="button" onClick={() => setShowCampaignForm(false)} className="rounded-lg border border-[#E2E8F0] px-4 py-2.5 text-[12px] font-bold text-[#475569]">Cancel</button>
-          </div>
-        </form>
-      )}
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">

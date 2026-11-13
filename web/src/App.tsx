@@ -228,6 +228,7 @@ export default function App() {
               <Route path="accounting" element={<TraderAccounting />} />
               <Route path="payments" element={<TraderPayments />} />
               <Route path="advertising" element={<TraderAdvertising />} />
+              <Route path="advertising/campaigns/new" element={<TraderAdvertising />} />
             </Route>
           </Route>
           <Route element={<AdminGuard />}>
