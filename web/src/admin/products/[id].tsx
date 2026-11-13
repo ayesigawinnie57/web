@@ -57,6 +57,8 @@ export default function EditProduct() {
           is_active: variant.is_active,
           image_url: variant.image_url,
           image_file: null,
+          sold_quantity: variant.sold_quantity,
+          has_inventory_item: variant.has_inventory_item,
         }))
         setVariants(loadedVariants)
         initialVariants.current = JSON.stringify(loadedVariants.map(({ image_file, ...variant }) => variant))

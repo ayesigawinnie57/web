@@ -99,6 +99,7 @@ export default function TraderProducts() {
   const [form, setForm] = useState<Form>(EMPTY)
   const set = (k: keyof Form) => (v: string | boolean) => setForm(f => ({ ...f, [k]: v }))
   const [specifications, setSpecifications] = useState<Record<string, unknown>>({})
+  const [specificationValueDrafts, setSpecificationValueDrafts] = useState<Record<string, string>>({})
   const [variantValues, setVariantValues] = useState<Record<string, string[]>>({})
   const [variantValueDrafts, setVariantValueDrafts] = useState<Record<string, string>>({})
   const [variants, setVariants] = useState<VariantDraft[]>([])
@@ -190,6 +191,7 @@ export default function TraderProducts() {
   const changeCategory = (categoryId: string) => {
     set('category_id')(categoryId)
     setSpecifications({})
+    setSpecificationValueDrafts({})
     setVariantValues({})
     setVariantValueDrafts({})
     setVariants([])
@@ -242,6 +244,7 @@ export default function TraderProducts() {
   const openAdd = () => {
     setForm(EMPTY)
     setSpecifications({})
+    setSpecificationValueDrafts({})
     setVariantValues({})
     setVariantValueDrafts({})
     setVariants([])
@@ -267,9 +270,19 @@ export default function TraderProducts() {
       is_new_deal: p.is_new_deal,
     })
     setSpecifications(p.specifications ?? {})
-    setVariantValues({})
+    setSpecificationValueDrafts({})
+    const existingVariants = p.variant_list ?? []
+    setVariantValues(Object.fromEntries(
+      [...new Set(existingVariants.flatMap(variant => Object.keys(variant.options)))].map(key => [
+        key,
+        [...new Set(existingVariants
+          .map(variant => variant.options[key])
+          .filter(value => value !== undefined)
+          .map(String))],
+      ]),
+    ))
     setVariantValueDrafts({})
-    setVariants((p.variant_list ?? []).map(variant => ({
+    setVariants(existingVariants.map(variant => ({
       sku: variant.sku,
       options: variant.options,
       price: variant.listed_price,
@@ -279,6 +292,8 @@ export default function TraderProducts() {
       is_active: variant.is_active,
       image_url: variant.image_url,
       image_file: null,
+      sold_quantity: variant.sold_quantity,
+      has_inventory_item: variant.has_inventory_item,
     })))
     setImages([]); setPreviews([])
     setExistingImage(p.image_url || null)
@@ -516,6 +531,17 @@ export default function TraderProducts() {
                   {selectedCategory.attributes.filter(attribute => !attribute.is_variant).map(attribute => {
                     const value = specifications[attribute.key]
                     const inputClass = 'w-full px-3 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-[12px]'
+                    const selectedValues = Array.isArray(value)
+                      ? value.map(String)
+                      : typeof value === 'string'
+                        ? value.split(',').map(item => item.trim()).filter(Boolean)
+                        : []
+                    const addMultiSelectValue = (rawValue: string) => {
+                      const nextValue = rawValue.trim()
+                      if (nextValue && !selectedValues.some(current => current.toLowerCase() === nextValue.toLowerCase())) {
+                        updateSpecification(attribute.key, [...selectedValues, nextValue])
+                      }
+                    }
                     return (
                       <div key={attribute.key}>
                         <label className="block text-[12px] font-bold text-[#071A2B] mb-1.5">{attribute.name}{attribute.is_required ? ' *' : ''}</label>
@@ -525,19 +551,72 @@ export default function TraderProducts() {
                           <select className={inputClass} value={String(value ?? '')} onChange={event => updateSpecification(attribute.key, event.target.value)}>
                             <option value="">Select...</option>{attribute.choices.map(choice => <option key={choice}>{choice}</option>)}
                           </select>
+                        ) : attribute.input_type === 'multi_select' ? (
+                          <div className="space-y-2">
+                            <select
+                              className={inputClass}
+                              value=""
+                              aria-label={`Add ${attribute.name}`}
+                              onChange={event => {
+                                addMultiSelectValue(event.target.value)
+                                event.currentTarget.value = ''
+                              }}
+                            >
+                              <option value="">Select a value to add...</option>
+                              {attribute.choices.filter(choice => !selectedValues.includes(choice)).map(choice => <option key={choice} value={choice}>{choice}</option>)}
+                            </select>
+                            <div className="flex flex-wrap gap-1.5">
+                              {selectedValues.map(selectedValue => (
+                                <span key={selectedValue} className="inline-flex items-center gap-1 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[11px] font-semibold text-[#334155]">
+                                  {selectedValue}
+                                  <button
+                                    type="button"
+                                    aria-label={`Remove ${selectedValue}`}
+                                    onClick={() => updateSpecification(attribute.key, selectedValues.filter(item => item !== selectedValue))}
+                                    className="text-[#64748B] hover:text-red-600"
+                                  ><X size={12} /></button>
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                className={inputClass}
+                                value={specificationValueDrafts[attribute.key] ?? ''}
+                                placeholder="Add a custom value"
+                                onChange={event => setSpecificationValueDrafts(current => ({ ...current, [attribute.key]: event.target.value }))}
+                                onKeyDown={event => {
+                                  if (event.key === 'Enter') {
+                                    event.preventDefault()
+                                    addMultiSelectValue(specificationValueDrafts[attribute.key] ?? '')
+                                    setSpecificationValueDrafts(current => ({ ...current, [attribute.key]: '' }))
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                className="shrink-0 rounded-lg border border-[#E2E8F0] px-3 text-[11px] font-bold text-[#334155]"
+                                onClick={() => {
+                                  addMultiSelectValue(specificationValueDrafts[attribute.key] ?? '')
+                                  setSpecificationValueDrafts(current => ({ ...current, [attribute.key]: '' }))
+                                }}
+                              >Add</button>
+                            </div>
+                          </div>
                         ) : (
                           <input
                             type={attribute.input_type === 'number' ? 'number' : 'text'}
                             className={inputClass}
                             value={Array.isArray(value) ? value.join(', ') : String(value ?? '')}
-                            placeholder={attribute.input_type === 'multi_select' ? 'Separate values with commas' : ''}
-                            onChange={event => updateSpecification(
-                              attribute.key,
-                              attribute.input_type === 'number' ? (event.target.value ? Number(event.target.value) : '') :
-                                attribute.input_type === 'multi_select' ? event.target.value.split(',').map(item => item.trim()).filter(Boolean) :
-                                  event.target.value,
+                            list={attribute.choices.length ? `product-attribute-${attribute.key}` : undefined}
+                            onChange={event => updateSpecification(attribute.key,
+                              attribute.input_type === 'number' ? (event.target.value ? Number(event.target.value) : '') : event.target.value,
                             )}
                           />
+                        )}
+                        {attribute.input_type !== 'dropdown' && attribute.choices.length > 0 && (
+                          <datalist id={`product-attribute-${attribute.key}`}>
+                            {attribute.choices.map(choice => <option key={choice} value={choice} />)}
+                          </datalist>
                         )}
                       </div>
                     )
@@ -561,10 +640,16 @@ export default function TraderProducts() {
                         <input
                           className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3 py-2.5 text-[12px] outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE]"
                           value={variantValueDrafts[attribute.key] ?? ''}
+                          list={attribute.choices.length ? `variant-values-${attribute.key}` : undefined}
                           onChange={event => setVariantValueDrafts(current => ({ ...current, [attribute.key]: event.target.value }))}
                           placeholder={attribute.key.toLowerCase().includes('size') ? 'e.g. S, M, L, 42' : `e.g. ${attribute.name}`}
                           aria-label={`${attribute.name} variant value`}
                         />
+                        {attribute.choices.length > 0 && (
+                          <datalist id={`variant-values-${attribute.key}`}>
+                            {attribute.choices.map(choice => <option key={choice} value={choice} />)}
+                          </datalist>
+                        )}
                         <button
                           type="button"
                           onClick={() => addCategoryVariant(attribute.key)}

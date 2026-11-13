@@ -11,6 +11,8 @@ export type ProductVariantDraft = {
   is_active: boolean
   image_url: string | null
   image_file: File | null
+  sold_quantity?: number
+  has_inventory_item?: boolean
 }
 
 function VariantRow({
@@ -105,11 +107,23 @@ function VariantRow({
         <button
           type="button"
           onClick={onRemove}
-          className="flex items-center justify-center gap-1 rounded-lg border border-[#FECACA] px-2 py-2 text-[11px] font-semibold text-red-600"
+          disabled={Boolean(variant.sold_quantity || variant.has_inventory_item)}
+          className="flex items-center justify-center gap-1 rounded-lg border border-[#FECACA] px-2 py-2 text-[11px] font-semibold text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
           aria-label={`Remove ${label}`}
+          title={variant.sold_quantity ? 'This option has order history and cannot be removed.' : variant.has_inventory_item ? 'This option is tracked in inventory and cannot be removed.' : undefined}
         >
           <X size={13} /> Remove
         </button>
+        {(variant.sold_quantity ?? 0) > 0 && (
+          <p className="col-span-2 text-[11px] font-semibold text-amber-700 md:col-span-4">
+            {variant.sold_quantity} sold. This option cannot be removed; mark it unavailable instead.
+          </p>
+        )}
+        {variant.has_inventory_item && !variant.sold_quantity && (
+          <p className="col-span-2 text-[11px] font-semibold text-amber-700 md:col-span-4">
+            This option is tracked in inventory and cannot be removed.
+          </p>
+        )}
       </div>
     </div>
   )

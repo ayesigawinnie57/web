@@ -320,6 +320,13 @@ export default function ProductPage() {
 
   const activeVariants = product.variants.filter(variant => variant.is_active)
   const hasVariants = product.variants.length > 0
+  const requiredOptionKeys = (product.categoryAttributes ?? [])
+    .filter(attribute => attribute.is_variant && attribute.is_required)
+    .map(attribute => attribute.key)
+  const requiresVariantSelection = requiredOptionKeys.length > 0
+    && product.variants.some(variant =>
+      requiredOptionKeys.every(key => Object.prototype.hasOwnProperty.call(variant.options, key)),
+    )
   const optionPriority = ['size', 'gender', 'age', 'measurement', 'length', 'width', 'color', 'colour']
   const optionKeys = [...new Set(activeVariants.flatMap(variant => Object.keys(variant.options)))].sort((left, right) => {
     const leftIndex = optionPriority.findIndex(key => left.toLowerCase().includes(key))
@@ -328,7 +335,11 @@ export default function ProductPage() {
   })
   const selectedVariant = optionKeys.length > 0 && optionKeys.every(key => selectedOptions[key] !== undefined)
     ? activeVariants.find(variant =>
-      optionKeys.every(key => String(variant.options[key]) === selectedOptions[key]),
+      optionKeys.every(key => String(variant.options[key]) === selectedOptions[key])
+      && (!requiresVariantSelection || requiredOptionKeys.every(key =>
+        Object.prototype.hasOwnProperty.call(variant.options, key)
+        && String(variant.options[key]) === selectedOptions[key],
+      )),
     )
     : undefined
   const selectedImageVariant = selectedVariant ?? activeVariants.find(variant =>
@@ -336,7 +347,9 @@ export default function ProductPage() {
     && Object.keys(selectedOptions).length > 0
     && Object.entries(selectedOptions).every(([key, value]) => String(variant.options[key]) === value),
   )
-  const selectionComplete = Object.keys(selectedOptions).length === 0 || Boolean(selectedVariant)
+  const selectionComplete = requiresVariantSelection
+    ? Boolean(selectedVariant)
+    : Object.keys(selectedOptions).length === 0 || Boolean(selectedVariant)
   const currentPrice = selectedVariant ? Number(selectedVariant.price) : product.price
   const currentOriginalPrice = selectedVariant?.compare_at_price
     ? Number(selectedVariant.compare_at_price)
@@ -355,6 +368,18 @@ export default function ProductPage() {
     ...activeVariants.map(variant => variant.image_url).filter((image): image is string => Boolean(image)),
   ].filter((image, index, images) => images.indexOf(image) === index)
   const variantImageChoices = activeVariants.filter(variant => Boolean(variant.image_url))
+  const productDetails = Object.entries(product.specifications)
+    .filter(([, value]) => value !== null && value !== '' && (!Array.isArray(value) || value.length > 0))
+    .map(([key, value]) => ({
+      label: optionLabel(key),
+      value: Array.isArray(value)
+        ? value.map(String).join(', ')
+        : typeof value === 'boolean'
+          ? value ? 'Yes' : 'No'
+          : typeof value === 'object'
+            ? JSON.stringify(value)
+            : String(value),
+    }))
 
   const selectVariant = (variant: typeof activeVariants[number]) => {
     setSelectedOptions(Object.fromEntries(
@@ -611,7 +636,7 @@ export default function ProductPage() {
                   <span className="text-[12px] text-[#64748B]">({product.reviewsCount} {product.reviewsCount === 1 ? 'review' : 'reviews'})</span>
                 )}
                 <span className={`ml-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${currentStock > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
-                  {Object.keys(selectedOptions).length > 0 && !selectedVariant
+                  {(requiresVariantSelection && !selectedVariant) || (Object.keys(selectedOptions).length > 0 && !selectedVariant)
                     ? 'Select options'
                     : currentStock > 0 ? `${currentStock} in stock` : 'Out of stock'}
                 </span>
@@ -641,17 +666,31 @@ export default function ProductPage() {
                 <p className="text-[13px] text-[#475569] leading-relaxed whitespace-pre-line">{shortDescription}</p>
               </div>
 
+              {productDetails.length > 0 && (
+                <section className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+                  <h2 className="mb-3 text-[14px] font-extrabold text-[#071A2B]">Product specifications</h2>
+                  <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                    {productDetails.map(detail => (
+                      <div key={detail.label} className="min-w-0">
+                        <dt className="text-[11px] font-semibold text-[#64748B]">{detail.label}</dt>
+                        <dd className="mt-0.5 break-words text-[13px] font-semibold text-[#071A2B]">{detail.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+
               {hasVariants && (
                 <div className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-4 sm:p-5">
                   <h2 className="text-[13px] font-extrabold text-[#071A2B]">Choose options</h2>
-                  <button
+                  {!requiresVariantSelection && <button
                     type="button"
                     aria-pressed={Object.keys(selectedOptions).length === 0}
                     onClick={selectMainProduct}
                     className={`rounded-lg border px-3 py-2 text-[12px] font-semibold ${Object.keys(selectedOptions).length === 0 ? 'border-[#1E3A8A] bg-blue-50 text-[#1E3A8A]' : 'border-[#E2E8F0] text-[#475569]'}`}
                   >
                     Main product
-                  </button>
+                  </button>}
                   {variantImageChoices.length > 0 && (
                     <fieldset className="min-w-0 max-w-full">
                       <legend className="mb-2 text-[12px] font-bold text-[#334155]">Choose a version</legend>

@@ -33,7 +33,7 @@ export default function TraderInventory() {
 
   // Add to inventory modal
   const [addModal, setAddModal] = useState(false)
-  const [addForm, setAddForm] = useState({ product: '', quantity: '', cost_price: '', location: '', note: '' })
+  const [addForm, setAddForm] = useState({ product: '', variant: '', quantity: '', cost_price: '', location: '', note: '' })
   const [productSearch, setProductSearch] = useState('')
   const [addSaving, setAddSaving] = useState(false)
   const [addError, setAddError] = useState('')
@@ -60,9 +60,11 @@ export default function TraderInventory() {
   }, [traderUuid])
 
   // Products not yet in inventory
-  const inventoriedIds = new Set(items.map(i => i.product))
+  const inventoriedBaseIds = new Set(items.filter(item => item.variant === null).map(item => item.product))
   const availableProducts = myProducts.filter(p =>
-    !inventoriedIds.has(p.id) &&
+    (p.variant_list?.length
+      ? p.variant_list.some(variant => !items.some(item => item.product === p.id && item.variant === variant.id))
+      : !inventoriedBaseIds.has(p.id)) &&
     (!productSearch.trim() || p.name.toLowerCase().includes(productSearch.toLowerCase()))
   )
   const selectedProduct = myProducts.find(p => String(p.id) === addForm.product)
@@ -74,17 +76,19 @@ export default function TraderInventory() {
   const totalValue = items.reduce((s, i) => s + Number(i.cost_price) * i.quantity, 0)
 
   const openAdd = () => {
-    setAddForm({ product: '', quantity: '', cost_price: '', location: '', note: '' })
+    setAddForm({ product: '', variant: '', quantity: '', cost_price: '', location: '', note: '' })
     setProductSearch(''); setAddError(''); setAddModal(true)
   }
 
   const handleAdd = async () => {
     if (!addForm.product) { setAddError('Select a product.'); return }
+    if (selectedProduct?.variant_list.length && !addForm.variant) { setAddError('Select a product option.'); return }
     if (!addForm.quantity) { setAddError('Enter quantity.'); return }
     setAddSaving(true); setAddError('')
     try {
       const { data } = await tradersApi.addInventoryItem(traderUuid!, {
         product: Number(addForm.product),
+        variant: addForm.variant ? Number(addForm.variant) : null,
         quantity: Number(addForm.quantity),
         cost_price: addForm.cost_price || 0,
         location: addForm.location,
@@ -206,7 +210,9 @@ export default function TraderInventory() {
                 }
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-[14px] font-extrabold text-[#071A2B] truncate">{item.product_name}</p>
+                    <p className="text-[14px] font-extrabold text-[#071A2B] truncate">
+                      {item.product_name}{Object.keys(item.variant_options).length > 0 && ` · ${Object.values(item.variant_options).map(String).join(' / ')}`}
+                    </p>
                     <StockBadge qty={item.quantity} />
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
@@ -269,7 +275,7 @@ export default function TraderInventory() {
                   <div className="flex items-center gap-3 bg-[#F8FAFC] border border-[#22C55E] rounded-xl p-3">
                     {selectedProduct.image_url && <img src={selectedProduct.image_url} className="w-10 h-10 rounded-lg object-cover" />}
                     <p className="flex-1 text-[13px] font-bold text-[#071A2B] truncate">{selectedProduct.name}</p>
-                    <button onClick={() => { setAddForm(f => ({ ...f, product: '' })); setProductSearch('') }}><X size={15} color="#64748B" /></button>
+                    <button onClick={() => { setAddForm(f => ({ ...f, product: '', variant: '', quantity: '' })); setProductSearch('') }}><X size={15} color="#64748B" /></button>
                   </div>
                 ) : (
                   <>
@@ -286,7 +292,7 @@ export default function TraderInventory() {
                           <button
                             key={p.id}
                             onClick={() => {
-                              setAddForm(f => ({ ...f, product: String(p.id), cost_price: p.price, quantity: String(p.stock) }))
+                              setAddForm(f => ({ ...f, product: String(p.id), variant: '', cost_price: p.price, quantity: p.variant_list?.length ? '' : String(p.stock) }))
                               setProductSearch(p.name)
                             }}
                             className="flex items-center gap-3 w-full px-3 py-2.5 border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC] text-left"
@@ -303,6 +309,34 @@ export default function TraderInventory() {
                   </>
                 )}
               </div>
+
+              {selectedProduct?.variant_list.length ? (
+                <div>
+                  <label className="mb-2 block text-[13px] font-bold text-[#071A2B]">Product option *</label>
+                  <select
+                    value={addForm.variant}
+                    onChange={event => {
+                      const variant = selectedProduct.variant_list.find(item => String(item.id) === event.target.value)
+                      setAddForm(form => ({
+                        ...form,
+                        variant: event.target.value,
+                        quantity: variant ? String(variant.stock) : '',
+                        cost_price: variant?.listed_price ?? form.cost_price,
+                      }))
+                    }}
+                    className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-3 text-[13px]"
+                  >
+                    <option value="">Select an option...</option>
+                    {selectedProduct.variant_list.map(variant => {
+                      const label = Object.values(variant.options).map(String).join(' / ') || variant.sku || `Option ${variant.id}`
+                      const alreadyTracked = items.some(item => item.product === selectedProduct.id && item.variant === variant.id)
+                      return <option key={variant.id} value={variant.id} disabled={alreadyTracked}>
+                        {label} · Stock: {variant.stock}{alreadyTracked ? ' · Already tracked' : ''}
+                      </option>
+                    })}
+                  </select>
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-2 gap-3">
                 {[

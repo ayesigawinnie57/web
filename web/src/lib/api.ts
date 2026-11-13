@@ -170,7 +170,7 @@ export type ApiProduct = {
   is_featured: boolean
   is_new_deal?: boolean
   images: { id: number; url: string; order: number }[]
-  category: { id: number; name: string; slug: string }
+  category: { id: number; name: string; slug: string; attributes?: ApiCategoryAttribute[] }
 }
 
 export type ApiProductVariant = {
@@ -186,6 +186,8 @@ export type ApiProductVariant = {
   image: string | null
   image_url: string | null
   is_active: boolean
+  sold_quantity?: number
+  has_inventory_item?: boolean
 }
 
 export type ApiCategoryAttribute = {
@@ -248,6 +250,7 @@ export type Product = {
   condition: 'new' | 'used' | 'refurbished'
   tags: string[]
   specifications: Record<string, unknown>
+  categoryAttributes?: ApiCategoryAttribute[]
   reviewStatus: ApiProduct['review_status']
   reviewNote: string
   variants: ApiProductVariant[]
@@ -283,6 +286,7 @@ export const toProduct = (p: ApiProduct): Product => ({
   condition: p.condition ?? 'new',
   tags: p.tags ?? [],
   specifications: p.specifications ?? {},
+  categoryAttributes: p.category?.attributes ?? [],
   reviewStatus: p.review_status ?? 'approved',
   reviewNote: p.review_note ?? '',
   variants: p.variants ?? [],
@@ -1095,6 +1099,9 @@ export type ApiTraderOrderItem = {
 export type ApiTraderInventoryItem = {
   id: number
   product: number
+  variant: number | null
+  variant_options: Record<string, string | number | boolean>
+  variant_sku: string
   product_uuid: string
   product_name: string
   product_image: string | null

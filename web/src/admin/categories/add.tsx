@@ -177,7 +177,7 @@ export default function AddCategory() {
             <select value={attributeType} onChange={event => setAttributeType(event.target.value as ApiCategoryAttribute['input_type'])} className="px-3 py-2 border border-[#E2E8F0] rounded-lg text-[12px]">
               {['text', 'number', 'dropdown', 'multi_select', 'boolean', 'measurement', 'color', 'size'].map(type => <option key={type} value={type}>{type.replace('_', ' ')}</option>)}
             </select>
-            {['dropdown', 'multi_select'].includes(attributeType) && <input value={attributeChoices} onChange={event => setAttributeChoices(event.target.value)} placeholder="Choices separated by commas" className="sm:col-span-2 px-3 py-2 border border-[#E2E8F0] rounded-lg text-[12px]" />}
+            {['dropdown', 'multi_select', 'text', 'size', 'color'].includes(attributeType) && <input value={attributeChoices} onChange={event => setAttributeChoices(event.target.value)} placeholder="Choices or suggestions, separated by commas" className="sm:col-span-2 px-3 py-2 border border-[#E2E8F0] rounded-lg text-[12px]" />}
           </div>
           <button type="button" onClick={addAttribute} className="text-[12px] font-bold text-[#1E3A8A]">+ Add Attribute</button>
         </section>
