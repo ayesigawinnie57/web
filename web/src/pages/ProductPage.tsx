@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { BadgeCheck, ChevronDown, ChevronRight, Star, Users } from 'lucide-react'
 import { cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiPublicSeller, type CartItem, type Product, type ApiReview } from '../lib/api'
 import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
+import { sanitizeRichText } from '../lib/sanitizeRichText'
 import ProductCard from '../components/ProductCard'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -985,7 +986,7 @@ export default function ProductPage() {
                       [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
                       [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic
                       [&_u]:underline [&_s]:line-through [&_strike]:line-through"
-                    dangerouslySetInnerHTML={{ __html: longDescription }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(longDescription) }}
                   />
                 </div>
               )}

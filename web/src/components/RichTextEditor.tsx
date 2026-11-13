@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { sanitizeRichText } from '../lib/sanitizeRichText'
 
 const FONT_SIZES = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px']
 
@@ -12,9 +13,10 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write h
   useEffect(() => {
     const el = editorRef.current
     if (!el) return
-    if (value !== lastValue.current && el.innerHTML !== value) {
-      el.innerHTML = value
-      lastValue.current = value
+    const safeValue = sanitizeRichText(value)
+    if (safeValue !== lastValue.current && el.innerHTML !== safeValue) {
+      el.innerHTML = safeValue
+      lastValue.current = safeValue
     }
   }, [value])
 
@@ -25,24 +27,32 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write h
   }
 
   const emit = () => {
-    const html = editorRef.current?.innerHTML ?? ''
+    const html = sanitizeRichText(editorRef.current?.innerHTML ?? '')
     lastValue.current = html
     onChange(html)
   }
+
+  const escapeHtml = (text: string) => text.replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character] ?? character)
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault()
     const html = e.clipboardData.getData('text/html')
     if (html) {
-      document.execCommand('insertHTML', false, html)
+      document.execCommand('insertHTML', false, sanitizeRichText(html))
     } else {
       const plain = e.clipboardData.getData('text/plain')
       if (!plain) return
       const converted = plain
         .split(/\n{2,}/)
-        .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+        .map(para => `<p>${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
         .join('')
-      document.execCommand('insertHTML', false, converted)
+      document.execCommand('insertHTML', false, sanitizeRichText(converted))
     }
     emit()
   }
