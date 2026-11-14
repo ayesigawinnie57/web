@@ -30,6 +30,19 @@ const api = axios.create({
   headers: { 'ngrok-skip-browser-warning': 'true' },
 })
 
+function getAdvertisingSession() {
+  const key = 'majo_advertising_session'
+  const existing = localStorage.getItem(key)
+  if (existing) return existing
+  const session = window.crypto.randomUUID()
+  localStorage.setItem(key, session)
+  return session
+}
+
+const advertisingSessionConfig = () => ({
+  headers: { 'X-Advertising-Session': getAdvertisingSession() },
+})
+
 export type DistrictRecord = { id: number; name: string; price: string; region: string }
 type ApiPage<T> = { results: T[]; next: string | null }
 
@@ -1379,17 +1392,20 @@ export const advertisingApi = {
     api.post<{ campaign: ApiAdvertisingCampaign }>(`/api/traders/${uuid}/advertising/campaigns/`, data),
   updateCampaign: (uuid: string, id: number, action: 'pause' | 'resume' | 'cancel') =>
     api.patch<{ campaign: ApiAdvertisingCampaign }>(`/api/traders/${uuid}/advertising/campaigns/${id}/`, { action }),
-  placements: (params: { q?: string; category?: string; product?: number; limit?: number; exclude?: string }) =>
-    api.get<{ results: ApiAdvertisingPlacement[] }>('/api/advertising/placements/', { params }),
+  placements: (params: { q?: string; category?: string; product?: string | number; limit?: number; exclude?: string }) =>
+    api.get<{ results: ApiAdvertisingPlacement[] }>('/api/advertising/placements/', { params, ...advertisingSessionConfig() }),
   exactProduct: (product: number) =>
-    api.get<{ results: ApiSponsoredOffer[] }>('/api/advertising/placements/', { params: { exact_product: product, limit: 1 } }),
+    api.get<{ results: ApiSponsoredOffer[] }>('/api/advertising/placements/', {
+      params: { exact_product: product, limit: 1 },
+      ...advertisingSessionConfig(),
+    }),
   impressions: (campaignOfferIds: number[]) =>
-    api.post('/api/advertising/impressions/', { campaign_offer_ids: campaignOfferIds }),
+    api.post('/api/advertising/impressions/', { campaign_offer_ids: campaignOfferIds }, advertisingSessionConfig()),
   click: (campaignOfferId: number, idempotencyKey: string) =>
     api.post<{ status: 'valid' | 'invalid' | 'suspicious'; slug: string; charged_amount: string }>('/api/advertising/clicks/', {
       campaign_offer_id: campaignOfferId,
       idempotency_key: idempotencyKey,
-    }),
+    }, advertisingSessionConfig()),
   adminCampaigns: () => api.get<{ results: ApiAdminAdvertisingCampaign[] }>('/api/advertising/admin/campaigns/'),
   adminTransactions: () => api.get<{ results: ApiAdminAdvertisingTransaction[] }>('/api/advertising/admin/transactions/'),
   adminUpdateCampaign: (id: number, action: 'approve' | 'reject' | 'pause' | 'resume' | 'cancel', reason = '') =>

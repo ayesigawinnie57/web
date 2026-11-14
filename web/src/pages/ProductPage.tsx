@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { BadgeCheck, ChevronDown, ChevronRight, Star, Users } from 'lucide-react'
-import { advertisingApi, cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiPublicSeller, type CartItem, type Product, type ApiReview } from '../lib/api'
+import { advertisingApi, cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiAdvertisingPlacement, type ApiPublicSeller, type CartItem, type Product, type ApiReview } from '../lib/api'
 import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
 import { sanitizeRichText } from '../lib/sanitizeRichText'
 import ProductCard from '../components/ProductCard'
@@ -146,6 +146,7 @@ export default function ProductPage() {
 
   const [product, setProduct] = useState<Product | null>(null)
   const [sponsoredProductId, setSponsoredProductId] = useState<number | null>(null)
+  const [sponsoredPlacements, setSponsoredPlacements] = useState<ApiAdvertisingPlacement[]>([])
   const [catalogOffers, setCatalogOffers] = useState<Product[]>([])
   const [related, setRelated] = useState<Product[]>([])
   const [alsoBy, setAlsoBy] = useState<Product[]>([])
@@ -225,7 +226,9 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (!slug) return
+    let active = true
     setLoading(true)
+    setSponsoredPlacements([])
     setActiveImg(0)
     setQty(1)
     setSelectedOptions({})
@@ -238,6 +241,15 @@ export default function ProductPage() {
     setSeller(null)
     setSummary(null)
     setHasReviewedProduct(false)
+
+    advertisingApi.placements({ product: slug, limit: 12 })
+      .then(({ data }) => {
+        if (active) setSponsoredPlacements(data.results)
+      })
+      .catch(error => {
+        console.error('Sponsored products could not be loaded alongside product details.', error)
+        if (active) setSponsoredPlacements([])
+      })
 
     if (hasAccessToken()) {
       productsApi.checkEligibility(slug)
@@ -320,6 +332,7 @@ export default function ProductPage() {
       productsApi.ratingSummary(slug).then(({ data: d }) => setSummary(d)).catch(() => undefined)
 
     }).catch(() => navigate('/')).finally(() => setLoading(false))
+    return () => { active = false }
   }, [slug])
 
   const toggleSellerFollow = async () => {
@@ -694,7 +707,7 @@ export default function ProductPage() {
             {/* Product info */}
             <div className="flex-1 min-w-0 flex flex-col gap-4">
 
-              {product && <SponsoredProductsSection category={product.category} product={product.id} excludeProductIds={[product.id, ...related.map(item => item.id), ...alsoBy.map(item => item.id)]} title="Sponsored Products" layout="product-page" />}
+              {product && <SponsoredProductsSection product={product.slug} excludeProductIds={[product.id]} prefetchedPlacements={sponsoredPlacements} title="Sponsored Products" layout="product-page" />}
 
               {/* Category + name */}
               <div>

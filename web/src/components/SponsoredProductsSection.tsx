@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronRight, Megaphone, Sparkles, X } from 'lucide-react'
 import { advertisingApi, type ApiAdvertisingPlacement, type ApiLinkedAdvertisingPlacement } from '../lib/api'
 import { toSponsoredProduct } from '../lib/advertising'
@@ -7,7 +7,8 @@ import ProductCard from './ProductCard'
 type Props = {
   query?: string
   category?: string
-  product?: number
+  product?: string | number
+  prefetchedPlacements?: ApiAdvertisingPlacement[]
   excludeProductIds?: number[]
   limit?: number
   title?: string
@@ -15,11 +16,12 @@ type Props = {
   layout?: 'grid' | 'product-page'
 }
 
-export default function SponsoredProductsSection({ query, category, product, excludeProductIds = [], limit = 6, title = 'Sponsored Products', enableModal = false, layout = 'grid' }: Props) {
+export default function SponsoredProductsSection({ query, category, product, prefetchedPlacements, excludeProductIds = [], limit = 6, title = 'Sponsored Products', enableModal = false, layout = 'grid' }: Props) {
   const [response, setResponse] = useState<{ key: string; placements: ApiLinkedAdvertisingPlacement[] } | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalResponse, setModalResponse] = useState<{ key: string; placements: ApiLinkedAdvertisingPlacement[] } | null>(null)
   const [modalLoading, setModalLoading] = useState(false)
+  const [autoRotatePaused, setAutoRotatePaused] = useState(false)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const excluded = excludeProductIds.join(',')
   const params = useMemo(() => ({ q: query, category, product, limit, exclude: excluded }), [query, category, product, limit, excluded])
@@ -74,6 +76,7 @@ export default function SponsoredProductsSection({ query, category, product, exc
   }, [modalOpen, modalParams, modalRequestKey, product])
 
   useEffect(() => {
+    if (layout === 'product-page' && prefetchedPlacements !== undefined) return
     let active = true
     advertisingApi.placements(params)
       .then(({ data }) => {
@@ -99,11 +102,37 @@ export default function SponsoredProductsSection({ query, category, product, exc
         if (active) setResponse({ key: requestKey, placements: [] })
       })
     return () => { active = false }
-  }, [params, product, limit, requestKey, layout])
+  }, [params, product, limit, requestKey, layout, prefetchedPlacements])
 
-  const placements = response?.key === requestKey ? response.placements : []
+  const placements = useMemo(() => {
+    const source = prefetchedPlacements !== undefined
+      ? prefetchedPlacements
+      : response?.key === requestKey ? response.placements : []
+    const excludedIds = new Set(excluded ? excluded.split(',').map(Number) : [])
+    return source
+      .filter((placement): placement is ApiLinkedAdvertisingPlacement =>
+        placement.public_product_id !== null && Boolean(placement.slug))
+      .filter(placement => placement.public_product_id !== product && !excludedIds.has(placement.public_product_id))
+      .slice(0, limit)
+  }, [prefetchedPlacements, response, requestKey, excluded, product, limit])
   const featuredIndex = featured?.key === requestKey ? featured.index : 0
   const featuredPlacement = placements[featuredIndex]
+
+  const advanceFeatured = useCallback(() => {
+    setFeatured(current => {
+      const currentIndex = current?.key === requestKey ? current.index : 0
+      return { key: requestKey, index: (currentIndex + 1) % placements.length }
+    })
+  }, [requestKey, placements.length])
+
+  useEffect(() => {
+    if (layout !== 'product-page' || placements.length < 2 || autoRotatePaused) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') advanceFeatured()
+    }, 6000)
+    return () => window.clearInterval(timer)
+  }, [layout, placements.length, autoRotatePaused, advanceFeatured])
 
   useEffect(() => {
     if (layout !== 'product-page' || !featuredPlacement) return
@@ -117,7 +146,16 @@ export default function SponsoredProductsSection({ query, category, product, exc
 
   if (layout === 'product-page') {
     return (
-      <section className="mb-1 rounded-2xl border border-[#CBD5FF] bg-gradient-to-r from-[#F1F4FF] to-[#F5F8FF] p-3 shadow-sm sm:p-4" aria-label={title}>
+      <section
+        className="mb-1 rounded-2xl border border-[#CBD5FF] bg-gradient-to-r from-[#F1F4FF] to-[#F5F8FF] p-3 shadow-sm sm:p-4"
+        aria-label={title}
+        onMouseEnter={() => setAutoRotatePaused(true)}
+        onMouseLeave={() => setAutoRotatePaused(false)}
+        onFocusCapture={() => setAutoRotatePaused(true)}
+        onBlurCapture={event => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setAutoRotatePaused(false)
+        }}
+      >
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="flex items-center gap-1.5 text-[14px] font-extrabold text-[#155EEF] sm:text-[16px]">
             <Sparkles size={16} fill="currentColor" /> {title}
@@ -137,7 +175,7 @@ export default function SponsoredProductsSection({ query, category, product, exc
           {placements.length > 1 && (
             <button
               type="button"
-              onClick={() => setFeatured({ key: requestKey, index: (featuredIndex + 1) % placements.length })}
+              onClick={advanceFeatured}
               aria-label="Next sponsored product"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#1E40AF] shadow-sm transition hover:bg-[#E8EEFF] focus:outline-none focus:ring-2 focus:ring-[#4169F5]"
             >
