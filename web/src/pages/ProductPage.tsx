@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { BadgeCheck, ChevronDown, ChevronRight, Star, Users } from 'lucide-react'
@@ -159,7 +159,6 @@ export default function ProductPage() {
   const [activeImg, setActiveImg] = useState(0)
   const [qty, setQty] = useState(1)
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
-  const variantImageChoiceRefs = useRef(new Map<number, HTMLButtonElement>())
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [wishlisted, setWishlisted] = useState(false)
   const [sharing, setSharing] = useState(false)
@@ -168,45 +167,6 @@ export default function ProductPage() {
   const [cartToast, setCartToast] = useState<string | null>(null)
   const [followBusy, setFollowBusy] = useState(false)
   const [followError, setFollowError] = useState('')
-
-  useEffect(() => {
-    if (!slug) return
-
-    let active = true
-    let refreshing = false
-    const refreshProduct = () => {
-      if (document.visibilityState !== 'visible' || refreshing) return
-      refreshing = true
-      productsApi.bySlug(slug)
-        .then(({ data }) => {
-          if (!active) return
-          const refreshedProduct = { ...toProduct(data), slug }
-          setCatalogOffers(current => current.map(offer =>
-            offer.id === refreshedProduct.id ? refreshedProduct : offer,
-          ))
-          setProduct(current =>
-            current?.catalogProductId && current.id !== refreshedProduct.id
-              ? current
-              : refreshedProduct,
-          )
-        })
-        .catch(error => {
-          if (active) console.error('Failed to refresh product details.', error)
-        })
-        .finally(() => { refreshing = false })
-    }
-
-    window.addEventListener('focus', refreshProduct)
-    document.addEventListener('visibilitychange', refreshProduct)
-    const refreshInterval = window.setInterval(refreshProduct, 30_000)
-
-    return () => {
-      active = false
-      window.removeEventListener('focus', refreshProduct)
-      document.removeEventListener('visibilitychange', refreshProduct)
-      window.clearInterval(refreshInterval)
-    }
-  }, [slug])
 
   useEffect(() => {
     if (!product) return
@@ -431,8 +391,7 @@ export default function ProductPage() {
     )
     : undefined
   const selectedImageVariant = selectedVariant ?? activeVariants.find(variant =>
-    Boolean(variant.image_url)
-    && Object.keys(selectedOptions).length > 0
+    Object.keys(selectedOptions).length > 0
     && Object.entries(selectedOptions).every(([key, value]) => String(variant.options[key]) === value),
   )
   const selectionComplete = requiresVariantSelection
@@ -450,12 +409,29 @@ export default function ProductPage() {
     ? Math.round((1 - currentPrice / currentOriginalPrice) * 100)
     : null
 
-  const allImages = [
+  const imageIdentity = (image: string) => image.split(/[?#]/, 1)[0]
+  const productImages = [
     ...(product.image ? [product.image] : []),
     ...product.images.map(i => i.url).filter(u => u !== product.image),
     ...activeVariants.map(variant => variant.image_url).filter((image): image is string => Boolean(image)),
-  ].filter((image, index, images) => images.indexOf(image) === index)
-  const variantImageChoices = activeVariants.filter(variant => Boolean(variant.image_url))
+  ]
+  const uniqueImages = new Map<string, string>()
+  productImages.forEach(image => {
+    if (!uniqueImages.has(imageIdentity(image))) uniqueImages.set(imageIdentity(image), image)
+  })
+  const allImages = [...uniqueImages.values()]
+  const firstVariantForImage = new Map<string, number>()
+  activeVariants.forEach((variant, index) => {
+    if (variant.image_url && !firstVariantForImage.has(imageIdentity(variant.image_url))) {
+      firstVariantForImage.set(imageIdentity(variant.image_url), index)
+    }
+  })
+  const variantImageChoices = activeVariants.map((variant, index) => ({
+    variant,
+    image: variant.image_url && firstVariantForImage.get(imageIdentity(variant.image_url)) === index
+      ? variant.image_url
+      : null,
+  }))
   const productDetails = Object.entries(product.specifications)
     .filter(([, value]) => value !== null && value !== '' && (!Array.isArray(value) || value.length > 0))
     .map(([key, value]) => ({
@@ -474,8 +450,9 @@ export default function ProductPage() {
       Object.entries(variant.options).map(([key, value]) => [key, String(value)]),
     ))
     setQty(1)
-    if (variant.image_url) {
-      const imageIndex = allImages.indexOf(variant.image_url)
+    const variantImage = variant.image_url
+    if (variantImage) {
+      const imageIndex = allImages.findIndex(image => imageIdentity(image) === imageIdentity(variantImage))
       if (imageIndex >= 0) setActiveImg(imageIndex)
     }
   }
@@ -494,16 +471,10 @@ export default function ProductPage() {
       Boolean(variant.image_url)
       && Object.entries(nextOptions).every(([optionKey, optionValue]) => String(variant.options[optionKey]) === optionValue),
     )
-    if (matchingVariant?.image_url) {
-      const imageIndex = allImages.indexOf(matchingVariant.image_url)
+    const matchingImage = matchingVariant?.image_url
+    if (matchingImage) {
+      const imageIndex = allImages.findIndex(image => imageIdentity(image) === imageIdentity(matchingImage))
       if (imageIndex >= 0) setActiveImg(imageIndex)
-      requestAnimationFrame(() => {
-        variantImageChoiceRefs.current.get(matchingVariant.id)?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'nearest',
-        })
-      })
     }
   }
 
@@ -690,9 +661,12 @@ export default function ProductPage() {
                   {allImages.map((img, i) => (
                     <button
                       key={i}
+                      type="button"
                       onClick={() => {
                         setActiveImg(i)
-                        const imageVariant = activeVariants.find(variant => variant.image_url === img)
+                        const imageVariant = activeVariants.find(variant =>
+                          variant.image_url && imageIdentity(variant.image_url) === imageIdentity(img),
+                        )
                         if (imageVariant) selectVariant(imageVariant)
                       }}
                       className={`shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden transition-all ${i === activeImg ? 'border-[#1E3A8A] shadow-md' : 'border-[#E2E8F0] opacity-70 hover:opacity-100'}`}
@@ -821,7 +795,7 @@ export default function ProductPage() {
                     <fieldset className="min-w-0 max-w-full">
                       <legend className="mb-2 text-[12px] font-bold text-[#334155]">Choose a version</legend>
                       <div className="flex w-full max-w-full snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none pb-2">
-                        {variantImageChoices.map(variant => {
+                        {variantImageChoices.map(({ variant, image }) => {
                           const optionLabelKey = optionKeys.find(key => /color|colour/i.test(key)) ?? optionKeys[0]
                           const label = optionLabelKey
                             ? String(variant.options[optionLabelKey] ?? 'Option')
@@ -834,16 +808,14 @@ export default function ProductPage() {
                               type="button"
                               aria-label={`Select ${accessibleLabel}`}
                               aria-pressed={selectedImageVariant?.id === variant.id}
-                              ref={element => {
-                                if (element) variantImageChoiceRefs.current.set(variant.id, element)
-                                else variantImageChoiceRefs.current.delete(variant.id)
-                              }}
                               onClick={() => selectVariant(variant)}
                               className={`box-border w-24 shrink-0 snap-start overflow-hidden rounded-xl border-2 text-left transition-colors ${selected ? 'border-[#1E3A8A] ring-2 ring-blue-100' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
                             >
                               <span className="flex flex-col">
-                                <img src={variant.image_url ?? ''} alt="" className="block h-20 w-full object-cover" />
-                                <span className="box-border block w-full truncate px-2 py-1.5 text-center text-[11px] font-semibold text-[#334155]">{label}</span>
+                                {image
+                                  ? <img src={image} alt="" className="block h-20 w-full object-cover" />
+                                  : <span className="flex h-20 items-center justify-center bg-[#F1F5F9] text-[10px] font-semibold text-[#64748B]">Variant</span>}
+                                <span className="box-border block w-full truncate px-2 py-1.5 text-center text-[11px] font-semibold text-[#334155]">{accessibleLabel || label}</span>
                               </span>
                             </button>
                           )
