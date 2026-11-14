@@ -408,6 +408,8 @@ export default function ProductPage() {
     && (item.variant_id ?? null) === (selectedVariant?.id ?? null),
   )
   const offerRequired = product.catalogProductId !== null
+    && !product.offerId
+    && product.sellerCount === 0
   const discount = currentOriginalPrice
     ? Math.round((1 - currentPrice / currentOriginalPrice) * 100)
     : null

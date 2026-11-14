@@ -1064,7 +1064,7 @@ export default function TraderProducts() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-bold text-[#071A2B]">My product requests</h2>
-                <p className="mt-1 text-[12px] text-[#64748B]">Track review status. Approved requests can be listed with your saved offer details.</p>
+                <p className="mt-1 text-[12px] text-[#64748B]">Track review status. Approved requests are listed with your saved offer details.</p>
               </div>
               {myCatalogRequestsLoading && <span className="text-[11px] text-[#64748B]">Loading…</span>}
             </div>
@@ -1086,10 +1086,17 @@ export default function TraderProducts() {
                     {request.review_status === 'approved' && Number(request.request_offer_details?.price) > 0 && (
                       <button
                         type="button"
-                        onClick={() => sellApprovedCatalogRequest(request)}
+                        disabled={loading}
+                        onClick={() => {
+                          const existingOffer = products.find(offer => offer.catalog_product?.id === request.id)
+                          if (existingOffer) openEdit(existingOffer)
+                          else sellApprovedCatalogRequest(request)
+                        }}
                         className="rounded-lg bg-[#22C55E] px-3 py-2 text-[11px] font-bold text-white"
                       >
-                        Sell this product
+                        {products.some(offer => offer.catalog_product?.id === request.id)
+                          ? 'Edit My Offer'
+                          : 'Sell this product'}
                       </button>
                     )}
                     {request.review_status === 'approved' && !(Number(request.request_offer_details?.price) > 0) && (
