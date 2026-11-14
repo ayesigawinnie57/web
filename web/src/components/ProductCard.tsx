@@ -4,7 +4,7 @@ import { advertisingApi, type Product } from '../lib/api'
 import { trackProductClick } from '../lib/behaviour'
 import { cloudinaryImageUrl } from '../lib/api'
 
-export default function ProductCard({ product, sponsoredCampaignOfferId }: { product: Product; sponsoredCampaignOfferId?: number }) {
+export default function ProductCard({ product, sponsoredCampaignOfferId, variant = 'grid' }: { product: Product; sponsoredCampaignOfferId?: number; variant?: 'grid' | 'product-page' }) {
   const navigate = useNavigate()
   const discount = product.originalPrice
     ? Math.round((1 - product.price / product.originalPrice) * 100)
@@ -24,6 +24,42 @@ export default function ProductCard({ product, sponsoredCampaignOfferId }: { pro
     } else {
       void recordClick()
     }
+  }
+
+  if (variant === 'product-page') {
+    return (
+      <Link
+        to={`/shop/${product.slug}`}
+        onClick={handleClick}
+        className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+      >
+        <div className="h-[76px] w-[76px] shrink-0 overflow-hidden rounded-lg bg-white sm:h-[88px] sm:w-[88px]">
+          {product.image
+            ? <img
+                src={cloudinaryImageUrl(product.image, 240) ?? product.image}
+                alt={product.name}
+                loading="lazy"
+                width={240}
+                height={240}
+                className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-105"
+              />
+            : <div className="flex h-full w-full items-center justify-center text-2xl">📦</div>
+          }
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-[12px] font-extrabold leading-snug text-[#071A2B] group-hover:text-[#1D4ED8] sm:text-[14px]">{product.name}</p>
+          <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-[14px] font-extrabold text-[#1D4ED8] sm:text-[17px]">UGX {product.price.toLocaleString()}</span>
+            {product.originalPrice && (
+              <span className="text-[10px] font-medium text-[#64748B] line-through sm:text-[12px]">UGX {product.originalPrice.toLocaleString()}</span>
+            )}
+            {discount && (
+              <span className="rounded-full bg-[#FEF2F2] px-1.5 py-0.5 text-[9px] font-extrabold text-[#DC2626] sm:text-[10px]">-{discount}%</span>
+            )}
+          </div>
+        </div>
+      </Link>
+    )
   }
 
   return (

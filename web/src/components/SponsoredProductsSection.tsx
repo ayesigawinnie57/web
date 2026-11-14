@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Megaphone, Sparkles, X } from 'lucide-react'
+import { ChevronRight, Megaphone, Sparkles, X } from 'lucide-react'
 import { advertisingApi, type ApiAdvertisingPlacement, type ApiLinkedAdvertisingPlacement } from '../lib/api'
 import { toSponsoredProduct } from '../lib/advertising'
 import ProductCard from './ProductCard'
@@ -12,9 +12,10 @@ type Props = {
   limit?: number
   title?: string
   enableModal?: boolean
+  layout?: 'grid' | 'product-page'
 }
 
-export default function SponsoredProductsSection({ query, category, product, excludeProductIds = [], limit = 6, title = 'Sponsored Products', enableModal = false }: Props) {
+export default function SponsoredProductsSection({ query, category, product, excludeProductIds = [], limit = 6, title = 'Sponsored Products', enableModal = false, layout = 'grid' }: Props) {
   const [response, setResponse] = useState<{ key: string; placements: ApiLinkedAdvertisingPlacement[] } | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalResponse, setModalResponse] = useState<{ key: string; placements: ApiLinkedAdvertisingPlacement[] } | null>(null)
@@ -25,6 +26,7 @@ export default function SponsoredProductsSection({ query, category, product, exc
   const modalParams = useMemo(() => ({ ...params, limit: 50 }), [params])
   const requestKey = JSON.stringify(params)
   const modalRequestKey = JSON.stringify(modalParams)
+  const [featured, setFeatured] = useState<{ key: string; index: number } | null>(null)
 
   useEffect(() => {
     if (!modalOpen) return
@@ -86,7 +88,7 @@ export default function SponsoredProductsSection({ query, category, product, exc
           .slice(0, limit)
         setResponse({ key: requestKey, placements: selected })
         const ids = selected.map(placement => placement.campaign_offer_id)
-        if (ids.length) {
+        if (ids.length && layout !== 'product-page') {
           advertisingApi.impressions(ids).catch(error => {
             console.error('Sponsored impressions could not be recorded.', error)
           })
@@ -97,11 +99,55 @@ export default function SponsoredProductsSection({ query, category, product, exc
         if (active) setResponse({ key: requestKey, placements: [] })
       })
     return () => { active = false }
-  }, [params, product, limit, requestKey])
+  }, [params, product, limit, requestKey, layout])
 
   const placements = response?.key === requestKey ? response.placements : []
+  const featuredIndex = featured?.key === requestKey ? featured.index : 0
+  const featuredPlacement = placements[featuredIndex]
+
+  useEffect(() => {
+    if (layout !== 'product-page' || !featuredPlacement) return
+    advertisingApi.impressions([featuredPlacement.campaign_offer_id]).catch(error => {
+      console.error('Sponsored product impression could not be recorded.', error)
+    })
+  }, [layout, featuredPlacement])
+
   if (!placements.length) return null
   const modalPlacements = modalResponse?.key === modalRequestKey ? modalResponse.placements : placements
+
+  if (layout === 'product-page') {
+    return (
+      <section className="mb-1 rounded-2xl border border-[#CBD5FF] bg-gradient-to-r from-[#F1F4FF] to-[#F5F8FF] p-3 shadow-sm sm:p-4" aria-label={title}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-1.5 text-[14px] font-extrabold text-[#155EEF] sm:text-[16px]">
+            <Sparkles size={16} fill="currentColor" /> {title}
+          </h2>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#C7D2FE] bg-white px-2.5 py-1 text-[9px] font-extrabold text-[#3155D9] shadow-sm sm:text-[10px]">
+            <span className="h-2 w-2 rounded-full bg-[#4169F5]" /> Sponsored
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {featuredPlacement && (
+            <ProductCard
+              product={toSponsoredProduct(featuredPlacement)}
+              sponsoredCampaignOfferId={featuredPlacement.campaign_offer_id}
+              variant="product-page"
+            />
+          )}
+          {placements.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setFeatured({ key: requestKey, index: (featuredIndex + 1) % placements.length })}
+              aria-label="Next sponsored product"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#1E40AF] shadow-sm transition hover:bg-[#E8EEFF] focus:outline-none focus:ring-2 focus:ring-[#4169F5]"
+            >
+              <ChevronRight size={22} />
+            </button>
+          )}
+        </div>
+      </section>
+    )
+  }
 
   return (
     <>

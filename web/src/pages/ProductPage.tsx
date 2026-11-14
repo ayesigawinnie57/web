@@ -694,6 +694,8 @@ export default function ProductPage() {
             {/* Product info */}
             <div className="flex-1 min-w-0 flex flex-col gap-4">
 
+              {product && <SponsoredProductsSection category={product.category} product={product.id} excludeProductIds={[product.id, ...related.map(item => item.id), ...alsoBy.map(item => item.id)]} title="Sponsored Products" layout="product-page" />}
+
               {/* Category + name */}
               <div>
                 <div className="flex items-center justify-between gap-3 mb-2">
@@ -1111,8 +1113,6 @@ export default function ProductPage() {
             </div>
             {seller && <SellerInformationPanel seller={seller} followBusy={followBusy} followError={followError} onFollow={toggleSellerFollow} />}
           </div>
-
-          {product && <SponsoredProductsSection category={product.category} product={product.id} excludeProductIds={[product.id, ...related.map(item => item.id), ...alsoBy.map(item => item.id)]} title="Sponsored Products" />}
 
           {/* Related Products */}
           {related.length > 0 && (
