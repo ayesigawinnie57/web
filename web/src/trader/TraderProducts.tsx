@@ -9,6 +9,7 @@ import {
 import ProductVariantEditor, { type ProductVariantDraft } from '../components/ProductVariantEditor'
 import CategoryCascadeSelect from '../components/CategoryCascadeSelect'
 import RichTextEditor from '../components/RichTextEditor'
+import { sanitizeRichText } from '../lib/sanitizeRichText'
 
 const fmt = (n: string | number) => `UGX ${Number(n).toLocaleString()}`
 
@@ -1270,7 +1271,10 @@ export default function TraderProducts() {
             {selectedCatalogProduct
               ? <div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
                   <p className="mb-2 text-[13px] font-bold text-[#071A2B]">Shared product description</p>
-                  <p className="whitespace-pre-wrap text-[12px] text-[#475569]">{form.long_description}</p>
+                  <div
+                    className="whitespace-pre-wrap text-[12px] text-[#475569] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-bold [&_b]:font-bold"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichText(form.long_description) }}
+                  />
                 </div>
               : <div>
                   <label className="block text-[13px] font-bold text-[#071A2B] mb-2">Long Description</label>
