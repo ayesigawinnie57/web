@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronDown, Filter, RotateCcw } from 'lucide-react'
 import { Helmet } from 'react-helmet-async'
@@ -14,9 +14,13 @@ export default function ShopPage() {
   const [related, setRelated] = useState<Product[]>([])
   const [categories, setCategories] = useState<ApiCategory[]>([])
   const [totalProductsCount, setTotalProductsCount] = useState(0)
+  const [nextProductsPage, setNextProductsPage] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadMoreError, setLoadMoreError] = useState(false)
   const [error, setError] = useState(false)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const loadMoreRequestRef = useRef(0)
 
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? ''
@@ -31,7 +35,11 @@ export default function ShopPage() {
   const ordering = searchParams.get('ordering') ?? ''
 
   useEffect(() => {
+    loadMoreRequestRef.current += 1
     setLoading(true)
+    setLoadingMore(false)
+    setNextProductsPage(null)
+    setLoadMoreError(false)
     setRelated([])
     const params = new URLSearchParams()
     if (query) params.set('search', query)
@@ -59,6 +67,7 @@ export default function ShopPage() {
         if (active) {
           setCategories(rawCategories)
           setProducts(available)
+          setNextProductsPage(Array.isArray(productResponse.data) ? null : (productResponse.data as any).next ?? null)
           setTotalProductsCount(saleOnly || Array.isArray(productResponse.data)
             ? available.length
             : (productResponse.data as any).count ?? available.length)
@@ -86,6 +95,32 @@ export default function ShopPage() {
       stopWatching()
     }
   }, [query, category, saleOnly, topBought, brand, priceMin, priceMax, availableOnly, minRating, seller, ordering])
+
+  const loadMoreProducts = async () => {
+    if (!nextProductsPage || loadingMore) return
+    const requestId = ++loadMoreRequestRef.current
+    setLoadingMore(true)
+    setLoadMoreError(false)
+    try {
+      const nextParams = new URL(nextProductsPage, window.location.origin).searchParams.toString()
+      const { data } = await productsApi.list(nextParams)
+      if (requestId !== loadMoreRequestRef.current) return
+      const raw = Array.isArray(data) ? data : (data as any).results ?? []
+      let nextProducts = raw.map(toProduct)
+      if (saleOnly) nextProducts = nextProducts.filter((product: Product) =>
+        product.originalPrice && product.originalPrice > product.price,
+      )
+      setProducts(current => {
+        const existingIds = new Set(current.map(product => product.id))
+        return [...current, ...nextProducts.filter((product: Product) => !existingIds.has(product.id))]
+      })
+      setNextProductsPage(Array.isArray(data) ? null : (data as any).next ?? null)
+    } catch {
+      if (requestId === loadMoreRequestRef.current) setLoadMoreError(true)
+    } finally {
+      if (requestId === loadMoreRequestRef.current) setLoadingMore(false)
+    }
+  }
 
   const updateFilter = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams)
@@ -276,9 +311,24 @@ export default function ShopPage() {
         ) : loading ? (
           <div className="py-20 text-center text-[13px] text-[#64748B]">Loading products...</div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {products.map(p => <ProductCard key={p.id} product={p} />)}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {products.map(p => <ProductCard key={p.id} product={p} />)}
+            </div>
+            {nextProductsPage && (
+              <div className="mt-8 text-center">
+                {loadMoreError && <p role="alert" className="mb-2 text-[12px] text-red-600">Could not load more products. Please try again.</p>}
+                <button
+                  type="button"
+                  onClick={loadMoreProducts}
+                  disabled={loadingMore}
+                  className="rounded-lg bg-[#071A2B] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60"
+                >
+                  {loadingMore ? 'Loading...' : 'Load more products'}
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div>
             <div className="py-12 text-center">
@@ -288,6 +338,20 @@ export default function ShopPage() {
               <p className="text-[13px] text-[#64748B] mt-1">Check back soon or explore related products below.</p>
               <Link to="/shop" className="inline-block mt-4 text-[13px] font-bold text-[#1E3A8A]">Browse all products</Link>
             </div>
+
+            {nextProductsPage && (
+              <div className="mb-8 text-center">
+                {loadMoreError && <p role="alert" className="mb-2 text-[12px] text-red-600">Could not load more products. Please try again.</p>}
+                <button
+                  type="button"
+                  onClick={loadMoreProducts}
+                  disabled={loadingMore}
+                  className="rounded-lg bg-[#071A2B] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60"
+                >
+                  {loadingMore ? 'Loading...' : 'Load more products'}
+                </button>
+              </div>
+            )}
 
             {related.length > 0 && (
               <div className="mt-4">
