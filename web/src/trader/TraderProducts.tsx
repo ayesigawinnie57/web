@@ -158,6 +158,9 @@ export default function TraderProducts() {
   const [catalogBrowseHasMore, setCatalogBrowseHasMore] = useState(false)
   const [catalogBrowseLoading, setCatalogBrowseLoading] = useState(false)
   const [catalogBrowseError, setCatalogBrowseError] = useState('')
+  const [sharedCatalogSearchMatches, setSharedCatalogSearchMatches] = useState<ApiCatalogProduct[] | null>(null)
+  const [sharedCatalogSearchLoading, setSharedCatalogSearchLoading] = useState(false)
+  const [sharedCatalogSearchError, setSharedCatalogSearchError] = useState('')
   const [selectedCatalogImages, setSelectedCatalogImages] = useState<string[]>([])
   const [catalogRequestForm, setCatalogRequestForm] = useState(() => ({
     name: (location.state as { requestProductName?: string } | null)?.requestProductName ?? '',
@@ -241,6 +244,43 @@ export default function TraderProducts() {
       .finally(() => { if (active) setCatalogBrowseLoading(false) })
     return () => { active = false }
   }, [view, isCatalogRequestPage, reloadKey])
+
+  useEffect(() => {
+    if (view !== 'list' || isCatalogRequestPage) return
+    const query = search.trim()
+    if (!query) {
+      setSharedCatalogSearchMatches(null)
+      setSharedCatalogSearchError('')
+      setSharedCatalogSearchLoading(false)
+      return
+    }
+    if (query.length < 2) {
+      setSharedCatalogSearchMatches([])
+      setSharedCatalogSearchError('')
+      setSharedCatalogSearchLoading(false)
+      return
+    }
+
+    let active = true
+    setSharedCatalogSearchMatches([])
+    setSharedCatalogSearchLoading(true)
+    setSharedCatalogSearchError('')
+    const timeout = window.setTimeout(() => {
+      productsApi.searchCatalog(query)
+        .then(({ data }) => { if (active) setSharedCatalogSearchMatches(data) })
+        .catch(cause => {
+          if (!active) return
+          setSharedCatalogSearchMatches([])
+          setSharedCatalogSearchError(getLoadError(cause, 'shared catalog products'))
+        })
+        .finally(() => { if (active) setSharedCatalogSearchLoading(false) })
+    }, 250)
+
+    return () => {
+      active = false
+      window.clearTimeout(timeout)
+    }
+  }, [view, isCatalogRequestPage, search])
 
   const loadMoreCatalogProducts = async () => {
     const nextPage = catalogBrowsePage + 1
@@ -1404,9 +1444,26 @@ export default function TraderProducts() {
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     (p.category_name ?? '').toLowerCase().includes(search.toLowerCase())
   )
+  const searchQuery = search.trim()
+  const visibleCatalogProducts = searchQuery
+    ? sharedCatalogSearchMatches ?? []
+    : catalogBrowseProducts
 
   return (
     <div className="p-6 md:p-8">
+      <div className="sticky top-0 z-20 -mx-6 bg-[#F8FAFC] px-6 pb-3 pt-2 md:-mx-8 md:px-8">
+        <div className="flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-3">
+          <Search size={14} className="shrink-0 text-[#94A3B8]" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search shared catalog and your products…"
+            className="flex-1 bg-transparent text-[13px] text-[#071A2B] outline-none placeholder-[#94A3B8]"
+          />
+          {search && <button onClick={() => setSearch('')} aria-label="Clear product search"><X size={13} className="text-[#94A3B8]" /></button>}
+        </div>
+      </div>
+
       <section className="mb-8 rounded-xl border border-[#E2E8F0] bg-white p-5">
         <div className="mb-4">
           <h2 className="text-[15px] font-extrabold text-[#071A2B]">Shared catalog</h2>
@@ -1414,14 +1471,22 @@ export default function TraderProducts() {
             Approved products are available to every trader. Choose one to add your own price, stock, and variants.
           </p>
         </div>
-        {catalogBrowseError && <p role="alert" className="mb-3 text-[13px] text-red-600">{catalogBrowseError}</p>}
-        {catalogBrowseLoading && catalogBrowseProducts.length === 0 ? (
+        {!searchQuery && catalogBrowseError && <p role="alert" className="mb-3 text-[13px] text-red-600">{catalogBrowseError}</p>}
+        {searchQuery.length >= 2 && sharedCatalogSearchError && <p role="alert" className="mb-3 text-[13px] text-red-600">{sharedCatalogSearchError}</p>}
+        {searchQuery.length === 1 ? (
+          <p className="py-6 text-center text-[13px] text-[#64748B]">Enter at least 2 characters to search the shared catalog.</p>
+        ) : searchQuery.length >= 2 && sharedCatalogSearchLoading ? (
           <p className="py-6 text-center text-[13px] text-[#64748B]">Loading shared products…</p>
-        ) : catalogBrowseProducts.length === 0 ? (
+        ) : searchQuery.length >= 2 && sharedCatalogSearchError ? null
+        : searchQuery.length >= 2 && visibleCatalogProducts.length === 0 ? (
+          <p className="py-6 text-center text-[13px] text-[#64748B]">No shared catalog products match “{searchQuery}”.</p>
+        ) : !searchQuery && catalogBrowseLoading && catalogBrowseProducts.length === 0 ? (
+          <p className="py-6 text-center text-[13px] text-[#64748B]">Loading shared products…</p>
+        ) : !searchQuery && catalogBrowseProducts.length === 0 ? (
           !catalogBrowseError && <p className="py-6 text-center text-[13px] text-[#64748B]">No approved shared products are available yet.</p>
-        ) : (
+        ) : !searchQuery && catalogBrowseError ? null : (
           <div className="grid gap-3">
-            {catalogBrowseProducts.map(product => (
+            {visibleCatalogProducts.map(product => (
               <article key={product.id} className="grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-4 rounded-xl border border-[#E2E8F0] p-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
                 <CatalogResultImage references={product.image_references ?? []} name={product.name} />
                 <div className="min-w-0">
@@ -1445,7 +1510,7 @@ export default function TraderProducts() {
             ))}
           </div>
         )}
-        {catalogBrowseHasMore && (
+        {!searchQuery && catalogBrowseHasMore && (
           <button
             type="button"
             onClick={loadMoreCatalogProducts}
@@ -1476,17 +1541,6 @@ export default function TraderProducts() {
           </button>
         </div>
       )}
-
-      <div className="flex items-center gap-2 bg-white border border-[#E2E8F0] rounded-lg px-3 h-10 mb-5">
-        <Search size={14} className="text-[#94A3B8] shrink-0" />
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search products…"
-          className="flex-1 text-[13px] text-[#071A2B] placeholder-[#94A3B8] outline-none bg-transparent"
-        />
-        {search && <button onClick={() => setSearch('')}><X size={13} className="text-[#94A3B8]" /></button>}
-      </div>
 
       {loading ? (
         <div className="flex justify-center py-20">
