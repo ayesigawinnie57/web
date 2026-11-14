@@ -55,7 +55,7 @@ export default function ProductCard({ product, sponsoredCampaignOfferId, variant
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-[12px] font-extrabold leading-snug text-[#071A2B] group-hover:text-[#1D4ED8] sm:text-[14px]">{product.name}</p>
           <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-[14px] font-extrabold text-[#1D4ED8] sm:text-[17px]">UGX {product.price.toLocaleString()}</span>
+            <span className="text-[14px] font-extrabold text-[#1D4ED8] sm:text-[17px]">{product.sellerCount ? 'From ' : ''}UGX {product.price.toLocaleString()}</span>
             {product.originalPrice && (
               <span className="text-[10px] font-medium text-[#64748B] line-through sm:text-[12px]">UGX {product.originalPrice.toLocaleString()}</span>
             )}
@@ -111,11 +111,16 @@ export default function ProductCard({ product, sponsoredCampaignOfferId, variant
       <div className="p-2.5 sm:p-3">
         <p className="mb-1.5 truncate text-[11px] font-bold leading-4 text-[#071A2B] sm:text-[12px]">{product.name}</p>
         <div className="flex items-center flex-wrap gap-1">
-          <span className="text-[11px] font-extrabold text-[#1E3A8A] sm:text-[12px]">UGX {product.price.toLocaleString()}</span>
+          <span className="text-[11px] font-extrabold text-[#1E3A8A] sm:text-[12px]">{product.sellerCount ? 'From ' : ''}UGX {product.price.toLocaleString()}</span>
           {product.originalPrice && (
             <span className="text-[9px] text-[#94A3B8] line-through">UGX {product.originalPrice.toLocaleString()}</span>
           )}
         </div>
+        {(product.sellerCount ?? 0) > 0 && (
+          <p className="mt-1 text-[9px] font-semibold text-[#64748B]">
+            {product.sellerCount} {product.sellerCount === 1 ? 'seller' : 'sellers'}
+          </p>
+        )}
         {product.rating > 0 && (
           <div className="flex items-center gap-0.5 mt-1">
             <span className="text-[12px] text-yellow-400">★</span>

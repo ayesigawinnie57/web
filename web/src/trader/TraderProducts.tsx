@@ -435,6 +435,12 @@ export default function TraderProducts() {
   }
 
   const selectCatalogProduct = (product: ApiCatalogProduct) => {
+    const existingOffer = products.find(offer => offer.catalog_product?.id === product.id)
+    if (existingOffer) {
+      setCatalogRequestMessage('You already have an offer for this product. Edit your existing offer instead.')
+      openEdit(existingOffer)
+      return
+    }
     setSelectedCatalogProduct(product)
     setApprovedVariantOptions(product.variants.map(variant => ({
       options: variant.options,
@@ -1507,7 +1513,7 @@ export default function TraderProducts() {
                     }}
                     className="mt-3 rounded-lg bg-[#22C55E] px-4 py-2.5 text-[12px] font-bold text-white"
                   >
-                    Sell this product
+                    {products.some(offer => offer.catalog_product?.id === product.id) ? 'Edit My Offer' : 'Sell this product'}
                   </button>
                 </div>
               </article>

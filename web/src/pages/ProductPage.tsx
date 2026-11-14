@@ -403,8 +403,11 @@ export default function ProductPage() {
     : product.originalPrice
   const currentStock = selectedVariant?.stock ?? product.stock
   const inCart = cartItems.some(item =>
-    item.product_id === product.id && (item.variant_id ?? null) === (selectedVariant?.id ?? null),
+    item.product_id === product.id
+    && (item.trader_offer_id ?? null) === (product.offerId ?? null)
+    && (item.variant_id ?? null) === (selectedVariant?.id ?? null),
   )
+  const offerRequired = product.catalogProductId !== null
   const discount = currentOriginalPrice
     ? Math.round((1 - currentPrice / currentOriginalPrice) * 100)
     : null
@@ -537,7 +540,7 @@ export default function ProductPage() {
     if (inCart) { navigate('/cart'); return }
     setCartBusy(true)
     try {
-      const item = await cartApi.add(product, qty, selectedVariant?.id)
+      const item = await cartApi.add(product, qty, selectedVariant?.id, product.offerId)
       setCartItems(current => [...current.filter(existing => existing.id !== item.id), item])
       showToast(`${product.name} added to cart`)
     } catch {
@@ -555,7 +558,7 @@ export default function ProductPage() {
     if (inCart) { navigate('/cart'); return }
     setCartBusy(true)
     try {
-      const item = await cartApi.add(product, qty, selectedVariant?.id)
+      const item = await cartApi.add(product, qty, selectedVariant?.id, product.offerId)
       setCartItems(current => [...current.filter(existing => existing.id !== item.id), item])
       navigate('/cart')
     } catch {
@@ -735,11 +738,11 @@ export default function ProductPage() {
                     <div className="space-y-2">
                       {catalogOffers.map(offer => (
                         <button
-                          key={offer.id}
+                          key={offer.offerId ?? offer.id}
                           type="button"
-                          aria-pressed={offer.id === product.id}
+                          aria-pressed={offer.offerId === product.offerId}
                           onClick={() => selectCatalogOffer(offer)}
-                          className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left ${offer.id === product.id ? 'border-[#1E3A8A] bg-blue-50' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
+                          className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left ${offer.offerId === product.offerId ? 'border-[#1E3A8A] bg-blue-50' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
                         >
                           <span className="min-w-0">
                             <span className="block truncate text-[12px] font-bold text-[#334155]">{offer.sellerName || 'Marketplace seller'}</span>
@@ -923,7 +926,7 @@ export default function ProductPage() {
                 <div className="flex gap-3">
                   {/* Add to cart */}
                   <button
-                    disabled={currentStock === 0 || !selectionComplete || cartBusy}
+                    disabled={currentStock === 0 || !selectionComplete || (offerRequired && !product.offerId) || cartBusy}
                     onClick={addToCart}
                     className="flex-1 h-11 bg-[#1E3A8A] text-white font-bold text-[14px] rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
@@ -935,7 +938,7 @@ export default function ProductPage() {
 
                   {/* Buy now */}
                   <button
-                    disabled={currentStock === 0 || !selectionComplete || cartBusy}
+                    disabled={currentStock === 0 || !selectionComplete || (offerRequired && !product.offerId) || cartBusy}
                     onClick={buyNow}
                     className="flex-1 h-11 border-2 border-[#1E3A8A] text-[#1E3A8A] font-bold text-[14px] rounded-xl hover:bg-[#EFF6FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >

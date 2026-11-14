@@ -1,21 +1,26 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
-import { adminProductsApi, type ApiProduct } from '../../lib/api'
+import { adminProductsApi, tradersApi, type ApiProduct, type ApiTraderProduct } from '../../lib/api'
 import ErrorBanner, { parseError } from '../ErrorBanner'
 
 export default function AdminProducts() {
   const navigate = useNavigate()
   const [products, setProducts] = useState<ApiProduct[]>([])
+  const [offers, setOffers] = useState<ApiTraderProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [offerError, setOfferError] = useState('')
 
   useEffect(() => {
     adminProductsApi.list()
       .then(({ data }) => setProducts(Array.isArray(data) ? data : (data as any).results ?? []))
       .catch(err => setError(parseError(err, 'Failed to load products.')))
       .finally(() => setLoading(false))
+    tradersApi.adminOffers()
+      .then(({ data }) => setOffers(data))
+      .catch(err => setOfferError(parseError(err, 'Failed to load trader offers for review.')))
   }, [])
 
   const handleDelete = async (id: number, name: string) => {
@@ -39,6 +44,21 @@ export default function AdminProducts() {
       setProducts(current => current.map(product => product.id === data.id ? data : product))
     } catch (err) {
       setError(parseError(err, 'Failed to update product review status.'))
+    }
+
+  }
+
+  const updateOfferReview = async (item: ApiTraderProduct, reviewStatus: ApiTraderProduct['review_status']) => {
+    const needsReason = reviewStatus === 'rejected' || reviewStatus === 'changes_required'
+    const reviewNote = needsReason
+      ? window.prompt(reviewStatus === 'rejected' ? 'Reason for rejection:' : 'Changes required:')
+      : ''
+    if (needsReason && !reviewNote?.trim()) return
+    try {
+      await tradersApi.reviewOffer(item.uuid, reviewStatus, reviewNote ?? '')
+      setOffers(current => current.filter(offer => offer.uuid !== item.uuid))
+    } catch (err) {
+      setOfferError(parseError(err, 'Failed to update offer review status.'))
     }
   }
 
@@ -73,6 +93,35 @@ export default function AdminProducts() {
       </div>
 
       {error && <ErrorBanner message={error} onDismiss={() => setError('')} />}
+      {offerError && <ErrorBanner message={offerError} onDismiss={() => setOfferError('')} />}
+
+      {offers.length > 0 && (
+        <section className="mb-6 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+          <h2 className="mb-3 text-[14px] font-extrabold text-[#071A2B]">
+            Trader offers awaiting review ({offers.length})
+          </h2>
+          <div className="flex flex-col gap-2">
+            {offers.map(offer => (
+              <div key={offer.uuid} className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-100 bg-white p-3">
+                {offer.image_url
+                  ? <img src={offer.image_url} alt={offer.name} className="h-12 w-12 rounded-lg object-cover" />
+                  : <div className="h-12 w-12 rounded-lg bg-[#F8FAFC]" />}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-bold text-[#071A2B]">{offer.name}</p>
+                  <p className="text-[11px] text-[#64748B]">
+                    {offer.trader_name || 'Trader'} · UGX {Number(offer.price).toLocaleString()} · Stock {offer.stock}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => updateOfferReview(offer, 'approved')} className="rounded-lg bg-green-50 px-2.5 py-1.5 text-[10px] font-bold text-green-700">Approve</button>
+                  <button onClick={() => updateOfferReview(offer, 'changes_required')} className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-[10px] font-bold text-amber-700">Request changes</button>
+                  <button onClick={() => updateOfferReview(offer, 'rejected')} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[10px] font-bold text-red-700">Reject</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
         {filters.map(([value, label]) => (

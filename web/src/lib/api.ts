@@ -156,6 +156,8 @@ api.interceptors.response.use(
 
 export type ApiProduct = {
   id: number
+  trader_offer_id?: number | null
+  seller_count?: number
   catalog_product_id?: number | null
   slug: string
   name: string
@@ -326,6 +328,8 @@ export function getCategoryUrl(categories: ApiCategory[], category: ApiCategory)
 
 export type Product = {
   id: number
+  offerId?: number | null
+  sellerCount?: number
   catalogProductId: number | null
   slug: string
   name: string
@@ -368,6 +372,8 @@ function unescapeHtml(str: string): string {
 
 export const toProduct = (p: ApiProduct): Product => ({
   id: p.id,
+  offerId: p.trader_offer_id ?? null,
+  sellerCount: p.seller_count ?? 0,
   catalogProductId: p.catalog_product_id ?? null,
   slug: p.slug,
   name: p.name,
@@ -447,6 +453,7 @@ export type ApiReview = {
 export type CartItem = {
   id: number
   product_id: number
+  trader_offer_id?: number | null
   variant_id?: number | null
   variant_options?: Record<string, string | number | boolean>
   variant_sku?: string
@@ -668,6 +675,7 @@ export const cartApi = {
       : getGuestCart().map(item => ({
         id: item.id,
         product_id: item.product_id,
+        trader_offer_id: item.trader_offer_id ?? null,
         variant_id: item.variant_id ?? null,
         variant_options: item.variant_options ?? {},
         quantity: item.quantity,
@@ -681,12 +689,13 @@ export const cartApi = {
   list: async () => hasAccessToken()
     ? (await api.get<CartItem[]>('/api/auth/cart/')).data
     : getGuestCart(),
-  add: async (product: Product, quantity: number, variantId?: number) => {
+  add: async (product: Product, quantity: number, variantId?: number, traderOfferId = product.offerId) => {
     const selectedVariant = product.variants.find(variant => variant.id === variantId)
     const productImage = selectedVariant?.image_url ?? product.image ?? null
     if (hasAccessToken()) {
       const response = await api.post<CartItem>('/api/auth/cart/', {
         product_id: product.id,
+        trader_offer_id: traderOfferId ?? null,
         variant_id: variantId ?? null,
         product_name: product.name,
         product_price: product.price,
@@ -702,7 +711,9 @@ export const cartApi = {
 
     const items = getGuestCart()
     const existing = items.find(item =>
-      item.product_id === product.id && (item.variant_id ?? null) === (variantId ?? null),
+      item.product_id === product.id
+      && (item.trader_offer_id ?? null) === (traderOfferId ?? null)
+      && (item.variant_id ?? null) === (variantId ?? null),
     )
     if (existing) {
       existing.quantity += quantity
@@ -711,6 +722,7 @@ export const cartApi = {
     else items.push({
       id: Math.max(Date.now(), ...items.map(item => item.id + 1)),
       product_id: product.id,
+      trader_offer_id: traderOfferId ?? null,
       variant_id: variantId ?? null,
       variant_options: product.variants.find(variant => variant.id === variantId)?.options ?? {},
       variant_sku: product.variants.find(variant => variant.id === variantId)?.sku ?? '',
@@ -1156,6 +1168,7 @@ export type ApiTraderFinance = {
 export type ApiTraderProduct = {
   id: number
   public_product_id: number | null
+  trader_name?: string
   catalog_product: Pick<ApiCatalogProduct, 'id' | 'name' | 'brand' | 'model' | 'product_type' | 'category_id' | 'variant_options' | 'variants' | 'image_references'> | null
   catalog_image_references: string[]
   uuid: string
@@ -1350,6 +1363,10 @@ export const tradersApi = {
   me: () => api.get<{ id: number; uuid: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; email: string; full_name: string; agreement_required: boolean; agreement_signed_at: string | null } | null>('/api/traders/me/').catch(() => ({ data: null })),
   adminList: (status?: string) => api.get<ApiTraderApplication[]>(`/api/traders/admin/${status ? `?status=${status}` : ''}`),
   adminFinance: () => api.get<ApiTraderFinance>('/api/traders/admin/finance/'),
+  adminOffers: (status = 'pending_review') =>
+    api.get<ApiTraderProduct[]>(`/api/traders/admin/offers/${status ? `?status=${status}` : ''}`),
+  reviewOffer: (offerUuid: string, review_status: ApiTraderProduct['review_status'], review_note = '') =>
+    api.post<ApiTraderProduct>(`/api/traders/admin/offers/${offerUuid}/review/`, { review_status, review_note }),
   updateWithdrawal: (id: number, data: { status: 'processing' | 'paid' | 'rejected'; transfer_reference?: string; admin_note?: string }) =>
     api.post<ApiTraderWithdrawal>(`/api/traders/admin/withdrawals/${id}/`, data),
   adminGet: (id: number) => api.get<ApiTraderApplication>(`/api/traders/admin/${id}/`),
