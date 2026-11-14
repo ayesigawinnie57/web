@@ -224,7 +224,11 @@ export default function ProductPage() {
           const { data: offerData } = await productsApi.catalogOffers(data.catalog_product_id)
           const offers = offerData.map(offer => ({ ...toProduct(offer), slug }))
           setCatalogOffers(offers)
-          p = offers.find(offer => offer.stock > 0) ?? offers[0] ?? p
+          const matchingOffer = offers.find(offer =>
+            (data.trader_offer_id != null && offer.offerId === data.trader_offer_id)
+            || (data.seller_uuid && offer.sellerUuid === data.seller_uuid),
+          )
+          p = matchingOffer ?? offers.find(offer => offer.stock > 0) ?? offers[0] ?? p
         } catch (error) {
           console.error('Failed to load sellers for the catalog product.', error)
           setCatalogOffers([p])
