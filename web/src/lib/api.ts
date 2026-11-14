@@ -524,6 +524,11 @@ export const productsApi = {
   categories: () => cachedRequest('products:categories:v4', () => api.get<ApiCategory[]>('/api/products/categories/')),
   searchCatalog: (query: string) =>
     api.get<ApiCatalogProduct[]>('/api/products/catalog/', { params: { q: query } }),
+  browseCatalog: (page = 1) =>
+    api.get<{ count: number; next: string | null; previous: string | null; results: ApiCatalogProduct[] }>(
+      '/api/products/catalog/browse/',
+      { params: { page } },
+    ),
   requestCatalogProduct: (data: FormData) =>
     api.post<{ id: number; name: string; review_status: string; detail: string }>('/api/products/catalog/', data, {
       headers: { 'Content-Type': 'multipart/form-data' },

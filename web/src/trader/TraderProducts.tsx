@@ -153,6 +153,11 @@ export default function TraderProducts() {
   const [catalogMatches, setCatalogMatches] = useState<ApiCatalogProduct[]>([])
   const [catalogSearchLoading, setCatalogSearchLoading] = useState(false)
   const [catalogSearchError, setCatalogSearchError] = useState('')
+  const [catalogBrowseProducts, setCatalogBrowseProducts] = useState<ApiCatalogProduct[]>([])
+  const [catalogBrowsePage, setCatalogBrowsePage] = useState(1)
+  const [catalogBrowseHasMore, setCatalogBrowseHasMore] = useState(false)
+  const [catalogBrowseLoading, setCatalogBrowseLoading] = useState(false)
+  const [catalogBrowseError, setCatalogBrowseError] = useState('')
   const [selectedCatalogImages, setSelectedCatalogImages] = useState<string[]>([])
   const [catalogRequestForm, setCatalogRequestForm] = useState(() => ({
     name: (location.state as { requestProductName?: string } | null)?.requestProductName ?? '',
@@ -217,6 +222,41 @@ export default function TraderProducts() {
       window.clearTimeout(timeout)
     }
   }, [view, catalogQuery, selectedCatalogProduct, isCatalogRequestPage])
+
+  useEffect(() => {
+    if (view !== 'list' || isCatalogRequestPage) return
+    let active = true
+    setCatalogBrowseLoading(true)
+    setCatalogBrowseError('')
+    productsApi.browseCatalog()
+      .then(({ data }) => {
+        if (!active) return
+        setCatalogBrowseProducts(data.results)
+        setCatalogBrowsePage(1)
+        setCatalogBrowseHasMore(Boolean(data.next))
+      })
+      .catch(cause => {
+        if (active) setCatalogBrowseError(getLoadError(cause, 'shared catalog products'))
+      })
+      .finally(() => { if (active) setCatalogBrowseLoading(false) })
+    return () => { active = false }
+  }, [view, isCatalogRequestPage, reloadKey])
+
+  const loadMoreCatalogProducts = async () => {
+    const nextPage = catalogBrowsePage + 1
+    setCatalogBrowseLoading(true)
+    setCatalogBrowseError('')
+    try {
+      const { data } = await productsApi.browseCatalog(nextPage)
+      setCatalogBrowseProducts(current => [...current, ...data.results])
+      setCatalogBrowsePage(nextPage)
+      setCatalogBrowseHasMore(Boolean(data.next))
+    } catch (cause) {
+      setCatalogBrowseError(getLoadError(cause, 'shared catalog products'))
+    } finally {
+      setCatalogBrowseLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (view !== 'add' || selectedCatalogProduct || isCatalogRequestPage) return
@@ -1367,6 +1407,56 @@ export default function TraderProducts() {
 
   return (
     <div className="p-6 md:p-8">
+      <section className="mb-8 rounded-xl border border-[#E2E8F0] bg-white p-5">
+        <div className="mb-4">
+          <h2 className="text-[15px] font-extrabold text-[#071A2B]">Shared catalog</h2>
+          <p className="mt-1 text-[12px] text-[#64748B]">
+            Approved products are available to every trader. Choose one to add your own price, stock, and variants.
+          </p>
+        </div>
+        {catalogBrowseError && <p role="alert" className="mb-3 text-[13px] text-red-600">{catalogBrowseError}</p>}
+        {catalogBrowseLoading && catalogBrowseProducts.length === 0 ? (
+          <p className="py-6 text-center text-[13px] text-[#64748B]">Loading shared products…</p>
+        ) : catalogBrowseProducts.length === 0 ? (
+          !catalogBrowseError && <p className="py-6 text-center text-[13px] text-[#64748B]">No approved shared products are available yet.</p>
+        ) : (
+          <div className="grid gap-3">
+            {catalogBrowseProducts.map(product => (
+              <article key={product.id} className="grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-4 rounded-xl border border-[#E2E8F0] p-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
+                <CatalogResultImage references={product.image_references ?? []} name={product.name} />
+                <div className="min-w-0">
+                  <h3 className="font-bold text-[#071A2B]">{product.name}</h3>
+                  <p className="mt-1 text-[12px] text-[#64748B]">
+                    {[product.brand, product.model, product.category_name].filter(Boolean).join(' · ')}
+                  </p>
+                  {product.short_description && <p className="mt-1 text-[12px] text-[#475569] line-clamp-2">{product.short_description}</p>}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      openAdd()
+                      selectCatalogProduct(product)
+                    }}
+                    className="mt-3 rounded-lg bg-[#22C55E] px-4 py-2.5 text-[12px] font-bold text-white"
+                  >
+                    Sell this product
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+        {catalogBrowseHasMore && (
+          <button
+            type="button"
+            onClick={loadMoreCatalogProducts}
+            disabled={catalogBrowseLoading}
+            className="mt-4 w-full rounded-lg border border-[#E2E8F0] px-4 py-2.5 text-[12px] font-bold text-[#071A2B] disabled:opacity-60"
+          >
+            {catalogBrowseLoading ? 'Loading…' : 'Load more products'}
+          </button>
+        )}
+      </section>
+
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-extrabold text-[#071A2B]">Products ({products.length})</h1>
         <button onClick={openAdd} className="flex items-center gap-2 bg-[#22C55E] text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:opacity-90">

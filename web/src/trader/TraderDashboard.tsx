@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Store, ChevronRight, Megaphone } from 'lucide-react'
-import { advertisingApi, tradersApi, type ApiAdvertisingDashboard, type ApiTraderDashboard, type ApiTraderApplication, type ApiTraderSale, type ApiTraderExpense, type ApiTraderInventoryItem, type ApiTraderOrderItem, type ApiTraderProduct, type ApiTraderWallet } from '../lib/api'
+import { Store, ChevronRight, Megaphone, Package } from 'lucide-react'
+import { advertisingApi, cloudinaryUrl, productsApi, tradersApi, type ApiAdvertisingDashboard, type ApiCatalogProduct, type ApiTraderDashboard, type ApiTraderApplication, type ApiTraderSale, type ApiTraderExpense, type ApiTraderInventoryItem, type ApiTraderOrderItem, type ApiTraderProduct, type ApiTraderWallet } from '../lib/api'
 
 const fmt = (n: number) => `UGX ${Number(n).toLocaleString()}`
 const fmtShort = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n)
@@ -54,6 +54,9 @@ export default function TraderDashboard() {
   const [wallet, setWallet] = useState<ApiTraderWallet | null>(null)
   const [advertising, setAdvertising] = useState<ApiAdvertisingDashboard | null>(null)
   const [advertisingError, setAdvertisingError] = useState(false)
+  const [sharedCatalog, setSharedCatalog] = useState<ApiCatalogProduct[]>([])
+  const [sharedCatalogLoading, setSharedCatalogLoading] = useState(true)
+  const [sharedCatalogError, setSharedCatalogError] = useState(false)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
@@ -86,6 +89,20 @@ export default function TraderDashboard() {
     return () => { active = false }
   }, [traderUuid])
 
+  useEffect(() => {
+    let active = true
+    productsApi.browseCatalog()
+      .then(({ data: result }) => {
+        if (active) {
+          setSharedCatalog(result.results.slice(0, 4))
+          setSharedCatalogError(false)
+        }
+      })
+      .catch(() => { if (active) setSharedCatalogError(true) })
+      .finally(() => { if (active) setSharedCatalogLoading(false) })
+    return () => { active = false }
+  }, [])
+
   if (loading) return <div className="flex justify-center py-32"><div className="w-8 h-8 border-2 border-[#22C55E] border-t-transparent rounded-full animate-spin" /></div>
 
   // Derived
@@ -116,6 +133,53 @@ export default function TraderDashboard() {
           <p className="text-[12px] text-[#64748B]">{profile?.location} · {profile?.business_type.replace('_', ' ')}</p>
         </div>
       </div>
+
+      <section className="mb-8 rounded-xl border border-[#E2E8F0] bg-white p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[14px] font-extrabold text-[#071A2B]">Products available to sell</h2>
+            <p className="mt-1 text-[11px] text-[#64748B]">Approved shared products are available to every trader.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate(href('products'))}
+            className="text-[11px] font-bold text-[#16A34A]"
+          >
+            Browse all products →
+          </button>
+        </div>
+        {sharedCatalogError ? (
+          <p role="status" className="py-4 text-[12px] text-[#64748B]">Shared catalog is unavailable. Open Products to retry.</p>
+        ) : sharedCatalogLoading ? (
+          <p className="py-4 text-[12px] text-[#64748B]">Loading shared products…</p>
+        ) : sharedCatalog.length === 0 ? (
+          <p className="py-4 text-[12px] text-[#64748B]">No approved shared products are available yet.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {sharedCatalog.map(product => {
+              const imageUrl = product.image_references[0]
+                ? cloudinaryUrl(product.image_references[0])
+                : null
+              return (
+                <button
+                  type="button"
+                  key={product.id}
+                  onClick={() => navigate(href('products'))}
+                  className="flex min-w-0 items-center gap-3 rounded-lg border border-[#E2E8F0] p-3 text-left hover:border-[#22C55E]"
+                >
+                  {imageUrl
+                    ? <img src={imageUrl} alt={product.name} className="h-12 w-12 shrink-0 rounded-lg bg-[#F1F5F9] object-contain" />
+                    : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9]"><Package size={18} className="text-[#94A3B8]" /></span>}
+                  <span className="min-w-0">
+                    <span className="block truncate text-[12px] font-bold text-[#071A2B]">{product.name}</span>
+                    <span className="mt-1 block text-[10px] text-[#64748B]">{product.category_name || 'Shared catalog'}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Today */}
       <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest mb-3">Today</p>
