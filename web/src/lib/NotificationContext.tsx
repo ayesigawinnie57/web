@@ -1,5 +1,12 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { notificationsApi, hasAccessToken, type ApiNotification } from './api'
+import {
+  findNewUnreadNotifications,
+  getBrowserNotificationPermission,
+  requestBrowserNotificationPermission,
+  showBrowserNotification,
+  type BrowserNotificationPermission,
+} from './browserNotifications'
 
 export const NOTIFICATION_UPDATED_EVENT = 'notification_updated'
 
@@ -45,6 +52,8 @@ type Ctx = {
   markAllRead: () => void
   deleteNotification: (id: string) => void
   refresh: () => void
+  browserPermission: BrowserNotificationPermission
+  requestBrowserPermission: () => Promise<BrowserNotificationPermission>
 }
 
 const NotificationContext = createContext<Ctx | null>(null)
@@ -52,18 +61,37 @@ const NotificationContext = createContext<Ctx | null>(null)
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(false)
+  const [browserPermission, setBrowserPermission] = useState(getBrowserNotificationPermission)
+  const knownNotificationIds = useRef<Set<number> | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!hasAccessToken()) { setNotifications([]); return }
+    if (!hasAccessToken()) {
+      setNotifications([])
+      knownNotificationIds.current = null
+      return
+    }
     setLoading(true)
     try {
       const { data } = await notificationsApi.list()
       setNotifications(data.map(fromApi))
+      const newNotifications = findNewUnreadNotifications(data, knownNotificationIds.current)
+      knownNotificationIds.current = new Set(data.map(notification => notification.id))
+      newNotifications.forEach(notification => {
+        void showBrowserNotification(notification).catch(error => {
+          console.error('Browser notification could not be shown.', error)
+        })
+      })
     } catch {
       // silently ignore
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const requestBrowserPermission = useCallback(async () => {
+    const permission = await requestBrowserNotificationPermission()
+    setBrowserPermission(permission)
+    return permission
   }, [])
 
   // Fetch on mount
@@ -118,7 +146,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, loading, markRead, markAllRead, deleteNotification, refresh }}>
+    <NotificationContext.Provider value={{
+      notifications,
+      unreadCount,
+      loading,
+      markRead,
+      markAllRead,
+      deleteNotification,
+      refresh,
+      browserPermission,
+      requestBrowserPermission,
+    }}>
       {children}
     </NotificationContext.Provider>
   )

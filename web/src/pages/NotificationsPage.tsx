@@ -18,9 +18,33 @@ function timeAgo(iso: string) {
 
 export default function NotificationsPage() {
   const navigate = useNavigate()
-  const { notifications, unreadCount, loading, markRead, markAllRead, deleteNotification } = useNotifications()
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    markRead,
+    markAllRead,
+    deleteNotification,
+    browserPermission,
+    requestBrowserPermission,
+  } = useNotifications()
   const [selected, setSelected] = useState<string[]>([])
+  const [requestingPermission, setRequestingPermission] = useState(false)
+  const [permissionError, setPermissionError] = useState('')
   const selecting = selected.length > 0
+
+  const enableBrowserNotifications = async () => {
+    setRequestingPermission(true)
+    setPermissionError('')
+    try {
+      await requestBrowserPermission()
+    } catch (error) {
+      console.error('Browser notification permission could not be requested.', error)
+      setPermissionError('Your browser could not enable notifications. Check its site permissions and try again.')
+    } finally {
+      setRequestingPermission(false)
+    }
+  }
 
   const toggle = (id: string) =>
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
@@ -72,6 +96,32 @@ export default function NotificationsPage() {
                 <button onClick={markAllRead} title="Mark all as read"><CheckCheck size={20} color="#22C55E" /></button>
               )}
             </>
+          )}
+        </div>
+
+        <div className="mb-6 flex flex-col gap-2 rounded-xl border border-[#DBEAFE] bg-[#EFF6FF] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[13px] font-bold text-[#071A2B]">Browser notifications</p>
+            <p className="mt-1 text-[12px] text-[#475569]">
+              {browserPermission === 'granted'
+                ? 'Enabled. New Django notifications appear as browser alerts while Majo is open.'
+                : browserPermission === 'denied'
+                  ? 'Blocked by your browser. Allow notifications for this site in browser settings.'
+                  : browserPermission === 'unsupported'
+                    ? 'This browser does not support browser notifications.'
+                    : 'Allow alerts for new orders, account updates, and other important events while Majo is open.'}
+            </p>
+            {permissionError && <p role="alert" className="mt-1 text-[12px] text-red-700">{permissionError}</p>}
+          </div>
+          {browserPermission === 'default' && (
+            <button
+              type="button"
+              onClick={() => void enableBrowserNotifications()}
+              disabled={requestingPermission}
+              className="shrink-0 rounded-lg bg-[#1E3A8A] px-4 py-2 text-[12px] font-bold text-white disabled:opacity-50"
+            >
+              {requestingPermission ? 'Enabling...' : 'Enable notifications'}
+            </button>
           )}
         </div>
 
