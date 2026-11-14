@@ -14,9 +14,15 @@ export default function ProductCard({ product, sponsoredCampaignOfferId, variant
     trackProductClick(product.id, product.category)
     if (!sponsoredCampaignOfferId) return
 
-    const recordClick = () => advertisingApi.click(sponsoredCampaignOfferId, window.crypto.randomUUID()).catch(error => {
-      console.error('Sponsored click could not be recorded.', error)
-    })
+    const recordClick = () => advertisingApi.click(sponsoredCampaignOfferId, window.crypto.randomUUID())
+      .then(({ data }) => {
+        if (data.status !== 'valid') {
+          console.warn('Sponsored click was not billed.', data.reason ?? data.status)
+        }
+      })
+      .catch(error => {
+        console.error('Sponsored click could not be recorded.', error)
+      })
     if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
       event.preventDefault()
       void recordClick()

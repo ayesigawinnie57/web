@@ -1402,7 +1402,7 @@ export const advertisingApi = {
   impressions: (campaignOfferIds: number[]) =>
     api.post('/api/advertising/impressions/', { campaign_offer_ids: campaignOfferIds }, advertisingSessionConfig()),
   click: (campaignOfferId: number, idempotencyKey: string) =>
-    api.post<{ status: 'valid' | 'invalid' | 'suspicious'; slug: string; charged_amount: string }>('/api/advertising/clicks/', {
+    api.post<{ status: 'valid' | 'invalid' | 'suspicious'; slug: string; charged_amount: string; reason?: string }>('/api/advertising/clicks/', {
       campaign_offer_id: campaignOfferId,
       idempotency_key: idempotencyKey,
     }, advertisingSessionConfig()),

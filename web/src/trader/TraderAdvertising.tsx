@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { AlertCircle, LoaderCircle, Megaphone, Plus, Wallet } from 'lucide-react'
+import { AlertCircle, LoaderCircle, Megaphone, Plus, RefreshCw, Wallet } from 'lucide-react'
 import {
   advertisingApi,
   type ApiAdvertisingCampaign,
@@ -60,6 +60,7 @@ export default function TraderAdvertising() {
   const [dashboard, setDashboard] = useState<ApiAdvertisingDashboard | null>(null)
   const [offers, setOffers] = useState<ApiAdvertisingOffer[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState(() => (
     (location.state as { advertisingNotice?: string } | null)?.advertisingNotice ?? ''
@@ -96,6 +97,15 @@ export default function TraderAdvertising() {
       setLoading(false)
     }
   }, [traderUuid])
+
+  const refreshStats = async () => {
+    setRefreshing(true)
+    try {
+      await load()
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   useEffect(() => {
     if (!traderUuid) return
@@ -283,6 +293,9 @@ export default function TraderAdvertising() {
 
       {error && <div role="alert" className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] text-red-700"><AlertCircle size={16} className="shrink-0" />{error}</div>}
       {notice && <p role="status" className="rounded-lg border border-green-200 bg-green-50 p-3 text-[12px] font-semibold text-green-800">{notice}</p>}
+      <p role="note" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-900">
+        For fraud prevention, clicks made from your own trader account and repeat clicks from the same visitor are not counted or billed. To verify billing, use a separate buyer account or device. Refresh stats to see new activity.
+      </p>
 
       <section className="rounded-xl border border-[#E2E8F0] bg-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -334,7 +347,12 @@ export default function TraderAdvertising() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-[15px] font-extrabold text-[#071A2B]">Campaigns</h2>
-          <span className="text-[11px] text-[#64748B]">{dashboard.campaigns.length} total</span>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => void refreshStats()} disabled={refreshing} className="inline-flex items-center gap-1.5 rounded-lg border border-[#CBD5E1] bg-white px-3 py-1.5 text-[11px] font-bold text-[#334155] disabled:opacity-50">
+              <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} /> Refresh stats
+            </button>
+            <span className="text-[11px] text-[#64748B]">{dashboard.campaigns.length} total</span>
+          </div>
         </div>
         {dashboard.campaigns.length ? dashboard.campaigns.map(campaign => (
           <article key={campaign.id} className="rounded-xl border border-[#E2E8F0] bg-white p-4 md:p-5">
