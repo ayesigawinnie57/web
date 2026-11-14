@@ -1542,9 +1542,9 @@ export const behaviourApi = {
     hasAccessToken()
       ? api.post('/api/auth/behaviour/', { event, category_slug, product_id }).catch(() => {})
       : Promise.resolve(),
-  recommended: (page = 1, page_size = 12, exclude: number[] = []) =>
+  recommended: (page = 1, page_size = 12, exclude: number[] = [], excludeCatalog: number[] = []) =>
     api.get<{ results: ApiProduct[]; count: number; next: number | null }>(
-      `/api/auth/recommended/?page=${page}&page_size=${page_size}${exclude.length ? `&exclude=${exclude.join(',')}` : ''}`
+      `/api/auth/recommended/?page=${page}&page_size=${page_size}${exclude.length ? `&exclude=${exclude.join(',')}` : ''}${excludeCatalog.length ? `&exclude_catalog=${excludeCatalog.join(',')}` : ''}`
     ),
 }
 

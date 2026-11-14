@@ -6,10 +6,13 @@ import ProductCard from '../components/ProductCard'
 
 const PAGE_SIZE = 12
 
-function rankProducts(products: Product[], seenIds: Set<number>): Product[] {
+function rankProducts(products: Product[], seenIds: Set<number>, seenCatalogIds: Set<number>): Product[] {
   const rankedCats = getRankedCategories()
   const recentIds = new Set(getRecentProductIds())
-  const pool = products.filter(p => !seenIds.has(p.id))
+  const pool = products.filter(p =>
+    !seenIds.has(p.id)
+    && (p.catalogProductId === null || !seenCatalogIds.has(p.catalogProductId)),
+  )
   if (!pool.length) return []
   if (!rankedCats.length) return [...pool].sort(() => Math.random() - 0.5)
   return pool
@@ -24,7 +27,17 @@ function rankProducts(products: Product[], seenIds: Set<number>): Product[] {
     .map(x => x.p)
 }
 
-export default function Recommended({ products: initialProducts, nextPage, featuredIds }: { products: Product[]; nextPage: string | null; featuredIds: Set<number> }) {
+export default function Recommended({
+  products: initialProducts,
+  nextPage,
+  featuredIds,
+  featuredCatalogIds,
+}: {
+  products: Product[]
+  nextPage: string | null
+  featuredIds: Set<number>
+  featuredCatalogIds: Set<number>
+}) {
   const [displayed, setDisplayed] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
   const [exhausted, setExhausted] = useState(false)
@@ -32,10 +45,11 @@ export default function Recommended({ products: initialProducts, nextPage, featu
   const allProductsRef = useRef<Product[]>(initialProducts)
   const nextPageRef = useRef<string | null>(nextPage)
   const seenIdsRef = useRef<Set<number>>(new Set(featuredIds))
+  const seenCatalogIdsRef = useRef<Set<number>>(new Set(featuredCatalogIds))
   const sentinelRef = useRef<HTMLDivElement>(null)
   const loadingRef = useRef(false)
   const exhaustedRef = useRef(false)
-  const apiPageRef = useRef(2)
+  const apiPageRef = useRef(1)
 
   const appendPage = async () => {
     if (loadingRef.current || exhaustedRef.current) return
@@ -46,23 +60,28 @@ export default function Recommended({ products: initialProducts, nextPage, featu
       if (hasAccessToken()) {
         // ── Authenticated: use backend recommended endpoint ──
         const excludeIds = Array.from(seenIdsRef.current)
-        const { data } = await behaviourApi.recommended(apiPageRef.current, PAGE_SIZE, excludeIds)
-        const fresh = (data.results ?? []).map(toProduct)
-        if (!fresh.length || !data.next) {
+        const excludeCatalogIds = Array.from(seenCatalogIdsRef.current)
+        const { data } = await behaviourApi.recommended(apiPageRef.current, PAGE_SIZE, excludeIds, excludeCatalogIds)
+        const fresh = (data.results ?? []).map(toProduct).filter(p =>
+          !seenIdsRef.current.has(p.id)
+          && (p.catalogProductId === null || !seenCatalogIdsRef.current.has(p.catalogProductId)),
+        )
+        if (!data.next) {
           exhaustedRef.current = true
           setExhausted(true)
-          if (fresh.length) {
-            fresh.forEach(p => seenIdsRef.current.add(p.id))
-            setDisplayed(prev => [...prev, ...fresh])
-          }
         } else {
           apiPageRef.current = data.next
-          fresh.forEach(p => seenIdsRef.current.add(p.id))
+        }
+        if (fresh.length) {
+          fresh.forEach(p => {
+            seenIdsRef.current.add(p.id)
+            if (p.catalogProductId !== null) seenCatalogIdsRef.current.add(p.catalogProductId)
+          })
           setDisplayed(prev => [...prev, ...fresh])
         }
       } else {
         // ── Guest: rank locally, fetch more from API if pool runs low ──
-        let ranked = rankProducts(allProductsRef.current, seenIdsRef.current)
+        let ranked = rankProducts(allProductsRef.current, seenIdsRef.current, seenCatalogIdsRef.current)
         if (!ranked.length) {
           if (!nextPageRef.current) {
             exhaustedRef.current = true
@@ -83,9 +102,15 @@ export default function Recommended({ products: initialProducts, nextPage, featu
             return
           }
           const existingIds = new Set(allProductsRef.current.map(p => p.id))
-          const fresh = raw.map(toProduct).filter(p => !existingIds.has(p.id))
+          const existingCatalogIds = new Set(allProductsRef.current.flatMap(
+            p => p.catalogProductId === null ? [] : [p.catalogProductId],
+          ))
+          const fresh = raw.map(toProduct).filter(p =>
+            !existingIds.has(p.id)
+            && (p.catalogProductId === null || !existingCatalogIds.has(p.catalogProductId)),
+          )
           allProductsRef.current = [...allProductsRef.current, ...fresh]
-          ranked = rankProducts(allProductsRef.current, seenIdsRef.current)
+          ranked = rankProducts(allProductsRef.current, seenIdsRef.current, seenCatalogIdsRef.current)
         }
         if (!ranked.length) {
           exhaustedRef.current = true
@@ -95,7 +120,10 @@ export default function Recommended({ products: initialProducts, nextPage, featu
           return
         }
         const slice = ranked.slice(0, PAGE_SIZE)
-        slice.forEach(p => seenIdsRef.current.add(p.id))
+        slice.forEach(p => {
+          seenIdsRef.current.add(p.id)
+          if (p.catalogProductId !== null) seenCatalogIdsRef.current.add(p.catalogProductId)
+        })
         setDisplayed(prev => [...prev, ...slice])
       }
     } catch (error: any) {
@@ -117,6 +145,15 @@ export default function Recommended({ products: initialProducts, nextPage, featu
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProducts])
+
+  useEffect(() => {
+    featuredIds.forEach(id => seenIdsRef.current.add(id))
+    featuredCatalogIds.forEach(id => seenCatalogIdsRef.current.add(id))
+    setDisplayed(prev => prev.filter(product =>
+      !featuredIds.has(product.id)
+      && (product.catalogProductId === null || !featuredCatalogIds.has(product.catalogProductId)),
+    ))
+  }, [featuredIds, featuredCatalogIds])
 
   // Intersection observer
   useEffect(() => {

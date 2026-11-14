@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Navbar from './Navbar'
 import Hero from './Hero'
 import Products from './Products'
@@ -11,8 +11,34 @@ import { productsApi, toProduct, watchPageResume, type Product } from '../lib/ap
 
 export default function LandingPage() {
   const [products, setProducts] = useState<Product[]>([])
+  const [flashSaleProducts, setFlashSaleProducts] = useState<Product[]>([])
   const [nextProductsPage, setNextProductsPage] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const handleFlashSaleProducts = useCallback((items: Product[]) => {
+    setFlashSaleProducts(items)
+  }, [])
+
+  const flashSaleProductIds = useMemo(() => new Set(flashSaleProducts.map(product => product.id)), [flashSaleProducts])
+  const flashSaleCatalogIds = useMemo(() => new Set(
+    flashSaleProducts.flatMap(product => product.catalogProductId === null ? [] : [product.catalogProductId]),
+  ), [flashSaleProducts])
+  const featuredProducts = useMemo(
+    () => products.filter(product =>
+      !flashSaleProductIds.has(product.id)
+      && (product.catalogProductId === null || !flashSaleCatalogIds.has(product.catalogProductId)),
+    ).slice(0, 12),
+    [products, flashSaleProductIds, flashSaleCatalogIds],
+  )
+  const excludedProductIds = useMemo(
+    () => new Set([...featuredProducts, ...flashSaleProducts].map(product => product.id)),
+    [featuredProducts, flashSaleProducts],
+  )
+  const excludedCatalogIds = useMemo(
+    () => new Set([...featuredProducts, ...flashSaleProducts].flatMap(
+      product => product.catalogProductId === null ? [] : [product.catalogProductId],
+    )),
+    [featuredProducts, flashSaleProducts],
+  )
 
   useEffect(() => {
     let active = true
@@ -50,10 +76,17 @@ export default function LandingPage() {
       <div className="pb-20 pt-[112px] lg:pb-0 lg:pt-[128px]">
         <Hero />
         <ShopByCategory />
-        <FlashDeals products={[]} />
+        <FlashDeals onProductsLoaded={handleFlashSaleProducts} />
         <PromoBanners />
-        {loading ? <ProductsSkeleton /> : <Products products={products} />}
-        {!loading && <Recommended products={products} nextPage={nextProductsPage} featuredIds={new Set(products.slice(0, 12).map(p => p.id))} />}
+        {loading ? <ProductsSkeleton /> : <Products products={featuredProducts} />}
+        {!loading && (
+          <Recommended
+            products={products}
+            nextPage={nextProductsPage}
+            featuredIds={excludedProductIds}
+            featuredCatalogIds={excludedCatalogIds}
+          />
+        )}
       </div>
       <Footer />
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Flame, ShoppingCart, Timer } from 'lucide-react'
-import { cartApi, productsApi, toFlashSale, watchPageResume, type FlashSale } from '../lib/api'
+import { cartApi, productsApi, toFlashSale, watchPageResume, type FlashSale, type Product } from '../lib/api'
 import { Link as RouterLink } from 'react-router-dom'
 
 function useCountdown(endsAt: Date) {
@@ -105,7 +105,7 @@ function FlashCard({ sale }: { sale: FlashSale }) {
   )
 }
 
-export default function FlashDeals({ products: _ }: { products: unknown[] }) {
+export default function FlashDeals({ onProductsLoaded }: { onProductsLoaded: (products: Product[]) => void }) {
   const [sales, setSales] = useState<FlashSale[]>([])
   const [showAll, setShowAll] = useState(false)
 
@@ -114,7 +114,10 @@ export default function FlashDeals({ products: _ }: { products: unknown[] }) {
     const loadSales = () => {
       productsApi.flashSales().then(({ data }) => {
         const raw = Array.isArray(data) ? data : (data as any).results ?? []
-        if (active) setSales(raw.map(toFlashSale))
+        if (active) {
+          const mapped: FlashSale[] = raw.map(toFlashSale)
+          setSales(mapped)
+        }
       }).catch(() => undefined)
     }
     loadSales()
@@ -124,6 +127,11 @@ export default function FlashDeals({ products: _ }: { products: unknown[] }) {
       stopWatching()
     }
   }, [])
+
+  useEffect(() => {
+    const visibleSales = showAll ? sales : sales.slice(0, 6)
+    onProductsLoaded(visibleSales.map(sale => sale.product))
+  }, [onProductsLoaded, sales, showAll])
 
   if (!sales.length) return null
 
