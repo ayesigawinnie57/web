@@ -23,6 +23,25 @@ self.addEventListener('activate', event => {
   )
 })
 
+self.addEventListener('notificationclick', event => {
+  event.notification.close()
+  const actionUrl = event.notification.data?.actionUrl
+  const target = typeof actionUrl === 'string' && actionUrl.startsWith('/') && !actionUrl.startsWith('//')
+    ? new URL(actionUrl, self.location.origin)
+    : new URL('/notifications', self.location.origin)
+
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const client = clients.find(candidate => new URL(candidate.url).origin === self.location.origin)
+    if (client) {
+      await client.focus()
+      if (client.navigate) await client.navigate(target.href)
+    } else {
+      await self.clients.openWindow(target.href)
+    }
+  })())
+})
+
 self.addEventListener('fetch', event => {
   const request = event.request
   const requestUrl = new URL(request.url)
