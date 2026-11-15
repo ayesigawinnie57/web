@@ -122,11 +122,6 @@ export default function ProductCard({ product, sponsoredCampaignOfferId, variant
         {product.sellerName && (
           <p className="mt-1 truncate text-[9px] font-semibold text-[#64748B]">Sold by {product.sellerName}</p>
         )}
-        {(product.sellerCount ?? 0) > 0 && (
-          <p className="mt-1 text-[9px] font-semibold text-[#64748B]">
-            {product.sellerCount} {product.sellerCount === 1 ? 'seller' : 'sellers'}
-          </p>
-        )}
         {product.rating > 0 && (
           <div className="flex items-center gap-0.5 mt-1">
             <span className="text-[12px] text-yellow-400">★</span>
