@@ -54,6 +54,9 @@ export default function ProductCard({ product, sponsoredCampaignOfferId, variant
         </div>
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-[12px] font-extrabold leading-snug text-[#071A2B] group-hover:text-[#1D4ED8] sm:text-[14px]">{product.name}</p>
+          {product.sellerName && (
+            <p className="mt-1 truncate text-[10px] font-semibold text-[#64748B]">Sold by {product.sellerName}</p>
+          )}
           <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="text-[14px] font-extrabold text-[#1D4ED8] sm:text-[17px]">UGX {product.price.toLocaleString()}</span>
             {product.originalPrice && (
@@ -116,6 +119,9 @@ export default function ProductCard({ product, sponsoredCampaignOfferId, variant
             <span className="text-[9px] text-[#94A3B8] line-through">UGX {product.originalPrice.toLocaleString()}</span>
           )}
         </div>
+        {product.sellerName && (
+          <p className="mt-1 truncate text-[9px] font-semibold text-[#64748B]">Sold by {product.sellerName}</p>
+        )}
         {(product.sellerCount ?? 0) > 0 && (
           <p className="mt-1 text-[9px] font-semibold text-[#64748B]">
             {product.sellerCount} {product.sellerCount === 1 ? 'seller' : 'sellers'}
