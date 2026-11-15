@@ -5,6 +5,7 @@ import { LOGO, sessionApi, supportChatApi } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { useSwitchPortal } from '../lib/SwitchContext'
 import { ASSIGNED_PAGES_KEY } from './AdminGuard'
+import PwaInstallButton from '../components/PwaInstallButton'
 
 const ALL_NAV = [
   { to: '/admin',             label: 'Dashboard',  pageKey: null,           icon: LayoutDashboard, end: true },
@@ -126,6 +127,7 @@ export default function AdminLayout() {
             </button>
           )}
         </div>
+        <PwaInstallButton />
 
         {/* Desktop-only: Notification + Account icons */}
         <div className="hidden md:flex items-center gap-2">

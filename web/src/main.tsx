@@ -28,7 +28,10 @@ if (routeToRestore) {
   window.history.replaceState(null, '', routeToRestore)
 }
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+const enableDevelopmentPwa = import.meta.env.DEV
+  && import.meta.env.VITE_ENABLE_PWA_DEV === 'true'
+
+if ((import.meta.env.PROD || enableDevelopmentPwa) && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, {
       scope: import.meta.env.BASE_URL,

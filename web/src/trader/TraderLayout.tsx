@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
 import { Store, Menu, X, Settings, ArrowLeftRight, LayoutDashboard, Package, ShoppingBag, TrendingUp, DollarSign, CreditCard, Megaphone } from 'lucide-react'
 import { LOGO, sessionApi } from '../lib/api'
 import { useSwitchPortal } from '../lib/SwitchContext'
+import PwaInstallButton from '../components/PwaInstallButton'
 
 import type { LucideIcon } from 'lucide-react'
 
@@ -71,6 +72,7 @@ export default function TraderLayout() {
           <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest hidden sm:block">Trader Portal</span>
         </div>
         <div className="flex-1" />
+        <PwaInstallButton />
         <button
           onClick={() => setDrawerOpen(true)}
           className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors shrink-0 md:hidden"

@@ -78,6 +78,8 @@ export async function promptToInstall() {
 }
 
 export function requiresDesktopInstall() {
+  if (import.meta.env.DEV) return false
+
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     || (navigator as Navigator & { standalone?: boolean }).standalone === true

@@ -1,13 +1,14 @@
 import axios from 'axios'
 
-const DEFAULT_BACKEND_URL = 'https://api.majogadgets.com'
+const PRODUCTION_BACKEND_URL = 'https://api.majogadgets.com'
+const DEVELOPMENT_BACKEND_URL = 'http://localhost:8000'
 
 const resolveApiBaseUrl = () => {
   const configured = import.meta.env.VITE_API_URL
-  if (import.meta.env.PROD) return DEFAULT_BACKEND_URL
+  if (import.meta.env.PROD) return PRODUCTION_BACKEND_URL
   if (configured && configured.trim()) return configured.trim().replace(/\/+$/, '')
 
-  return DEFAULT_BACKEND_URL
+  return DEVELOPMENT_BACKEND_URL
 }
 
 export const BASE_URL = resolveApiBaseUrl()
