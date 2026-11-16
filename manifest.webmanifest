@@ -1,7 +1,7 @@
 {
-  "name": "Majo Gadgets",
-  "short_name": "Majo Gadgets",
-  "description": "Shop electronics, gadgets, and accessories at Majo Gadgets.",
+  "name": "Majo Market",
+  "short_name": "Majo Market",
+  "description": "Your marketplace for quality products, great deals and trusted sellers.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
