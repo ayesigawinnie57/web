@@ -4,13 +4,27 @@ import { join } from 'path'
 const API_URL = process.env.VITE_API_URL || 'http://localhost:8000'
 const DIST = 'dist'
 
+class PrerenderDataUnavailableError extends Error {}
+
+async function fetchPrerenderData(url, resource) {
+  let response
+  try {
+    response = await fetch(url)
+  } catch (error) {
+    const detail = error instanceof Error ? `: ${error.message}` : ''
+    throw new PrerenderDataUnavailableError(`Could not load ${resource} for prerendering${detail}.`)
+  }
+  if (!response.ok) {
+    throw new PrerenderDataUnavailableError(`Could not load ${resource} for prerendering (${response.status}).`)
+  }
+  return response.json()
+}
+
 async function fetchAllProducts() {
   const products = []
   let url = `${API_URL}/api/products/`
   while (url) {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`Could not load products for prerendering (${res.status}).`)
-    const data = await res.json()
+    const data = await fetchPrerenderData(url, 'products')
     const results = Array.isArray(data) ? data : (data.results ?? [])
     products.push(...results)
     url = data.next ?? null
@@ -22,9 +36,7 @@ async function fetchAllCategories() {
   const categories = []
   let url = `${API_URL}/api/products/categories/`
   while (url) {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`Could not load categories for prerendering (${res.status}).`)
-    const data = await res.json()
+    const data = await fetchPrerenderData(url, 'categories')
     categories.push(...(Array.isArray(data) ? data : (data.results ?? [])))
     url = data.next ?? null
   }
@@ -175,7 +187,20 @@ for (const page of staticPages) {
 
 console.log(`Pre-rendered ${staticPages.length} public pages.`)
 
-const [products, categories] = await Promise.all([fetchAllProducts(), fetchAllCategories()])
+async function loadPrerenderData(fetchData, pageType) {
+  try {
+    return await fetchData()
+  } catch (error) {
+    if (!(error instanceof PrerenderDataUnavailableError)) throw error
+    console.warn(`WARNING: ${error.message} ${pageType} pages will remain client-rendered and will be omitted from this deploy's sitemap.`)
+    return []
+  }
+}
+
+const [products, categories] = await Promise.all([
+  loadPrerenderData(fetchAllProducts, 'Product'),
+  loadPrerenderData(fetchAllCategories, 'Category'),
+])
 console.log(`Pre-rendering ${products.length} product pages...`)
 
 for (const p of products) {
