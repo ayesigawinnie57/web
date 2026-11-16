@@ -8,4 +8,4 @@ export const C = {
   mutedLight: '#94A3B8',
 }
 
-export const LOGO = 'https://res.cloudinary.com/d5qqtsou/image/upload/v1788691351/Majo_Gadgets_logo_an2hbc.png'
+export const LOGO = 'https://www.majogadgets.com/pwa-512.png'

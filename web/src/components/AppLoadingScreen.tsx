@@ -8,7 +8,7 @@ export default function AppLoadingScreen() {
           <span className="app-loading-orbit" />
           <img src={LOGO} alt="" className="app-loading-logo" />
         </div>
-        <p className="app-loading-brand">MAJO <span>GADGETS</span></p>
+        <p className="app-loading-brand">MAJO <span>MARKET</span></p>
         <p className="app-loading-message">Getting things ready</p>
         <div className="app-loading-progress" aria-hidden="true"><span /></div>
         <p className="app-loading-caption">A better shopping experience is just a moment away.</p>

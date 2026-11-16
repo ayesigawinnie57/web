@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { ShieldCheck, CheckCircle2 } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -7,7 +8,7 @@ const sections = [
   {
     title: '1. Acceptance of terms',
     text:
-      'By accessing and using Majo Gadgets, you agree to these Terms and Conditions and any additional policies posted on the platform. If you do not agree, please do not use the website or mobile app.',
+      'By accessing and using Majo Market, you agree to these Terms and Conditions and any additional policies posted on the platform. If you do not agree, please do not use the website or mobile app.',
   },
   {
     title: '2. Orders and purchases',
@@ -42,22 +43,22 @@ const sections = [
   {
     title: '8. Account security',
     text:
-      'You are responsible for safeguarding your password and the email account used to access your Majo Gadgets account, and for notifying us promptly if you suspect unauthorized use. Administrators and approved traders are required to complete email-based two-factor authentication (2FA) when signing in on a device that is not recognized. Verification codes expire after 10 minutes and may only be used once. If you choose to remember a device, it may be recognized for up to seven days; your password is still required. We send an email alert after each successful administrator or approved-trader sign-in. You may optionally permit your device to share its location for inclusion in that alert; if you do not grant permission or location is unavailable, the alert will indicate that location is unavailable.',
+      'You are responsible for safeguarding your password and the email account used to access your Majo Market account, and for notifying us promptly if you suspect unauthorized use. Administrators and approved traders are required to complete email-based two-factor authentication (2FA) when signing in on a device that is not recognized. Verification codes expire after 10 minutes and may only be used once. If you choose to remember a device, it may be recognized for up to seven days; your password is still required. We send an email alert after each successful administrator or approved-trader sign-in. You may optionally permit your device to share its location for inclusion in that alert; if you do not grant permission or location is unavailable, the alert will indicate that location is unavailable.',
   },
   {
     title: '9. Unauthorized sign-ins and password changes',
     text:
-      'If you receive a sign-in alert for activity you do not recognize, use the password-reset option on our website and secure the email account associated with your Majo Gadgets account. Changing your password clears remembered-device credentials, and devices will need to complete sign-in verification again. Do not share verification codes with anyone. Email alerts and two-factor authentication are security measures, but they cannot guarantee that unauthorized access will never occur.',
+      'If you receive a sign-in alert for activity you do not recognize, use the password-reset option on our website and secure the email account associated with your Majo Market account. Changing your password clears remembered-device credentials, and devices will need to complete sign-in verification again. Do not share verification codes with anyone. Email alerts and two-factor authentication are security measures, but they cannot guarantee that unauthorized access will never occur.',
   },
   {
     title: '10. Intellectual property',
     text:
-      'All content on Majo Gadgets, including text, product images, branding, and design, is protected by intellectual property laws and may not be copied, reproduced, distributed, or used without prior written permission.',
+      'All content on Majo Market, including text, product images, branding, and design, is protected by intellectual property laws and may not be copied, reproduced, distributed, or used without prior written permission.',
   },
   {
     title: '11. Limitation of liability',
     text:
-      'Majo Gadgets shall not be liable for indirect, incidental, or consequential damages arising from the use of the platform, including delays, losses, or issues caused by third-party delivery services, outages, or circumstances beyond our reasonable control.',
+      'Majo Market shall not be liable for indirect, incidental, or consequential damages arising from the use of the platform, including delays, losses, or issues caused by third-party delivery services, outages, or circumstances beyond our reasonable control.',
   },
   {
     title: '12. Changes to terms',
@@ -74,6 +75,12 @@ const sections = [
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Terms and Conditions | Majo Market</title>
+        <meta name="description" content="Read the terms and conditions for shopping and using services on the Majo Market website and mobile app." />
+        <meta name="robots" content="index,follow" />
+        <link rel="canonical" href="https://www.majogadgets.com/terms" />
+      </Helmet>
       <Navbar />
 
       <main className="w-full max-w-none px-4 pt-[150px] pb-8 md:px-8 md:pt-[156px] md:pb-10 lg:px-12">
@@ -85,7 +92,7 @@ export default function TermsPage() {
             </div>
             <h1 className="mt-4 text-3xl font-black md:text-5xl tracking-tight">Terms and Conditions</h1>
             <p className="mt-3 max-w-3xl text-[14px] md:text-[16px] text-slate-200">
-              Please read these terms carefully before using Majo Gadgets products and services.
+              Please read these terms carefully before using Majo Market products and services.
             </p>
             <p className="mt-3 text-[12px] text-slate-300">Last updated: October 26, 2026</p>
           </section>

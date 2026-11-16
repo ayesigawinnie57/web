@@ -55,9 +55,18 @@ export default function DealsPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Helmet>
-        <title>Deals &amp; Flash Sales – Majo Gadgets</title>
-        <meta name="description" content="Grab limited-time deals and flash sales on Majo Gadgets. Save big on electronics and accessories while stock lasts." />
+        <title>Marketplace Deals &amp; Flash Sales | Majo Market</title>
+        <meta name="description" content="Discover marketplace deals and limited-time offers from trusted sellers on Majo Market while available stock lasts." />
+        <meta name="robots" content="index,follow" />
         <link rel="canonical" href="https://www.majogadgets.com/deals" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Majo Market" />
+        <meta property="og:title" content="Marketplace Deals &amp; Flash Sales | Majo Market" />
+        <meta property="og:description" content="Discover marketplace deals and limited-time offers from trusted sellers on Majo Market while available stock lasts." />
+        <meta property="og:url" content="https://www.majogadgets.com/deals" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Marketplace Deals &amp; Flash Sales | Majo Market" />
+        <meta name="twitter:description" content="Discover marketplace deals and limited-time offers from trusted sellers on Majo Market while available stock lasts." />
       </Helmet>
       <Navbar />
       <main className="pt-14 lg:pt-16">

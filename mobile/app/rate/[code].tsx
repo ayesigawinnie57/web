@@ -129,7 +129,7 @@ export default function RateServiceScreen() {
           <CheckCircle size={48} color={C.green} />
         </View>
         <Text style={s.doneTitle}>Thank You!</Text>
-        <Text style={s.doneSub}>Your feedback helps Majo Gadgets improve our service and give you an even better shopping experience.</Text>
+        <Text style={s.doneSub}>Your feedback helps Majo Market improve our service and give you an even better shopping experience.</Text>
         <TouchableOpacity style={s.doneBtn} onPress={() => router.replace('/' as any)}>
           <Text style={s.doneBtnText}>Done</Text>
         </TouchableOpacity>

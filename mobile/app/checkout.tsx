@@ -357,7 +357,7 @@ export default function CheckoutScreen() {
             }
           </TouchableOpacity>
         </View>
-        <Text style={styles.secureNote}>Your order is protected by Majo Gadgets secure checkout.</Text>
+        <Text style={styles.secureNote}>Your order is protected by Majo Market secure checkout.</Text>
 
         <View style={{ height: BOTTOM_NAV_HEIGHT + insets.bottom + 16 }} />
       </ScrollView>}

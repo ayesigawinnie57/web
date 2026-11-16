@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { ShieldCheck, CheckCircle2 } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -13,12 +14,12 @@ const sections: {
 }[] = [
   {
     title: '1. Information We Collect',
-    intro: 'Majo Gadgets collects information necessary to provide you with a secure, reliable, and convenient shopping experience. Depending on how you use our platform, the information we collect may include:',
+    intro: 'Majo Market collects information necessary to provide you with a secure, reliable, and convenient shopping experience. Depending on how you use our platform, the information we collect may include:',
     items: [
       { label: 'Personal information', text: 'Your name, email address, phone number, and other details you provide when creating or managing your account.' },
       { label: 'Delivery information', text: 'Your delivery address and relevant contact details needed to fulfil your orders.' },
       { label: 'Order information', text: 'Products purchased, order history, returns, refunds, and related transaction details.' },
-      { label: 'Payment information', text: 'Payment status, transaction references, and other information necessary to process and verify payments. Payment details may be processed by our payment service providers. Majo Gadgets does not store full card numbers, CVV/security codes, card expiry dates, mobile-money PINs, or mobile-money authorization codes in browser storage or in our order records. Card and mobile-money payment credentials are entered on the payment provider’s page; we receive transaction details needed to confirm and manage the payment. Phone numbers used as account or delivery contact details may be stored with your account or order and are not mobile-money PINs or authorization credentials. The provider and your browser may have their own data-handling or payment-saving settings, which are outside Majo Gadgets browser storage.' },
+      { label: 'Payment information', text: 'Payment status, transaction references, and other information necessary to process and verify payments. Payment details may be processed by our payment service providers. Majo Market does not store full card numbers, CVV/security codes, card expiry dates, mobile-money PINs, or mobile-money authorization codes in browser storage or in our order records. Card and mobile-money payment credentials are entered on the payment provider’s page; we receive transaction details needed to confirm and manage the payment. Phone numbers used as account or delivery contact details may be stored with your account or order and are not mobile-money PINs or authorization credentials. The provider and your browser may have their own data-handling or payment-saving settings, which are outside Majo Market browser storage.' },
       { label: 'Account preferences', text: 'Your saved addresses, shopping preferences, and other settings you choose to provide.' },
       { label: 'Platform usage information', text: 'Relevant browsing activity, interactions with products, and technical information used to improve website performance, enhance your shopping experience, and maintain security.' },
       { label: 'Security information', text: 'Where applicable, we process sign-in verification status, device or browser descriptions, sign-in timestamps, and information needed to protect accounts against unauthorized access.' },
@@ -45,17 +46,17 @@ const sections: {
   {
     title: '3. Account Security and Sign-In Alerts',
     paragraphs: [
-      'We take the security of your Majo Gadgets account seriously. To help protect your account from unauthorized access, approved traders may be required to verify their identity using a one-time verification code sent to their registered email address when signing in from an unrecognized device.',
+      'We take the security of your Majo Market account seriously. To help protect your account from unauthorized access, approved traders may be required to verify their identity using a one-time verification code sent to their registered email address when signing in from an unrecognized device.',
       'Verification codes expire after 10 minutes and can only be used once. For your security, never share your verification code with anyone.',
       'Where available, you may choose to remember a trusted device for up to seven days for a more convenient sign-in experience. Remembered-device credentials are stored securely in a hashed form. You must still enter your password when signing in from a remembered device.',
       'After a successful sign-in, we may send you an email notification containing a description of the device or browser used and the time of access. These alerts help you recognize legitimate activity and identify sign-ins you do not recognize.',
-      'If you receive an alert about activity you did not authorize, we recommend changing your password promptly and contacting Majo Gadgets Support for assistance.',
+      'If you receive an alert about activity you did not authorize, we recommend changing your password promptly and contacting Majo Market Support for assistance.',
     ],
   },
   {
     title: '4. Optional Location Information',
     paragraphs: [
-      "To provide additional context in security notifications, Majo Gadgets may request permission to access your device's location during sign-in verification.",
+      "To provide additional context in security notifications, Majo Market may request permission to access your device's location during sign-in verification.",
       'If you grant permission and your device provides location coordinates, we may include approximate, rounded coordinates in the successful sign-in notification sent to your registered email address. If you decline permission or your device cannot provide location information, the notification will indicate that the location is unavailable.',
       "Location sharing is optional and is not required to use your account. We do not use this feature to continuously track your location or monitor your movements in the background. We also do not send your device's coordinates to a third-party geolocation service through this feature.",
       'You may decline the location request without preventing sign-in verification from proceeding, subject to other applicable security requirements.',
@@ -64,7 +65,7 @@ const sections: {
   {
     title: '5. Sharing of information',
     paragraphs: [
-      'Majo Gadgets respects your privacy. We do not sell your personal information to third parties.',
+      'Majo Market respects your privacy. We do not sell your personal information to third parties.',
       'We may share only the information necessary with trusted service providers that help us operate our platform, process payments, fulfil and deliver orders, send transactional and security notifications, maintain our systems, and provide technical support.',
       'These service providers are expected to protect your information and use it only for authorized purposes in accordance with applicable privacy and data protection requirements.',
       'We may also disclose information when required by law, in response to lawful requests from competent authorities, or when reasonably necessary to protect our users, prevent fraud, investigate security incidents, and safeguard the integrity of our platform.',
@@ -79,7 +80,7 @@ const sections: {
   {
     title: '7. Data security',
     text:
-      'We take reasonable steps to protect personal data using secure systems, access controls, and trusted processing practices. Two-factor authentication adds a verification step but does not guarantee that an account cannot be compromised. Never share sign-in codes, even with someone claiming to represent Majo Gadgets. If you do not recognize a sign-in alert, use the password-reset link on our website to change your password. Resetting your password removes remembered-device credentials, so those devices must complete verification again. No online service can guarantee absolute security.',
+      'We take reasonable steps to protect personal data using secure systems, access controls, and trusted processing practices. Two-factor authentication adds a verification step but does not guarantee that an account cannot be compromised. Never share sign-in codes, even with someone claiming to represent Majo Market. If you do not recognize a sign-in alert, use the password-reset link on our website to change your password. Resetting your password removes remembered-device credentials, so those devices must complete verification again. No online service can guarantee absolute security.',
   },
   {
     title: '8. Retention of information',
@@ -111,6 +112,12 @@ const sections: {
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Privacy Policy | Majo Market</title>
+        <meta name="description" content="Read how Majo Market collects, uses, and protects personal information when customers use our marketplace." />
+        <meta name="robots" content="index,follow" />
+        <link rel="canonical" href="https://www.majogadgets.com/privacy-policy" />
+      </Helmet>
       <Navbar />
 
       <main className="w-full max-w-none px-4 pt-[150px] pb-8 md:px-8 md:pt-[156px] md:pb-10 lg:px-12">
@@ -134,8 +141,8 @@ export default function PrivacyPolicyPage() {
                   <h2 className="text-[18px] md:text-[20px] font-extrabold text-[#071A2B] mb-3">{section.title}</h2>
                   {(section.paragraphs ?? (section.text ? [section.text] : [])).map((paragraph, index) => (
                     <p key={index} className="text-[15px] leading-8 text-[#475569] mb-3 last:mb-0">
-                      {paragraph === 'Majo Gadgets respects your privacy. We do not sell your personal information to third parties.'
-                        ? <>Majo Gadgets respects your privacy. <strong>We do not sell your personal information to third parties.</strong></>
+                      {paragraph === 'Majo Market respects your privacy. We do not sell your personal information to third parties.'
+                        ? <>Majo Market respects your privacy. <strong>We do not sell your personal information to third parties.</strong></>
                         : paragraph}
                     </p>
                   ))}

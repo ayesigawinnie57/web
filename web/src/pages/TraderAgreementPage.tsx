@@ -72,7 +72,7 @@ export default function TraderAgreementPage() {
 
       <article className="agreement-paper mx-auto max-w-4xl border border-[#DCE5EB] bg-white px-6 py-8 shadow-sm sm:px-12 sm:py-12">
         <header className="border-b border-[#DCE5EB] pb-6">
-          <p className="text-xs font-bold uppercase text-[#166534]">Majo Gadgets</p>
+          <p className="text-xs font-bold uppercase text-[#166534]">Majo Market</p>
           <h1 className="mt-2 text-2xl font-black text-[#071A2B]">Trader Participation and Marketplace Agreement</h1>
           <dl className="mt-5 grid gap-2 text-sm sm:grid-cols-2">
             <div><dt className="inline font-bold">Agreement Reference: </dt><dd className="inline">{agreement.reference}</dd></div>
@@ -107,7 +107,7 @@ export default function TraderAgreementPage() {
           <h2 className="text-base font-extrabold text-[#071A2B]">13. DECLARATION AND SIGNATURES</h2>
           <p className="mt-3 text-sm leading-6">{agreement.declaration}</p>
           <div className="mt-6 grid gap-6 border-t border-[#DCE5EB] pt-5 sm:grid-cols-2">
-            <div><h3 className="font-bold">FOR MAJO GADGETS</h3><p className="mt-2 text-sm">Legal representative: {agreement.platform.signatory}</p><p className="text-sm">Title: {agreement.platform.title}</p><p className="mt-2 text-sm">Electronically executed on: {dateLabel(agreement.platform.signed_at)}</p></div>
+            <div><h3 className="font-bold">FOR MAJO MARKET</h3><p className="mt-2 text-sm">Legal representative: {agreement.platform.signatory}</p><p className="text-sm">Title: {agreement.platform.title}</p><p className="mt-2 text-sm">Electronically executed on: {dateLabel(agreement.platform.signed_at)}</p></div>
             <div><h3 className="font-bold">FOR THE TRADER</h3><p className="mt-2 text-sm">Full legal name: {agreement.trader.signed_name || agreement.trader.name}</p><p className="text-sm">Trader ID: {agreement.trader.id}</p><p className="mt-2 text-sm">Electronically executed on: {dateLabel(agreement.trader.signed_at)}</p>{agreement.trader.has_signature_image && <p className="text-sm">Signature image securely retained with the execution record.</p>}</div>
           </div>
           <p className="mt-6 text-xs leading-5 text-[#64748B]">Electronic execution: the system retains the agreed document version, signer identification, acceptance record, and timestamp as evidence of execution, subject to applicable law.</p>
@@ -117,7 +117,7 @@ export default function TraderAgreementPage() {
       {!signed && (
         <section className="no-print mx-auto mt-5 max-w-4xl border border-[#DCE5EB] bg-white p-6">
           <div className="flex items-center gap-2"><PenLine size={18} /><h2 className="text-base font-extrabold">Sign this agreement</h2></div>
-          {!agreement.ready_to_sign && <p className="mt-3 text-sm text-red-700">Majo Gadgets registered address must be configured before electronic execution.</p>}
+          {!agreement.ready_to_sign && <p className="mt-3 text-sm text-red-700">Majo Market registered address must be configured before electronic execution.</p>}
           <label className="mt-4 block text-sm font-bold">Your verified legal name
             <input value={signedName} onChange={event => setSignedName(event.target.value)} className="mt-1 block w-full border border-[#CBD5E1] px-3 py-2.5 font-normal" autoComplete="name" />
           </label>

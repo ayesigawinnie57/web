@@ -121,16 +121,34 @@ export default function Navbar() {
   })
 
   useEffect(() => {
-    if (!hasAccessToken()) return
-    sessionApi.trader().then(d => {
-      if (d && d.status === 'approved') {
-        localStorage.setItem('majo_trader_uuid', d.uuid)
-        setTraderUuid(d.uuid)
-      } else {
+    let requestId = 0
+    const refreshTrader = () => {
+      const currentRequestId = ++requestId
+      sessionApi.clear()
+      if (!hasAccessToken()) {
         localStorage.removeItem('majo_trader_uuid')
         setTraderUuid(null)
+        return
       }
-    })
+      sessionApi.trader().then(trader => {
+        if (currentRequestId !== requestId) return
+        if (trader?.status === 'approved') {
+          localStorage.setItem('majo_trader_uuid', trader.uuid)
+          setTraderUuid(trader.uuid)
+        } else {
+          localStorage.removeItem('majo_trader_uuid')
+          setTraderUuid(null)
+        }
+      })
+    }
+    refreshTrader()
+    window.addEventListener('majo-auth-changed', refreshTrader)
+    window.addEventListener('storage', refreshTrader)
+    return () => {
+      requestId++
+      window.removeEventListener('majo-auth-changed', refreshTrader)
+      window.removeEventListener('storage', refreshTrader)
+    }
   }, [])
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -189,6 +207,7 @@ export default function Navbar() {
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('majo_user')
     localStorage.removeItem('majo_trader_uuid')
+    sessionApi.clear()
     setUser(null)
     setTraderUuid(null)
     setAccountOpen(false)
@@ -202,7 +221,7 @@ export default function Navbar() {
         <div className="relative flex items-center px-4 h-16 lg:h-20 gap-2.5">
           {/* Logo */}
           <Link to="/" onClick={closeSearch} className="shrink-0">
-            <img src={LOGO} alt="Majo Gadgets" className="h-11 w-11 rounded-full object-cover mix-blend-multiply" />
+            <img src={LOGO} alt="Majo Market" className="h-11 w-11 rounded-full object-cover mix-blend-multiply" />
           </Link>
 
           {/* Search pill / active */}
@@ -220,7 +239,7 @@ export default function Navbar() {
                   else setQuery(value)
                 }}
                 onKeyDown={e => { if (e.key === 'Enter' && query.trim()) { navigate(`/shop?q=${query}`); closeSearch() } }}
-                placeholder="Search products, categories..."
+                placeholder="Search Majo Market..."
                 className="flex-1 bg-transparent text-sm text-[#071A2B] outline-none placeholder-[#94A3B8]"
               />
               {query
@@ -231,13 +250,13 @@ export default function Navbar() {
           ) : (
             <button
               onClick={() => setSearchOpen(true)}
-              aria-label="Search products"
+              aria-label="Search products on Majo Market"
               className="flex-1 lg:flex-none lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:w-[280px] flex items-center bg-[#F8FAFC] border-[1.5px] border-[#E2E8F0] rounded-full px-3 h-10 gap-2 text-left transition-[width] duration-200"
             >
               <svg className="w-3.5 h-3.5 text-[#64748B] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
               </svg>
-              <span className="text-sm text-[#94A3B8]">Search products...</span>
+              <span className="text-sm text-[#94A3B8]">Search Majo Market...</span>
             </button>
           )}
 
@@ -251,20 +270,20 @@ export default function Navbar() {
               <div className="relative hidden lg:block">
                 <button
                   onClick={installApp}
-                  aria-label="Install Majo Gadgets app"
+                  aria-label="Install Majo Market app"
                   aria-expanded={showInstallHelp}
                   aria-controls="install-app-help"
-                  title="Install Majo Gadgets"
+                  title="Install Majo Market"
                   className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[#071A2B] text-white text-[13px] font-bold hover:bg-[#12344A] transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   <span>Install app</span>
                 </button>
                 {showInstallHelp && !installPrompt && (
-                  <div id="install-app-help" role="dialog" aria-label="Install Majo Gadgets" className="absolute right-0 top-full mt-3 w-72 p-4 bg-white border border-[#E2E8F0] rounded-lg shadow-xl">
+                  <div id="install-app-help" role="dialog" aria-label="Install Majo Market" className="absolute right-0 top-full mt-3 w-72 p-4 bg-white border border-[#E2E8F0] rounded-lg shadow-xl">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-bold text-[#071A2B]">Add Majo Gadgets to your desktop</p>
+                        <p className="text-sm font-bold text-[#071A2B]">Add Majo Market to your desktop</p>
                         <p className="mt-1.5 text-xs leading-5 text-[#64748B]">Choose “Install app” in Chrome or Edge, or “Add to Dock” in Safari.</p>
                       </div>
                       <button onClick={() => setShowInstallHelp(false)} aria-label="Close install instructions" className="p-1 text-[#64748B] hover:text-[#071A2B]">
@@ -576,6 +595,9 @@ export default function Navbar() {
               </Link>
               <Link to="/wishlist" onClick={() => setAccountOpen(false)} className="w-full flex items-center justify-between py-3.5 text-[13px] font-semibold text-[#071A2B]">
                 Wishlist<span className="text-2xl text-[#64748B] leading-none">›</span>
+              </Link>
+              <Link to="/become-a-trader" onClick={() => setAccountOpen(false)} className="w-full flex items-center justify-between py-3.5 text-[13px] font-semibold text-[#071A2B]">
+                Sell with Majo Market<span className="text-2xl text-[#64748B] leading-none">›</span>
               </Link>
             </div>
             {user ? (

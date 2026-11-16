@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { MessageCircleMore, Mail, MapPin, Phone, ShieldCheck } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -8,7 +9,7 @@ const contactMethods = [
     icon: Phone,
     label: 'Call or WhatsApp',
     value: '+256 779 122 222',
-    href: 'https://wa.me/256779122222?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20need%20help.%20',
+    href: 'https://wa.me/256779122222?text=Hello%20Majo%20Market%20Support%2C%20I%20need%20help.%20',
   },
   {
     icon: Mail,
@@ -27,6 +28,12 @@ const contactMethods = [
 export default function ContactUsPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Contact Majo Market Support | Uganda</title>
+        <meta name="description" content="Contact Majo Market for help with marketplace orders, delivery, returns, payments, and customer support in Uganda." />
+        <meta name="robots" content="index,follow" />
+        <link rel="canonical" href="https://www.majogadgets.com/contact" />
+      </Helmet>
       <Navbar />
 
       <main className="w-full max-w-none px-4 pt-[150px] pb-8 md:px-8 md:pt-[156px] md:pb-10 lg:px-12">
@@ -76,7 +83,7 @@ export default function ContactUsPage() {
                 For quick assistance, message us directly on WhatsApp at +256 779 122 222 and we will guide you to the next step.
               </p>
               <a
-                href="https://wa.me/256779122222?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20need%20help.%20"
+                href="https://wa.me/256779122222?text=Hello%20Majo%20Market%20Support%2C%20I%20need%20help.%20"
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-[#25D366] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#1ebc5f]"

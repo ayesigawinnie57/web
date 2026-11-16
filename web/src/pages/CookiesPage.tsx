@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { Cookie, CheckCircle2 } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -28,7 +29,7 @@ const DEFAULT_SECTIONS = [
   },
   {
     title: '6. Your consent',
-    text: 'By continuing to use Majo Gadgets, you consent to our use of cookies as described in this policy. You may withdraw consent at any time by clearing cookies in your browser or adjusting your browser settings.',
+    text: 'By continuing to use Majo Market, you consent to our use of cookies as described in this policy. You may withdraw consent at any time by clearing cookies in your browser or adjusting your browser settings.',
   },
   {
     title: '7. Updates to this policy',
@@ -63,6 +64,12 @@ export default function CookiesPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Cookie Policy | Majo Market</title>
+        <meta name="description" content="Learn how Majo Market uses cookies and similar technologies to support and improve the marketplace." />
+        <meta name="robots" content="index,follow" />
+        <link rel="canonical" href="https://www.majogadgets.com/cookies" />
+      </Helmet>
       <Navbar />
 
       <main className="w-full max-w-none px-4 pt-[150px] pb-8 md:px-8 md:pt-[156px] md:pb-10 lg:px-12">
@@ -75,7 +82,7 @@ export default function CookiesPage() {
             </div>
             <h1 className="mt-4 text-3xl font-black md:text-5xl tracking-tight">Cookie Policy</h1>
             <p className="mt-3 max-w-3xl text-[14px] md:text-[16px] text-slate-200">
-              Learn how Majo Gadgets uses cookies and similar technologies to improve your experience.
+              Learn how Majo Market uses cookies and similar technologies to improve your experience.
             </p>
             {updatedAt && (
               <p className="mt-3 text-[12px] text-slate-400">

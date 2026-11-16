@@ -5,6 +5,7 @@ export type ApiProduct = {
   id: number
   uuid: string
   name: string
+  brand?: string
   slug: string
   price: string
   original_price: string | null

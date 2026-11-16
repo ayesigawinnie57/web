@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
-          <img src={LOGO} alt="Majo Gadgets" className="h-12 w-auto object-contain mx-auto mb-7" />
+          <img src={LOGO} alt="Majo Market" className="h-12 w-auto object-contain mx-auto mb-7" />
           {sent ? (
             <div className="text-center">
               <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">

@@ -107,7 +107,7 @@ export default function RateOrderPage() {
           </div>
           <h2 className="text-[22px] font-extrabold text-[#071A2B]">Thank You!</h2>
           <p className="text-[14px] text-[#64748B] leading-relaxed">
-            Your feedback helps Majo Gadgets improve our service and give you an even better shopping experience.
+            Your feedback helps Majo Market improve our service and give you an even better shopping experience.
           </p>
           <button onClick={() => navigate('/')}
             className="mt-2 px-10 py-3 bg-[#16A34A] text-white rounded-xl text-[14px] font-bold hover:opacity-90">

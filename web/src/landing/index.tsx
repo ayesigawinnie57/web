@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import Navbar from './Navbar'
 import Hero from './Hero'
 import Products from './Products'
@@ -72,6 +73,20 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Majo Market | Online Marketplace in Uganda | Shop Quality Products</title>
+        <meta name="description" content="Discover quality products from trusted sellers on Majo Market. Shop electronics, fashion, home essentials, tools, accessories and more at great prices." />
+        <meta name="robots" content="index,follow" />
+        <link rel="canonical" href="https://www.majogadgets.com/" />
+        <meta property="og:title" content="Majo Market | Shop Quality Products Online in Uganda" />
+        <meta property="og:description" content="Discover quality products from trusted sellers on Majo Market. Shop electronics, fashion, home essentials, tools, accessories and more." />
+        <meta property="og:url" content="https://www.majogadgets.com/" />
+        <meta property="og:image" content="https://www.majogadgets.com/OG.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Majo Market | Shop Quality Products Online in Uganda" />
+        <meta name="twitter:description" content="Discover quality products from trusted sellers on Majo Market. Shop electronics, fashion, home essentials, tools, accessories and more." />
+        <meta name="twitter:image" content="https://www.majogadgets.com/OG.png" />
+      </Helmet>
       <Navbar />
       <div className="pb-20 pt-[112px] lg:pb-0 lg:pt-[128px]">
         <Hero />
@@ -87,6 +102,21 @@ export default function LandingPage() {
             featuredCatalogIds={excludedCatalogIds}
           />
         )}
+        <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8" aria-labelledby="marketplace-intro">
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-7">
+            <h2 id="marketplace-intro" className="text-xl font-extrabold text-[#071A2B]">Shop Online with Majo Market</h2>
+            <p className="mt-3 text-sm leading-6 text-[#475569]">
+              Discover a wide selection of products from trusted sellers on Majo Market, a growing online marketplace in Uganda.
+            </p>
+            <p className="mt-3 text-sm leading-6 text-[#475569]">
+              Browse electronics, gadgets, fashion, shoes, home essentials, tools, accessories and many other products from different sellers in one convenient place.
+            </p>
+            <p className="mt-3 text-sm leading-6 text-[#475569]">
+              Majo Market gives shoppers more choice by allowing them to discover different products, prices, stock availability and seller offers. Customers should be able to compare available offers and view useful seller information before purchasing.
+            </p>
+            <p className="mt-4 text-sm font-bold text-[#071A2B]">Majo Market — Quality Products, Great Value.</p>
+          </div>
+        </section>
       </div>
       <Footer />
     </div>

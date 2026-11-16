@@ -35,12 +35,12 @@ export default function DesktopAdminInstallGate() {
       <section className="w-full max-w-2xl text-center">
         <img
           src="/OG.png"
-          alt="Majo Gadgets app shown on desktop and mobile"
+          alt="Majo Market app shown on desktop and mobile"
           className="w-full rounded-lg border border-[#D8E1E5] shadow-sm"
         />
-        <h1 className="mt-6 text-2xl font-extrabold text-[#071A2B]">Install Majo Gadgets to continue</h1>
+        <h1 className="mt-6 text-2xl font-extrabold text-[#071A2B]">Install Majo Market to continue</h1>
         <p className="mt-3 text-sm leading-6 text-[#536471]">
-          Install the Majo Gadgets web app on this desktop, then open it from your desktop or apps menu to access the portal.
+          Install the Majo Market web app on this desktop, then open it from your desktop or apps menu to access the portal.
         </p>
         {appInstalled ? (
           <>
@@ -48,10 +48,10 @@ export default function DesktopAdminInstallGate() {
               href="web+majo://admin"
               className="mt-6 block rounded-lg border border-[#B7E4C7] bg-white px-4 py-3 text-sm font-semibold text-[#12824C] hover:bg-[#F3FBF6] hover:underline"
             >
-              Majo Gadgets is installed. Click here to open the app.
+              Majo Market is installed. Click here to open the app.
             </a>
             <p className="mt-3 text-xs leading-5 text-[#64748B]">
-              If your browser asks, allow Majo Gadgets to open. If nothing happens, launch it from your desktop or apps menu.
+              If your browser asks, allow Majo Market to open. If nothing happens, launch it from your desktop or apps menu.
             </p>
           </>
         ) : (
@@ -69,7 +69,7 @@ export default function DesktopAdminInstallGate() {
               <div>
                 <h2 className="text-sm font-bold text-[#071A2B]">Install from your browser</h2>
                 <p className="mt-1.5 text-sm leading-6 text-[#536471]">
-                  In Chrome or Edge, use the install icon in the address bar or choose “Install Majo Gadgets” from the browser menu. In Safari, choose File, then Add to Dock.
+                  In Chrome or Edge, use the install icon in the address bar or choose “Install Majo Market” from the browser menu. In Safari, choose File, then Add to Dock.
                 </p>
               </div>
               <button onClick={() => setShowInstallSteps(false)} aria-label="Close install steps" className="p-1 text-[#64748B] hover:text-[#071A2B]">

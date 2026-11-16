@@ -61,7 +61,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
         <TouchableOpacity style={styles.row} onPress={() => router.push('/become-a-trader' as any)}>
           <Store size={20} color="#22C55E" />
-          <Text style={styles.rowText}>Sell with Majo Gadgets</Text>
+          <Text style={styles.rowText}>Sell with Majo Market</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

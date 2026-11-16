@@ -4,11 +4,11 @@ import { Link } from 'react-router-dom'
 const PROMOS = [
   {
     eyebrow: 'Weekend event',
-    title: 'Wemise Weekend',
-    detail: 'Make the most of your weekend upgrades.',
+    title: 'Weekend Marketplace Deals',
+    detail: 'Discover quality products from trusted sellers.',
     href: '/shop',
-     image: '/Majo%20Gadgets%20Weekend%20Tech%20Sale.png',
-    imageAlt: 'Smartphones and tablets for Wemise Weekend',
+    image: '/Majo%20Gadgets%20Weekend%20Tech%20Sale.png',
+    imageAlt: 'Majo Market weekend marketplace event featuring electronics, fashion, home, and tools',
     accent: '#F97316',
   },
   {
@@ -16,8 +16,8 @@ const PROMOS = [
     title: 'Top Bought Products',
     detail: 'See products customers are buying most.',
     href: '/shop?top_bought=true',
-     image: '/Majo%20Gadgets%20Top%20Sellers.png',
-    imageAlt: 'Popular laptops and computing products',
+    image: '/Majo%20Gadgets%20Top%20Sellers.png',
+    imageAlt: 'Majo Market shopper favorites across the marketplace',
     accent: '#0F766E',
   },
   {
@@ -25,8 +25,8 @@ const PROMOS = [
     title: 'Deals of the Day',
     detail: 'Shop active offers before they are gone.',
     href: '/deals',
-     image: '/Majo%20Gadgets%20Deal%20of%20the%20Day.png',
-    imageAlt: 'Home appliances available in current deals',
+    image: '/Majo%20Gadgets%20Deal%20of%20the%20Day.png',
+    imageAlt: 'Majo Market deals across electronics, fashion, home, and accessories',
     accent: '#B91C1C',
   },
 ]

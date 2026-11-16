@@ -94,7 +94,7 @@ export default function ProductDetail() {
   const handleShare = async () => {
     const productSlug = product.slug ?? String(product.id)
     const shareUrl = `${PRODUCT_SHARE_URL}/${productSlug}/`
-    const details = `Premium ${product.name.toLowerCase()} from Majo Gadgets. Rated ${product.rating}/5.`
+    const details = `${product.name} is available on Majo Market from trusted sellers. Rated ${product.rating}/5.`
     await Share.share({
       title: product.name,
       message: `${product.name}\nUGX ${product.price.toLocaleString()}\n${details}\n${product.image ? `Image: ${product.image}\n` : ''}${shareUrl}`,
@@ -110,7 +110,7 @@ export default function ProductDetail() {
     ? reviews.filter(r => r.images.length > 0)
     : reviews.filter(r => r.overall_rating === Number(reviewFilter))
 
-  const shortDescription = plainText(apiProduct?.short_description) || `A quality ${product.name.toLowerCase()} from Majo Gadgets, selected for reliable everyday use and great value.`
+  const shortDescription = plainText(apiProduct?.short_description) || `A quality ${product.name} from a trusted Majo Market seller.`
   const longDescription = plainText(apiProduct?.long_description) || shortDescription
   const deliveryFee = Number(apiProduct?.delivery_fee ?? 5000)
   const savings = product.originalPrice ? product.originalPrice - product.price : 0
@@ -300,7 +300,7 @@ export default function ProductDetail() {
               <Text style={styles.detailsText}>{longDescription}</Text>
               <View style={styles.specsList}>
                 {[
-                  ['Brand', 'Majo Gadgets'],
+                  ['Brand', apiProduct?.brand?.trim() || 'Not specified'],
                   ['Category', (product.categoryName || product.category).replace(/-/g, ' ')],
                   ['Condition', 'Brand New'],
                   ['Warranty', '1 Year Manufacturer'],

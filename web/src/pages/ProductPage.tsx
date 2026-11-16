@@ -147,7 +147,6 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [sponsoredProductId, setSponsoredProductId] = useState<number | null>(null)
   const [sponsoredPlacements, setSponsoredPlacements] = useState<ApiAdvertisingPlacement[]>([])
-  const [catalogOffers, setCatalogOffers] = useState<Product[]>([])
   const [related, setRelated] = useState<Product[]>([])
   const [alsoBy, setAlsoBy] = useState<Product[]>([])
   const [sellerProducts, setSellerProducts] = useState<Product[]>([])
@@ -196,7 +195,6 @@ export default function ProductPage() {
     setWishlisted(false)
     setProductDetailsExpanded(false)
     setReviews([])
-    setCatalogOffers([])
     setSellerProducts([])
     setSeller(null)
     setSummary(null)
@@ -223,7 +221,6 @@ export default function ProductPage() {
         try {
           const { data: offerData } = await productsApi.catalogOffers(data.catalog_product_id)
           const offers = offerData.map(offer => ({ ...toProduct(offer), slug }))
-          setCatalogOffers(offers)
           const matchingOffer = offers.find(offer =>
             (data.trader_offer_id != null && offer.offerId === data.trader_offer_id)
             || (data.seller_uuid && offer.sellerUuid === data.seller_uuid),
@@ -231,10 +228,7 @@ export default function ProductPage() {
           p = matchingOffer ?? offers.find(offer => offer.stock > 0) ?? offers[0] ?? p
         } catch (error) {
           console.error('Failed to load sellers for the catalog product.', error)
-          setCatalogOffers([p])
         }
-      } else {
-        setCatalogOffers([p])
       }
       setProduct(p)
       if (p.sellerUuid) {
@@ -246,8 +240,8 @@ export default function ProductPage() {
       } else {
         setSeller({
           uuid: '',
-          business_name: 'Majo Gadgets',
-          bio: 'Official Majo Gadgets store.',
+          business_name: 'Majo Market',
+          bio: 'Official Majo Market store.',
           is_verified: false,
           is_official: true,
           follower_count: null,
@@ -319,38 +313,6 @@ export default function ProductPage() {
     }
   }
 
-  const selectCatalogOffer = (offer: Product) => {
-    setProduct({ ...offer, slug: slug ?? offer.slug })
-    setQty(1)
-    setSelectedOptions({})
-    setActiveImg(0)
-    setCartToast(null)
-    if (offer.sellerUuid) {
-      publicSellerApi.profile(offer.sellerUuid)
-        .then(({ data }) => setSeller(data))
-        .catch(() => setSeller(null))
-    } else {
-      setSeller({
-        uuid: '',
-        business_name: 'Majo Gadgets',
-        bio: 'Official Majo Gadgets store.',
-        is_verified: false,
-        is_official: true,
-        follower_count: null,
-        is_following: false,
-        customer_rating: null,
-        review_count: 0,
-        quality_rating: null,
-        quality_review_count: 0,
-        shipping_speed_score: null,
-        shipping_sample_count: 0,
-        cancellation_rate: null,
-        order_item_count: 0,
-        seller_score: null,
-      })
-    }
-  }
-
   if (loading) return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Navbar />
@@ -365,10 +327,14 @@ export default function ProductPage() {
 
   if (!product) return null
 
-  const pageTitle = `${product.name} – Majo Gadgets`
-  const pageDesc = product.shortDescription.trim() || `Buy ${product.name} at UGX ${product.price.toLocaleString()} on Majo Gadgets. Fast delivery across Uganda.`
-  const pageImage = product.image || 'https://res.cloudinary.com/fhklnn0f/image/upload/v1789111152/Majo_Gadgets_logo_an2hbc.png'
+  const pageTitle = `${product.name} | Majo Market`
+  const productDescription = product.shortDescription.trim()
+  const pageDesc = productDescription
+    ? `${productDescription} Compare available seller offers on Majo Market.`
+    : `Buy ${product.name} on Majo Market. Compare available seller offers, prices, stock, delivery, warranty and return options.`
+  const pageImage = product.image || 'https://www.majogadgets.com/pwa-512.png'
   const pageUrl = `https://www.majogadgets.com/shop/${product.slug}`
+  const currentSellerName = seller?.business_name || product.sellerName || undefined
 
   const activeVariants = product.variants.filter(variant => variant.is_active)
   const hasVariants = product.variants.length > 0
@@ -488,7 +454,7 @@ export default function ProductPage() {
   }
 
   const savings = currentOriginalPrice ? currentOriginalPrice - currentPrice : 0
-  const shortDescription = product.shortDescription.trim() || 'A quality product from Majo Gadgets, selected for reliable everyday use and great value.'
+  const shortDescription = product.shortDescription.trim() || 'A quality product from Majo Market, selected for reliable everyday use and great value.'
   const longDescription = product.longDescription.trim() || shortDescription
   const deliveryDate = new Date()
   deliveryDate.setDate(deliveryDate.getDate() + 2)
@@ -529,7 +495,7 @@ export default function ProductPage() {
     setSharing(true)
     try {
       if (navigator.share) {
-        await navigator.share({ title: product.name, text: `Buy ${product.name} from Majo Gadgets`, url: shareUrl })
+        await navigator.share({ title: product.name, text: `Buy ${product.name} from Majo Market`, url: shareUrl })
       } else {
         await navigator.clipboard.writeText(shareUrl)
         showToast('Product link copied.')
@@ -592,37 +558,63 @@ export default function ProductPage() {
         <meta property="og:image" content={pageImage} />
         <meta property="og:url" content={pageUrl} />
         <meta property="og:type" content="product" />
+        <meta property="og:site_name" content="Majo Market" />
+        <meta property="og:image:alt" content={product.name} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDesc} />
         <meta name="twitter:image" content={pageImage} />
+        <meta name="twitter:image:alt" content={product.name} />
         <script type="application/ld+json">{JSON.stringify({
           '@context': 'https://schema.org',
-          '@type': 'Product',
-          name: product.name,
-          description: pageDesc,
-          image: allImages,
-          url: pageUrl,
-          sku: String(product.id),
-          brand: { '@type': 'Brand', name: 'Majo Gadgets' },
-          category: product.categoryName,
-          offers: {
-            '@type': 'Offer',
-            priceCurrency: 'UGX',
-            price: product.price,
-            availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-            url: pageUrl,
-            seller: { '@type': 'Organization', name: 'Majo Gadgets' },
-          },
-          ...(summary && summary.total > 0 ? {
-            aggregateRating: {
-              '@type': 'AggregateRating',
-              ratingValue: summary.average.toFixed(1),
-              reviewCount: summary.total,
-              bestRating: 5,
-              worstRating: 1,
-            }
-          } : {}),
+          '@graph': [
+            {
+              '@type': 'WebPage',
+              '@id': pageUrl,
+              url: pageUrl,
+              name: pageTitle,
+              description: pageDesc,
+              breadcrumb: { '@id': `${pageUrl}#breadcrumb` },
+              mainEntity: { '@id': `${pageUrl}#product` },
+            },
+            {
+              '@type': 'Product',
+              '@id': `${pageUrl}#product`,
+              name: product.name,
+              description: pageDesc,
+              image: allImages,
+              url: pageUrl,
+              sku: String(product.id),
+              ...(product.brand.trim() ? { brand: { '@type': 'Brand', name: product.brand } } : {}),
+              ...(product.categoryName ? { category: product.categoryName } : {}),
+              offers: {
+                '@type': 'Offer',
+                priceCurrency: 'UGX',
+                price: product.price,
+                availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                url: pageUrl,
+                ...(currentSellerName ? { seller: { '@type': 'Organization', name: currentSellerName } } : {}),
+              },
+              ...(summary && summary.total > 0 ? {
+                aggregateRating: {
+                  '@type': 'AggregateRating',
+                  ratingValue: summary.average.toFixed(1),
+                  reviewCount: summary.total,
+                  bestRating: 5,
+                  worstRating: 1,
+                },
+              } : {}),
+            },
+            {
+              '@type': 'BreadcrumbList',
+              '@id': `${pageUrl}#breadcrumb`,
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.majogadgets.com/' },
+                { '@type': 'ListItem', position: 2, name: 'Shop', item: 'https://www.majogadgets.com/shop' },
+                { '@type': 'ListItem', position: 3, name: product.name, item: pageUrl },
+              ],
+            },
+          ],
         })}</script>
       </Helmet>
       <Navbar />
@@ -737,28 +729,6 @@ export default function ProductPage() {
                   <p className="text-[12px] text-green-600 font-semibold">
                     You save UGX {savings.toLocaleString()} ({discount}%)
                   </p>
-                )}
-                {catalogOffers.length > 1 && (
-                  <section className="mt-4 rounded-xl border border-[#E2E8F0] bg-white p-3">
-                    <h2 className="mb-2 text-[12px] font-extrabold text-[#071A2B]">Other traders</h2>
-                    <div className="space-y-2">
-                      {catalogOffers.map(offer => (
-                        <button
-                          key={offer.offerId ?? offer.id}
-                          type="button"
-                          aria-pressed={offer.offerId === product.offerId}
-                          onClick={() => selectCatalogOffer(offer)}
-                          className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left ${offer.offerId === product.offerId ? 'border-[#1E3A8A] bg-blue-50' : 'border-[#E2E8F0] hover:border-[#94A3B8]'}`}
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate text-[12px] font-bold text-[#334155]">{offer.sellerName || 'Marketplace trader'}</span>
-                            <span className="mt-0.5 block text-[10px] text-[#64748B]">{offer.stock > 0 ? `${offer.stock} available` : 'Out of stock'}</span>
-                          </span>
-                          <span className="shrink-0 text-[12px] font-extrabold text-[#1E3A8A]">UGX {offer.price.toLocaleString()}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </section>
                 )}
               </div>
 

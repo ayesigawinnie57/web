@@ -130,12 +130,12 @@ export default function BecomeTraderScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}> 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Go back"><ArrowLeft size={22} color="#fff" /></TouchableOpacity>
-        <View style={styles.headerTitle}><Store size={19} color="#22C55E" /><Text style={styles.title}>Sell with Majo Gadgets</Text></View>
+        <View style={styles.headerTitle}><Store size={19} color="#22C55E" /><Text style={styles.title}>Sell with Majo Market</Text></View>
         <View style={styles.spacer} />
       </View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.heading}>Become a Trader</Text>
-        <Text style={styles.description}>Apply to list and sell your products on Majo Gadgets. Fields marked * are required.</Text>
+        <Text style={styles.description}>Apply to list and sell your products on Majo Market. Fields marked * are required.</Text>
         <Section title="Personal information">
           <Field label="Full name *" value={form.full_name} onChangeText={value => set('full_name', value)} />
           <Field label="Email *" value={form.email} onChangeText={value => set('email', value)} keyboardType="email-address" />

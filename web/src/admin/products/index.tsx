@@ -147,7 +147,7 @@ export default function AdminProducts() {
                 <p className="text-[14px] font-bold text-[#071A2B] truncate">{item.name}</p>
                 <p className="text-[13px] font-bold text-[#22C55E]">UGX {Number(item.price).toLocaleString()}</p>
                 <p className="text-[11px] text-[#64748B] capitalize">{item.category?.name ?? '—'}</p>
-                <p className="text-[10px] text-[#64748B]">{item.seller_name ?? 'Majo Gadgets'} · Stock {item.stock} · {item.variants?.length ?? 0} variants</p>
+                <p className="text-[10px] text-[#64748B]">{item.seller_name ?? 'Majo Market'} · Stock {item.stock} · {item.variants?.length ?? 0} variants</p>
                 <span className="inline-flex mt-1 rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold capitalize text-[#475569]">{item.review_status.replace('_', ' ')}</span>
                 {item.review_note && <p className="text-[10px] text-amber-700">{item.review_note}</p>}
               </div>

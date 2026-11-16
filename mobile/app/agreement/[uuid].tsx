@@ -79,7 +79,7 @@ export default function TraderAgreementScreen() {
   const downloadAgreement = async () => {
     if (!agreement) return
     const paragraphs = agreement.sections.map(section => `${section.title}\n${section.paragraphs.join('\n')}`).join('\n\n')
-    const content = `${agreement.title}\nAgreement Reference: ${agreement.reference}\nAgreement Version: ${agreement.version}\nEffective Date: ${dateLabel(agreement.effective_at)}\n\nTrader: ${agreement.trader.name}\nTrader ID: ${agreement.trader.id}\nBusiness: ${agreement.trader.business_name}\nLocation: ${agreement.trader.address}\nRegistration Number: ${agreement.trader.registration_number || 'Not provided'}\nNational ID: ${agreement.trader.national_id}\n\n${paragraphs}\n\nMajo Gadgets signatory: ${agreement.platform.signatory}, ${agreement.platform.title}\nTrader signature: ${agreement.trader.signed_name}\nExecuted: ${dateLabel(agreement.effective_at)}\nNational ID copy is not included.`
+    const content = `${agreement.title}\nAgreement Reference: ${agreement.reference}\nAgreement Version: ${agreement.version}\nEffective Date: ${dateLabel(agreement.effective_at)}\n\nTrader: ${agreement.trader.name}\nTrader ID: ${agreement.trader.id}\nBusiness: ${agreement.trader.business_name}\nLocation: ${agreement.trader.address}\nRegistration Number: ${agreement.trader.registration_number || 'Not provided'}\nNational ID: ${agreement.trader.national_id}\n\n${paragraphs}\n\nMajo Market signatory: ${agreement.platform.signatory}, ${agreement.platform.title}\nTrader signature: ${agreement.trader.signed_name}\nExecuted: ${dateLabel(agreement.effective_at)}\nNational ID copy is not included.`
     if (Platform.OS === 'web') {
       const url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }))
       const anchor = document.createElement('a')
@@ -100,7 +100,7 @@ export default function TraderAgreementScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/notifications' as any)} accessibilityLabel="Back"><ArrowLeft size={20} color="#fff" /></TouchableOpacity>
-        <View style={styles.headerTitle}><Text style={styles.brand}>MAJO GADGETS</Text><Text style={styles.heading}>Trader Agreement</Text></View>
+        <View style={styles.headerTitle}><Text style={styles.brand}>MAJO MARKET</Text><Text style={styles.heading}>Trader Agreement</Text></View>
         {signed && <TouchableOpacity onPress={downloadAgreement} accessibilityLabel="Download agreement"><Download size={19} color="#fff" /></TouchableOpacity>}
       </View>
       <ScrollView contentContainerStyle={styles.content}>
@@ -124,7 +124,7 @@ export default function TraderAgreementScreen() {
             </View>
           ))}
           <View style={styles.signatureBlock}>
-            <Text style={styles.sectionHeading}>FOR MAJO GADGETS</Text>
+            <Text style={styles.sectionHeading}>FOR MAJO MARKET</Text>
             <Text style={styles.paragraph}>Legal representative: {agreement.platform.signatory}</Text>
             <Text style={styles.paragraph}>Title: {agreement.platform.title}</Text>
             <Text style={styles.paragraph}>Electronically executed: {dateLabel(agreement.platform.signed_at)}</Text>
@@ -141,7 +141,7 @@ export default function TraderAgreementScreen() {
         ) : (
           <View style={styles.signPanel}>
             <View style={styles.panelHeading}><PenLine size={18} color={C.navy} /><Text style={styles.sectionHeading}>Sign this agreement</Text></View>
-            {!agreement.ready_to_sign && <Text style={styles.error}>Majo Gadgets business address must be configured before signing.</Text>}
+            {!agreement.ready_to_sign && <Text style={styles.error}>Majo Market business address must be configured before signing.</Text>}
             <Text style={styles.label}>Your verified legal name</Text>
             <TextInput value={signedName} onChangeText={setSignedName} style={styles.input} autoCapitalize="words" />
             <TouchableOpacity style={styles.uploadButton} onPress={pickSignature}><Text style={styles.uploadText}>{signature?.name ?? 'Add signature image (optional)'}</Text></TouchableOpacity>

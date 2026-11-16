@@ -2,10 +2,11 @@ import { type FormEvent, useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, ChevronDown, ShieldCheck } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
-import { authApi, cartApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, fetchAllDistricts, type DistrictRecord, type LoginResponse, type SigninLocation } from '../lib/api'
+import { authApi, cartApi, tradersApi, wishlistApi, notifyCartUpdated, notifyWishlistUpdated, LOGO, fetchAllDistricts, type DistrictRecord, type LoginResponse, type SigninLocation } from '../lib/api'
 import { useNotifications } from '../lib/NotificationContext'
 import { initializeSupportEncryptionBackup } from '../lib/supportEncryption'
 import { Helmet } from 'react-helmet-async'
+import AuthPageBackground from '../components/AuthPageBackground'
 
 const getSigninLocation = (): Promise<SigninLocation | null> => new Promise(resolve => {
   if (!navigator.geolocation) {
@@ -72,7 +73,17 @@ export default function LoginPage() {
       }
     } catch { /* ignore */ }
     const from = (location.state as any)?.from
-    navigate(isStaff ? '/admin' : (from ?? nextPath ?? '/'), { replace: true })
+    const requestedPath = from ?? nextPath
+    let destination = isStaff ? '/admin' : (requestedPath ?? '/')
+    if (!isStaff && !requestedPath) {
+      const { data: trader } = await tradersApi.me()
+      if (trader?.status === 'approved') {
+        destination = trader.agreement_required && !trader.agreement_signed_at
+          ? `/agreement/${trader.uuid}`
+          : `/trader/${trader.uuid}`
+      }
+    }
+    navigate(destination, { replace: true })
     refreshNotifications()
   }
 
@@ -157,13 +168,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-page-background min-h-screen flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <AuthPageBackground className="min-h-screen flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Helmet>
-        <title>Sign In - Majo Gadgets</title>
+        <title>Sign In - Majo Market</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
-        <img src={LOGO} alt="Majo Gadgets" className="h-12 w-auto object-contain mx-auto mb-7" />
+        <img src={LOGO} alt="Majo Market" className="h-12 w-auto object-contain mx-auto mb-7" />
         <div className="mb-7"><h1 className="text-2xl font-extrabold text-[#071A2B]">Welcome back</h1><p className="text-[13px] text-[#64748B] mt-1">Sign in to your account</p></div>
         {error && <div className="mb-5 p-3 bg-red-50 border border-red-100 text-[13px] font-semibold text-red-600">{error}</div>}
         <form onSubmit={submit} className="space-y-5">
@@ -178,7 +189,7 @@ export default function LoginPage() {
         </p>
         {hasGoogleClientId && <GoogleButton loading={loading} onSuccess={data => handleLoginResponse(data)} onError={setError} onNeedsProfile={setPendingProfile} />}
       </section>
-    </div>
+    </AuthPageBackground>
   )
 }
 
@@ -193,7 +204,7 @@ function EmailMfaForm({ emailHint, loading, error, onVerify, onResend, onCancel 
   const [code, setCode] = useState('')
   const [notice, setNotice] = useState('')
   return (
-    <div className="auth-page-background min-h-screen flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <AuthPageBackground className="min-h-screen flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
         <ShieldCheck size={36} className="mb-4 text-[#1E3A8A]" />
         <h1 className="text-2xl font-extrabold text-[#071A2B]">Verify your sign-in</h1>
@@ -213,7 +224,7 @@ function EmailMfaForm({ emailHint, loading, error, onVerify, onResend, onCancel 
           <button type="button" onClick={onCancel} className="font-semibold text-[#64748B]">Use another sign-in</button>
         </div>
       </section>
-    </div>
+    </AuthPageBackground>
   )
 }
 
@@ -319,9 +330,9 @@ function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
   }
 
   return (
-    <div className="auth-page-background min-h-screen flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <AuthPageBackground className="min-h-screen flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
-        <img src={LOGO} alt="Majo Gadgets" className="h-12 w-auto object-contain mx-auto mb-7" />
+        <img src={LOGO} alt="Majo Market" className="h-12 w-auto object-contain mx-auto mb-7" />
         <div className="mb-6">
           <h1 className="text-2xl font-extrabold text-[#071A2B]">Complete your profile</h1>
           <p className="text-[13px] text-[#64748B] mt-1">Signed in as <strong>{name}</strong> ({email}). Just a few more details.</p>
@@ -356,7 +367,7 @@ function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
           </button>
         </form>
       </section>
-    </div>
+    </AuthPageBackground>
   )
 }
 

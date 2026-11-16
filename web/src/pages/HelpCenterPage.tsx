@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { ArrowRight, CircleHelp, CreditCard, PackageCheck, Search, ShieldCheck, Truck } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -64,7 +65,7 @@ const faqs = [
   },
   {
     category: 'General',
-    question: 'Can I sell my products on Majo Gadgets?',
+    question: 'Can I sell my products on Majo Market?',
     answer:
       'Yes. Use the Become a Trader option from the site footer or the seller flow to apply and begin listing your products once your account is approved.',
   },
@@ -91,6 +92,12 @@ export default function HelpCenterPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Help Center | Majo Market</title>
+        <meta name="description" content="Get help with Majo Market orders, delivery, returns, payments, accounts, and trusted seller services." />
+        <meta name="robots" content="index,follow" />
+        <link rel="canonical" href="https://www.majogadgets.com/help-center" />
+      </Helmet>
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 pt-[150px] pb-8 md:pt-[156px] md:pb-12">
         <section className="rounded-[28px] bg-[#071A2B] px-6 py-8 md:px-10 md:py-10 text-white shadow-[0_25px_80px_rgba(15,43,67,0.18)]">
@@ -193,12 +200,12 @@ export default function HelpCenterPage() {
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="rounded-2xl border border-[#BAE6FD] bg-white px-4 py-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#1E3A8A]">WhatsApp support</p>
-              <p className="mt-1 text-[15px] font-extrabold text-[#071A2B]">Majo Gadgets Support</p>
+              <p className="mt-1 text-[15px] font-extrabold text-[#071A2B]">Majo Market Support</p>
               <p className="text-[13px] text-[#334155]">+256 779 122 222</p>
             </div>
 
             <a
-              href="https://wa.me/256779122222?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20need%20help.%20"
+              href="https://wa.me/256779122222?text=Hello%20Majo%20Market%20Support%2C%20I%20need%20help.%20"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center rounded-xl bg-[#25D366] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#1ebc5f]"

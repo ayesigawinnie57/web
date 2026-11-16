@@ -33,7 +33,7 @@ export default function LoginScreen() {
     pushNotification({
       type: 'welcome',
       title: 'Welcome back',
-      body: 'You are now signed in. Explore the latest gadgets and deals.',
+      body: 'You are now signed in. Discover quality products from trusted sellers and marketplace deals.',
       time: 'Just now',
     })
     router.replace('/' as any)

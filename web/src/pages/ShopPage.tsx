@@ -146,6 +146,13 @@ export default function ShopPage() {
     ordering,
     ...activeAttributeFilters.map(attribute => attribute.key),
   ].filter(Boolean).length
+  const hasSearchOrFilters = searchParams.toString().length > 0
+  const pageTitle = query.trim()
+    ? `Search results for "${query.trim()}" | Majo Market`
+    : `${heading} | Majo Market`
+  const pageDescription = query.trim()
+    ? `Search for ${query.trim()} on Majo Market and explore products from trusted sellers across Uganda.`
+    : `Browse ${heading.toLowerCase()} from trusted sellers on Majo Market. Compare products, prices, and current availability.`
 
   const clearFilters = () => {
     const next = new URLSearchParams()
@@ -156,9 +163,18 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Helmet>
-        <title>{heading} – Majo Gadgets</title>
-        <meta name="description" content={`Shop ${heading.toLowerCase()} on Majo Gadgets. Great prices, fast delivery across Uganda.`} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta name="robots" content={hasSearchOrFilters ? 'noindex,follow' : 'index,follow'} />
         <link rel="canonical" href="https://www.majogadgets.com/shop" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Majo Market" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content="https://www.majogadgets.com/shop" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
       </Helmet>
       <Navbar />
       <main className="mx-auto max-w-[1440px] px-4 pb-20 pt-[112px] lg:px-6 lg:pb-12 lg:pt-[128px]">
@@ -166,10 +182,10 @@ export default function ShopPage() {
           <div className="pointer-events-none absolute -right-10 -top-20 h-64 w-64 rounded-full border-[36px] border-white/[0.04]" />
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-200">Majo Gadgets Marketplace</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-200">Majo Market Marketplace</p>
               <h1 className="mt-2 text-2xl font-extrabold leading-tight sm:text-3xl">{heading}</h1>
               <p className="mt-2 max-w-2xl text-[13px] leading-5 text-white/75">
-                Discover quality products from trusted stores, all in one place.
+                Discover quality products from trusted sellers, all in one place.
               </p>
             </div>
             <div className="shrink-0 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-sm">

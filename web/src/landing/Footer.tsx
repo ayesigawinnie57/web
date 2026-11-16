@@ -6,8 +6,8 @@ export default function Footer() {
   const openAppStore = () => {
     const isAppleDevice = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)
     const storeUrl = isAppleDevice
-      ? 'https://apps.apple.com/search?term=Majo%20Gadgets'
-      : 'https://play.google.com/store/search?q=Majo%20Gadgets&c=apps'
+      ? 'https://apps.apple.com/search?term=Majo%20Market'
+      : 'https://play.google.com/store/search?q=Majo%20Market&c=apps'
 
     window.open(storeUrl, '_blank', 'noopener,noreferrer')
   }
@@ -21,7 +21,7 @@ export default function Footer() {
     { label: 'Privacy Policy', to: '/privacy-policy' },
     { label: 'Cookie Policy', to: '/cookies' },
     { label: 'Terms of Service', to: '/terms' },
-    { label: 'Sell with Majo Gadgets', to: '/become-a-trader' },
+    { label: 'Sell with Majo Market', to: '/become-a-trader' },
   ]
 
   return (
@@ -29,10 +29,10 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-10 md:grid-cols-[1.25fr_1fr_1fr] md:gap-8 lg:gap-16">
           <div>
-            <img src={LOGO} alt="Majo Gadgets" className="h-12 w-12 rounded-full object-cover object-center" />
+            <img src={LOGO} alt="Majo Market" className="h-12 w-12 rounded-full object-cover object-center" />
 
             <p className="mt-5 max-w-xs text-sm leading-6 text-slate-300">
-              Your one-stop destination for everything you need.
+              Your marketplace for quality products, great deals and trusted sellers.
             </p>
 
             <div className="mt-5 space-y-3 text-sm text-slate-300">
@@ -74,16 +74,16 @@ export default function Footer() {
 
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-100">GET THE APP</h2>
-            <p className="mt-5 max-w-xs text-sm leading-6 text-slate-300">Shop faster on the go with the Majo Gadgets mobile app.</p>
+            <p className="mt-5 max-w-xs text-sm leading-6 text-slate-300">Shop faster on the go with the Majo Market mobile app.</p>
             <button
               type="button"
               onClick={openAppStore}
-              aria-label="Download the Majo Gadgets app"
+              aria-label="Download the Majo Market app"
               className="mt-1 inline-flex w-fit max-w-full transition hover:opacity-90 sm:mt-3"
             >
               <img
                 src="https://res.cloudinary.com/fhklnn0f/image/upload/v1789119996/Mobile.png"
-                alt="Download the Majo Gadgets app"
+                alt="Download the Majo Market app"
                 className="h-20 max-w-full w-auto object-contain"
               />
             </button>
@@ -91,7 +91,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-sm text-slate-400 md:flex-row md:items-center md:justify-between">
-          <p>© 2026 Majo Gadgets. All rights reserved.</p>
+          <p>© 2026 Majo Market. All rights reserved.</p>
           <p className="flex w-full min-w-0 items-start gap-2 leading-6 md:w-auto md:justify-end md:text-right">
             <Code2 className="h-5 w-5 shrink-0 text-cyan-300" aria-hidden="true" />
             <span className="min-w-0 max-w-full break-all">Built and Managed by Oraka Software Tech <strong>|| 0794448439</strong></span>

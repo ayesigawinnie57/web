@@ -76,7 +76,7 @@ export default function OrderDetailScreen() {
           pushNotification({
             type: 'order',
             title: `🎉 Order Delivered — ${data.code}`,
-            body: `Your order has arrived! We hope you love your purchase.\n\nOrder No: ${data.code}\nItems: ${itemNames}\n\nEnjoy your new gadget(s) from Majo Gadgets!`,
+            body: `Your order has arrived! We hope you love your purchase.\n\nOrder No: ${data.code}\nItems: ${itemNames}\n\nEnjoy your purchase from Majo Market!`,
             time: 'Just now',
           })
           // Check eligibility for each item and push notification only for unreviewed ones
@@ -88,7 +88,7 @@ export default function OrderDetailScreen() {
               if (elig.eligible) {
                 pushNotification({
                   type: 'product_rating',
-                  title: '⭐ How do you like your new gadget?',
+                  title: '⭐ How do you like your new product?',
                   body: `You've received your order! Share your experience with ${item.product?.name ?? 'your product'} and help other Majo customers make better choices.|${slug}`,
                   time: 'Just now',
                 })
@@ -191,7 +191,7 @@ export default function OrderDetailScreen() {
               pushNotification({
                 type: 'order',
                 title: `❌ Order Cancelled — ${order.code}`,
-                body: `Your order has been successfully cancelled.\n\nOrder No: ${order.code}\nItems: ${order.items.map(i => i.product?.name ?? 'Item').join(', ')}\n\nIf this was a mistake or you'd like to reorder, visit the shop anytime. We're always here for you at Majo Gadgets.`,
+                body: `Your order has been successfully cancelled.\n\nOrder No: ${order.code}\nItems: ${order.items.map(i => i.product?.name ?? 'Item').join(', ')}\n\nIf this was a mistake or you'd like to reorder, visit the shop anytime. We're always here for you at Majo Market.`,
                 time: 'Just now',
               })
             } catch (e: any) {

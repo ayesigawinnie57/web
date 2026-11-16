@@ -107,9 +107,18 @@ export default function CategoryPage() {
   return (
     <div className="min-h-screen bg-[#F4F7FB]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Helmet>
-        <title>All Categories – Majo Gadgets</title>
-        <meta name="description" content="Browse all product departments and categories on Majo Gadgets. Find electronics, fashion, home essentials, and more." />
+        <title>All Categories – Majo Market</title>
+        <meta name="description" content="Browse all product departments and categories on Majo Market. Find electronics, fashion, home essentials, and more." />
+        <meta name="robots" content="index,follow" />
         <link rel="canonical" href="https://www.majogadgets.com/categories" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Majo Market" />
+        <meta property="og:title" content="All Categories | Majo Market" />
+        <meta property="og:description" content="Browse product categories and discover quality products from trusted sellers on Majo Market." />
+        <meta property="og:url" content="https://www.majogadgets.com/categories" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="All Categories | Majo Market" />
+        <meta name="twitter:description" content="Browse product categories and discover quality products from trusted sellers on Majo Market." />
       </Helmet>
       <Navbar />
       <main className="mx-auto max-w-[1440px] px-4 pb-20 pt-[112px] lg:px-6 lg:pb-12 lg:pt-[128px]">
@@ -117,7 +126,7 @@ export default function CategoryPage() {
           <div className="pointer-events-none absolute -right-10 -top-20 h-64 w-64 rounded-full border-[36px] border-white/[0.04]" />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-200">Explore Majo Gadgets</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-200">Explore Majo Market</p>
               <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">Shop by category</h1>
               <p className="mt-2 text-[13px] leading-6 text-white/75">
                 Browse departments, discover new collections, and find just what you need.

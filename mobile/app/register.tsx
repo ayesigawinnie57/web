@@ -60,8 +60,8 @@ export default function RegisterScreen() {
       }
       pushNotification({
         type: 'welcome',
-        title: 'Welcome to Majo Gadgets',
-        body: `Hi ${form.name.trim()}, your account is ready. Start exploring our latest gadgets.`,
+        title: 'Welcome to Majo Market',
+        body: `Hi ${form.name.trim()}, your account is ready. Discover quality products from trusted sellers.`,
         time: 'Just now',
       })
       router.replace('/' as any)

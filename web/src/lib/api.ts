@@ -13,7 +13,7 @@ const resolveApiBaseUrl = () => {
 
 export const BASE_URL = resolveApiBaseUrl()
 
-export const LOGO = 'https://res.cloudinary.com/d5qqtsou/image/upload/v1788691351/Majo_Gadgets_logo_an2hbc.png'
+export const LOGO = '/pwa-512.png'
 
 const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME ?? 'fhklnn0f'
 export const cloudinaryUrl = (publicId: string | null | undefined) =>
@@ -363,7 +363,7 @@ export type Product = {
 }
 
 const DEFAULT_PRODUCT_DESCRIPTION = 'Product details are provided by the seller. Contact us if you need more information.'
-const DEFAULT_LONG_DESCRIPTION = 'This product is available through the Majo Gadgets marketplace. Product availability and delivery details are shown above.'
+const DEFAULT_LONG_DESCRIPTION = 'This product is available through the Majo Market marketplace. Compare available seller offers and review current stock, delivery, warranty, and return details before purchasing.'
 
 function unescapeHtml(str: string): string {
   const txt = document.createElement('textarea')
@@ -1373,7 +1373,7 @@ export const tradersApi = {
   adminGet: (id: number) => api.get<ApiTraderApplication>(`/api/traders/admin/${id}/`),
   adminDocument: (id: number, documentType: 'national-id' | 'ura-certificate' | 'business-location') =>
     api.get<Blob>(`/api/traders/admin/${id}/documents/${documentType}/`, { responseType: 'blob' }),
-  approve: (id: number, note?: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/approve/`, { admin_note: note ?? '', documents_verified: true }),
+  approve: (id: number, note?: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/approve/`, { admin_note: note ?? '' }),
   reject: (id: number, note: string) => api.post<ApiTraderApplication>(`/api/traders/admin/${id}/reject/`, { admin_note: note }),
   // Trader portal
   profile: (uuid: string) => api.get<ApiTraderApplication>(`/api/traders/${uuid}/profile/`),

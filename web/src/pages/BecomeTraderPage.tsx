@@ -19,7 +19,7 @@ const TRADER_TERMS = [
   },
   {
     title: '2. Customer Privacy',
-    body: 'Traders must never directly contact customers or access their names, phone numbers, email addresses, or other personal details. All customer communication, orders, complaints, and returns are handled by Majo Gadgets.',
+    body: 'Traders must never directly contact customers or access their names, phone numbers, email addresses, or other personal details. All customer communication, orders, complaints, and returns are handled by Majo Market.',
   },
   {
     title: '3. Product Quality',
@@ -31,11 +31,11 @@ const TRADER_TERMS = [
   },
   {
     title: '5. Trust and Transparency',
-    body: 'Do not manipulate prices, fake reviews, create fraudulent orders, falsify records, or mislead customers or Majo Gadgets. Cooperate honestly with investigations and quality checks.',
+    body: 'Do not manipulate prices, fake reviews, create fraudulent orders, falsify records, or mislead customers or Majo Market. Cooperate honestly with investigations and quality checks.',
   },
   {
     title: '6. Returns Policy',
-    body: 'Majo Gadgets manages all returns and refunds. More than three returns of the same product from the same trader will trigger automatic temporary disabling of the trader account pending investigation. Fraud or serious misconduct may result in immediate suspension.',
+    body: 'Majo Market manages all returns and refunds. More than three returns of the same product from the same trader will trigger automatic temporary disabling of the trader account pending investigation. Fraud or serious misconduct may result in immediate suspension.',
   },
   {
     title: '7. Payments and Fees',
@@ -47,16 +47,16 @@ const TRADER_TERMS = [
   },
   {
     title: '9. Violations and Suspension',
-    body: 'Majo Gadgets may remove products, restrict accounts, suspend traders, or terminate accounts for fraud, repeated violations, poor product quality, or breaches of these terms. Appeals may be considered where appropriate.',
+    body: 'Majo Market may remove products, restrict accounts, suspend traders, or terminate accounts for fraud, repeated violations, poor product quality, or breaches of these terms. Appeals may be considered where appropriate.',
   },
   {
     title: '10. Agreement',
-    body: 'By accepting these terms, you confirm that your information is accurate, you will follow Majo Gadgets policies, protect customer privacy, and conduct business honestly.',
+    body: 'By accepting these terms, you confirm that your information is accurate, you will follow Majo Market policies, protect customer privacy, and conduct business honestly.',
   },
 ]
 
 const TRADER_TERMS_INTRO = 'By registering as a trader, you agree to the following rules:'
-const TRADER_TERMS_CLOSING = 'Majo Gadgets reserves the right to update these terms with appropriate notice. All traders must comply with applicable laws and the platform\'s policies.'
+const TRADER_TERMS_CLOSING = 'Majo Market reserves the right to update these terms with appropriate notice. All traders must comply with applicable laws and the platform\'s policies.'
 const TRADER_TERMS_SECTION_COUNT = TRADER_TERMS.length + 2
 const EVIDENCE_ACCEPT = '.jpg,.jpeg,.png,.pdf'
 const MAX_EVIDENCE_SIZE = 10 * 1024 * 1024
@@ -341,7 +341,7 @@ export default function BecomeTraderPage() {
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#FDBA74]">
               <Store size={15} /> Trader application
             </div>
-            <h1 className="mt-1 text-xl font-extrabold sm:text-2xl">Majo Gadgets Trader Terms &amp; Conditions</h1>
+            <h1 className="mt-1 text-xl font-extrabold sm:text-2xl">Majo Market Trader Terms &amp; Conditions</h1>
           </div>
         </div>
       </header>
@@ -410,9 +410,9 @@ export default function BecomeTraderPage() {
       <div className="max-w-2xl mx-auto px-6 py-8">
         {step === 0 && (
           <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 mb-6">
-            <p className="text-[13px] font-extrabold text-[#071A2B] mb-1">Sell on Majo Gadgets</p>
+            <p className="text-[13px] font-extrabold text-[#071A2B] mb-1">Sell on Majo Market</p>
             <p className="text-[12px] text-[#64748B] leading-relaxed">
-              Join our platform as a verified trader. Fill in the form below and our team will review your application. Once approved, you'll be able to list and sell products on Majo Gadgets.
+              Join our platform as a verified trader. Fill in the form below and our team will review your application. Once approved, you'll be able to list and sell products on Majo Market.
             </p>
             <p className="mt-3 text-[12px] text-[#64748B]">
               Sales and partnership questions? <a className="font-bold text-[#1E3A8A] hover:underline" href="mailto:sales@majogadgets.com">Email our sales team</a>.
@@ -524,7 +524,7 @@ export default function BecomeTraderPage() {
               <div>
                 <label className="text-[11px] font-bold text-[#64748B] mb-1 block">Trading / Business Experience</label>
                 <textarea value={form.experience} onChange={e => set('experience', e.target.value)} rows={3}
-                  placeholder="Briefly describe your experience selling gadgets or running a business..."
+                  placeholder="Briefly describe your experience selling products or running a business..."
                   className="w-full px-4 py-3 border border-[#E2E8F0] rounded-none text-[13px] text-[#071A2B] outline-none focus:border-[#071A2B] resize-none" />
               </div>
             </div>
@@ -552,7 +552,7 @@ export default function BecomeTraderPage() {
                 <input type="checkbox" checked={form.agreed_to_terms} onChange={e => set('agreed_to_terms', e.target.checked)}
                   className="mt-0.5 w-4 h-4 accent-[#071A2B]" />
                 <span className="text-[12px] text-[#64748B] leading-relaxed">
-                  I confirm that the information provided is accurate and I agree to Majo Gadgets' trader terms and conditions.
+                  I confirm that the information provided is accurate and I agree to Majo Market' trader terms and conditions.
                 </span>
               </label>
             </div>

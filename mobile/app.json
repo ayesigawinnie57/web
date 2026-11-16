@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Majo Gadgets",
+    "name": "Majo Market",
     "slug": "shopmajo",
     "scheme": "shopmajo",
     "version": "1.0.0",
@@ -30,7 +30,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Majo Gadgets to include your approximate location in sign-in security alerts."
+          "locationWhenInUsePermission": "Allow Majo Market to include your approximate location in sign-in security alerts."
         }
       ]
     ]

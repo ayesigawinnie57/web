@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { ArrowRight, CheckCircle2, CreditCard, MessageCircleMore, ShieldCheck } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
@@ -6,6 +7,12 @@ import Footer from '../landing/Footer'
 export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Payment Information | Majo Market</title>
+        <meta name="description" content="Learn about payment options and order payment confirmation on Majo Market." />
+        <meta name="robots" content="index,follow" />
+        <link rel="canonical" href="https://www.majogadgets.com/payment" />
+      </Helmet>
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 pt-[150px] pb-10 md:pt-[156px] md:pb-14">
@@ -30,7 +37,7 @@ export default function PaymentPage() {
             <div className="space-y-4">
               <div className="rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] p-4">
                 <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#64748B]">Account name</p>
-                <p className="mt-2 text-[18px] font-black text-[#071A2B]">Majo Gadgets</p>
+                <p className="mt-2 text-[18px] font-black text-[#071A2B]">Majo Market</p>
               </div>
 
               <div className="rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] p-4">
@@ -59,12 +66,12 @@ export default function PaymentPage() {
 
             <div className="mt-5 rounded-2xl border border-[#BAE6FD] bg-[#E0F2FE] p-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#1E3A8A]">WhatsApp</p>
-              <p className="mt-2 text-[18px] font-black text-[#071A2B]">Majo Gadgets Support</p>
+              <p className="mt-2 text-[18px] font-black text-[#071A2B]">Majo Market Support</p>
               <p className="mt-1 text-[15px] text-[#334155]">+256 779 122 222</p>
             </div>
 
             <a
-              href="https://wa.me/256779122222?text=Hello%20Majo%20Gadgets%20Support%2C%20I%20want%20to%20confirm%20payment%20for%20my%20order."
+              href="https://wa.me/256779122222?text=Hello%20Majo%20Market%20Support%2C%20I%20want%20to%20confirm%20payment%20for%20my%20order."
               target="_blank"
               rel="noreferrer"
               className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#1ebc5f]"

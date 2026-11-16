@@ -37,10 +37,10 @@ export default function PwaInstallButton() {
     <div className="relative shrink-0">
       <button
         onClick={installApp}
-        aria-label="Install Majo Gadgets app"
+        aria-label="Install Majo Market app"
         aria-expanded={showInstructions}
         aria-controls="portal-install-instructions"
-        title="Install Majo Gadgets"
+        title="Install Majo Market"
         className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/15 px-2 text-[11px] font-semibold text-white/85 hover:bg-white/10 sm:px-3"
       >
         <Download className="h-4 w-4" />
@@ -50,12 +50,12 @@ export default function PwaInstallButton() {
         <div
           id="portal-install-instructions"
           role="dialog"
-          aria-label="Install Majo Gadgets"
+          aria-label="Install Majo Market"
           className="absolute right-0 top-full z-50 mt-3 w-72 rounded-lg border border-[#E2E8F0] bg-white p-4 text-left shadow-xl"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-bold text-[#071A2B]">Install Majo Gadgets</p>
+              <p className="text-sm font-bold text-[#071A2B]">Install Majo Market</p>
               <p className="mt-1.5 text-xs leading-5 text-[#64748B]">
                 Use your browser menu to install the app or add it to your dock. Installing is optional; you can keep using this browser.
               </p>

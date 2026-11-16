@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
@@ -24,15 +25,21 @@ const values = [
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>About Majo Market | Online Marketplace in Uganda</title>
+        <meta name="description" content="Learn how Majo Market connects shoppers with quality products and trusted sellers across Uganda." />
+        <meta name="robots" content="index,follow" />
+        <link rel="canonical" href="https://www.majogadgets.com/about" />
+      </Helmet>
       <Navbar />
 
       <main className="w-full max-w-none px-4 pt-[150px] pb-8 md:px-8 md:pt-[156px] md:pb-10 lg:px-12">
         <div className="max-w-6xl mx-auto">
           <section className="rounded-[28px] bg-[#071A2B] px-6 py-8 md:px-10 text-white shadow-[0_25px_80px_rgba(15,43,67,0.18)]">
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BFDBFE]">About us</div>
-            <h1 className="mt-4 text-3xl font-black md:text-5xl tracking-tight">We are Majo Gadgets</h1>
+            <h1 className="mt-4 text-3xl font-black md:text-5xl tracking-tight">We are Majo Market</h1>
             <p className="mt-3 max-w-3xl text-[14px] md:text-[16px] text-slate-200">
-              Majo Gadgets is a modern shopping platform built to make everyday buying easier, faster, and more rewarding for customers across Uganda and beyond.
+              Majo Market is a multi-seller online marketplace connecting shoppers with quality products from different sellers.
             </p>
           </section>
 

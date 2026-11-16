@@ -28,7 +28,7 @@ const STATUS_MESSAGES: Record<string, { title: string; body: (code: string) => s
   },
   delivered: {
     title: 'Order Delivered',
-    body: (code) => `Order No: ${code} has been delivered! Thank you for shopping with Majo Gadgets.`,
+    body: (code) => `Order No: ${code} has been delivered! Thank you for shopping with Majo Market.`,
   },
   cancelled: {
     title: 'Order Cancelled',
@@ -76,7 +76,7 @@ async function pollOrderStatuses() {
           if (!productSlug || (productReviewNotified[notificationKey] && notificationExists)) continue
           pushNotification({
             type: 'product_rating',
-            title: 'How do you like your new gadget?',
+            title: 'How do you like your new product?',
             body: `Your ${product.name} has arrived. Share a quick product review to help other shoppers choose with confidence.|${productSlug}`,
             time: 'Just now',
           })

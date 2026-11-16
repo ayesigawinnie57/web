@@ -27,9 +27,7 @@ export default function AdminTraders() {
   const [rejectNote, setRejectNote] = useState('')
   const [rejectModal, setRejectModal] = useState(false)
   const [error, setError] = useState('')
-  const [documentsVerified, setDocumentsVerified] = useState(false)
   const [openingDocument, setOpeningDocument] = useState<string | null>(null)
-  const [viewedDocuments, setViewedDocuments] = useState<Set<string>>(new Set())
   const [documentPreview, setDocumentPreview] = useState<{ type: string; url: string; contentType: string } | null>(null)
   const [finance, setFinance] = useState<ApiTraderFinance | null>(null)
   const [updatingWithdrawal, setUpdatingWithdrawal] = useState<number | null>(null)
@@ -60,8 +58,8 @@ export default function AdminTraders() {
 
   const handleApprove = async () => {
     if (!selected) return
-    if (!selected.has_national_id_document || !selected.has_business_location_proof || (!selected.has_ura_certificate_document && !selected.tin) || !documentsVerified) {
-      setError('Review the required documents and confirm the ID matches before approval.')
+    if (!selected.has_national_id_document || !selected.has_business_location_proof || (!selected.has_ura_certificate_document && !selected.tin)) {
+      setError('Required identity, business location, and URA/TIN information must be submitted before approval.')
       return
     }
     setActing(true)
@@ -81,7 +79,6 @@ export default function AdminTraders() {
       const { data } = await tradersApi.adminDocument(selected.id, documentType)
       const documentUrl = URL.createObjectURL(data)
       setDocumentPreview({ type: documentType, url: documentUrl, contentType: data.type })
-      setViewedDocuments(current => new Set(current).add(documentType))
     } catch {
       setError('Could not open this document. Refresh the application and try again.')
     } finally {
@@ -130,15 +127,9 @@ export default function AdminTraders() {
   // Detail view
   if (selected) {
     const cfg = STATUS_COLOR[selected.status]
-    const requiredDocuments = [
-      ...(selected.has_national_id_document ? ['national-id'] : []),
-      ...(selected.has_ura_certificate_document ? ['ura-certificate'] : []),
-      ...(selected.has_business_location_proof ? ['business-location'] : []),
-    ]
     const documentsComplete = selected.has_national_id_document
       && selected.has_business_location_proof
       && (selected.has_ura_certificate_document || !!selected.tin.trim())
-    const allDocumentsViewed = requiredDocuments.every(documentType => viewedDocuments.has(documentType))
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-3 px-6 py-4 border-b border-[#E2E8F0] bg-white shrink-0">
@@ -183,7 +174,7 @@ export default function AdminTraders() {
 
           <section className="mb-4 rounded-xl border border-[#DCE5EB] bg-white p-5">
             <h2 className="text-[12px] font-extrabold uppercase tracking-wide text-[#071A2B]">Verification documents</h2>
-            <p className="mt-1 text-[12px] leading-5 text-[#64748B]">Open and inspect the original files. The ID image is private and is not included in the trader agreement.</p>
+            <p className="mt-1 text-[12px] leading-5 text-[#64748B]">Preview the submitted files if needed; opening them is optional for approval. The ID image is private and is not included in the trader agreement.</p>
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
               {[
                 { type: 'national-id' as const, label: 'National ID copy', available: selected.has_national_id_document },
@@ -196,10 +187,6 @@ export default function AdminTraders() {
               ))}
             </div>
             {!selected.has_ura_certificate_document && selected.tin && <p className="mt-2 text-[12px] text-[#475569]">URA TIN provided: <strong>{selected.tin}</strong></p>}
-            <label className="mt-4 flex items-start gap-3 border-t border-[#E2E8F0] pt-4 text-[12px] leading-5 text-[#334155]">
-              <input type="checkbox" checked={documentsVerified} onChange={event => setDocumentsVerified(event.target.checked)} disabled={!allDocumentsViewed || selected.status === 'approved'} className="mt-0.5 h-4 w-4 accent-[#071A2B]" />
-              <span>{allDocumentsViewed ? 'I reviewed every submitted document, confirmed the ID matches the submitted details, and verified the business information.' : 'Open every submitted document above before confirming verification.'}</span>
-            </label>
           </section>
 
           {/* What they sell */}
@@ -232,7 +219,7 @@ export default function AdminTraders() {
               className="flex-1 py-3 rounded-xl bg-red-600 text-white text-[13px] font-bold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
               {selected.status === 'rejected' ? 'Rejected' : 'Reject'}
             </button>
-            <button onClick={handleApprove} disabled={acting || selected.status === 'approved' || !documentsComplete || !allDocumentsViewed || !documentsVerified}
+            <button onClick={handleApprove} disabled={acting || selected.status === 'approved' || !documentsComplete}
               className="flex-1 py-3 rounded-xl bg-[#22C55E] text-white text-[13px] font-bold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed">
               {acting ? 'Processing...' : selected.status === 'approved' ? 'Approved' : 'Approve'}
             </button>
@@ -354,7 +341,7 @@ export default function AdminTraders() {
           {filtered.map(a => {
             const cfg = STATUS_COLOR[a.status]
             return (
-              <button key={a.id} onClick={() => { setDocumentsVerified(false); setError(''); setSelected(a) }}
+              <button key={a.id} onClick={() => { setError(''); setSelected(a) }}
                 className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex items-center gap-4 text-left hover:border-[#071A2B] transition-colors">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: cfg.bg }}>
                   <cfg.icon size={18} color={cfg.color} />

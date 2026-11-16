@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { RotateCcw, Package } from 'lucide-react'
 import { ordersApi, hasAccessToken, type ApiOrderDetail, type ReturnRequest } from '../lib/api'
 import Navbar from '../landing/Navbar'
@@ -39,6 +40,10 @@ export default function ReturnPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <Helmet>
+        <title>Returns and Refunds | Majo Market</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Helmet>
       <Navbar />
       <main className="w-full max-w-6xl mx-auto px-4 py-8 pt-14 lg:px-8 lg:pt-16">
         <div className="mb-6 rounded-[28px] border border-[#E2E8F0] bg-white p-5 shadow-sm md:p-7">

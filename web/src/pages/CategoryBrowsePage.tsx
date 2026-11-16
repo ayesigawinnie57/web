@@ -61,6 +61,27 @@ export default function CategoryBrowsePage({ categoryId }: { categoryId: number 
 
   const path = category ? getCategoryPath(categories, category) : []
   const canonicalUrl = `https://www.majogadgets.com${category ? getCategoryUrl(categories, category) : '/categories'}`
+  const pageTitle = category
+    ? `${category.name} | Shop ${category.name} Online in Uganda | Majo Market`
+    : 'Marketplace Categories | Majo Market'
+  const pageDescription = category?.description?.trim()
+    || (category
+      ? `Browse ${category.name} from trusted sellers on Majo Market. Compare available products, prices, and stock.`
+      : 'Browse product categories and discover quality products from trusted sellers on Majo Market.')
+  const breadcrumbJsonLd = category ? {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.majogadgets.com/' },
+      { '@type': 'ListItem', position: 2, name: 'Categories', item: 'https://www.majogadgets.com/categories' },
+      ...path.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 3,
+        name: item.name,
+        item: `https://www.majogadgets.com${getCategoryUrl(categories, item)}`,
+      })),
+    ],
+  } : null
   const loadMore = async () => {
     if (!category || loadingMore || !hasMore) return
     setLoadingMore(true)
@@ -82,9 +103,19 @@ export default function CategoryBrowsePage({ categoryId }: { categoryId: number 
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Helmet>
-        <title>{category ? `${category.name} – Majo Gadgets` : 'Category – Majo Gadgets'}</title>
-        <meta name="description" content={category?.description || `Shop ${category?.name ?? 'products'} on Majo Gadgets.`} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta name="robots" content={category ? 'index,follow' : 'noindex,follow'} />
         <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Majo Market" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        {breadcrumbJsonLd && <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>}
       </Helmet>
       <Navbar />
       <main className="mx-auto max-w-7xl px-4 py-8 pt-14 lg:pt-16">

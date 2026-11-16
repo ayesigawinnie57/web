@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, Eye, EyeOff, UserPlus } from 'lucide-react'
 import { authApi, fetchAllDistricts, LOGO, type DistrictRecord } from '../lib/api'
 import { Helmet } from 'react-helmet-async'
+import AuthPageBackground from '../components/AuthPageBackground'
 
 const REGIONS = [
   { value: 'Central Region', label: 'Central Uganda' },
@@ -86,13 +87,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-page-background min-h-screen flex items-center justify-center px-4 py-10" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <AuthPageBackground className="min-h-screen flex items-center justify-center px-4 py-10" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <Helmet>
-        <title>Create Account - Majo Gadgets</title>
+        <title>Create Account - Majo Market</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <section className="w-full max-w-2xl bg-white border border-[#E2E8F0] p-6 sm:p-8">
-          <img src={LOGO} alt="Majo Gadgets" className="h-12 w-auto object-contain mx-auto mb-7" />
+          <img src={LOGO} alt="Majo Market" className="h-12 w-auto object-contain mx-auto mb-7" />
           <div className="flex items-center gap-3 mb-7">
             <div className="w-10 h-10 rounded-full bg-[#EFF6FF] flex items-center justify-center">
               <UserPlus className="text-[#1E3A8A]" size={19} />
@@ -149,7 +150,7 @@ export default function RegisterPage() {
               Already have an account? <Link to="/login" className="font-bold text-[#1E3A8A] hover:underline">Sign in</Link>
             </p>
         </section>
-      </div>
+    </AuthPageBackground>
   )
 }
 

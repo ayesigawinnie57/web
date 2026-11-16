@@ -414,7 +414,7 @@ export default function Navbar({ onRequestOpenAccount }: { onRequestOpenAccount?
                 <Text style={styles.accountLinkArrow}>›</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.accountLink} onPress={() => { setAccountOpen(false); router.push('/become-a-trader' as any) }}>
-                <Text style={styles.accountLinkText}>Sell with Majo Gadgets</Text>
+                <Text style={styles.accountLinkText}>Sell with Majo Market</Text>
                 <Text style={styles.accountLinkArrow}>›</Text>
               </TouchableOpacity>
             </View>
