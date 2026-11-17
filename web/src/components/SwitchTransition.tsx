@@ -283,7 +283,7 @@ export default function SwitchTransition({ from, to, userName, accountName, onDo
           padding: '20px 40px',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
         }}>
-          <img src={LOGO} alt="Majo Market" style={{ height: 38, width: 'auto', objectFit: 'contain', opacity: 0.9 }} />
+          <img src={LOGO} alt="Majo Market" style={{ height: 38, width: 38, objectFit: 'cover', opacity: 0.9, background: '#fff', borderRadius: '50%', padding: 5 }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: toMeta.color, boxShadow: `0 0 8px ${toMeta.color}` }} />
             <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em' }}>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Download, X } from 'lucide-react'
+import { LOGO } from '../lib/api'
 import { isPwaInstalled, promptToInstall, subscribeToInstalledState, subscribeToInstallPrompt } from '../lib/pwaInstall'
 
 export default function DesktopAdminInstallGate() {
@@ -34,9 +35,9 @@ export default function DesktopAdminInstallGate() {
     <main className="min-h-screen bg-[#F4F7F8] flex items-center justify-center px-5 py-12">
       <section className="w-full max-w-2xl text-center">
         <img
-          src="/OG.png"
-          alt="Majo Market app shown on desktop and mobile"
-          className="w-full rounded-lg border border-[#D8E1E5] shadow-sm"
+          src={LOGO}
+          alt="Majo Market logo"
+          className="brand-logo mx-auto w-32 h-32 border border-[#D8E1E5] shadow-sm"
         />
         <h1 className="mt-6 text-2xl font-extrabold text-[#071A2B]">Install Majo Market to continue</h1>
         <p className="mt-3 text-sm leading-6 text-[#536471]">

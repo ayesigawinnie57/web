@@ -199,26 +199,18 @@ export default function HelpCenterPage() {
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="rounded-2xl border border-[#BAE6FD] bg-white px-4 py-3 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#1E3A8A]">WhatsApp support</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#1E3A8A]">Majo Market support chat</p>
               <p className="mt-1 text-[15px] font-extrabold text-[#071A2B]">Majo Market Support</p>
-              <p className="text-[13px] text-[#334155]">+256 779 122 222</p>
+              <p className="text-[13px] text-[#334155]">Message us without leaving Majo Market.</p>
             </div>
 
-            <a
-              href="https://wa.me/256779122222?text=Hello%20Majo%20Market%20Support%2C%20I%20need%20help.%20"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-xl bg-[#25D366] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#1ebc5f]"
-            >
-              Chat on WhatsApp
-            </a>
             <a href="mailto:support@majogadgets.com" className="inline-flex items-center justify-center rounded-xl border border-[#0F2B43] px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-white">
               Email support
             </a>
           </div>
 
           <p className="mt-4 max-w-3xl text-[14px] leading-7 text-[#334155]">
-            For order-specific support, include your order number and the issue you are experiencing. You can also reach out through WhatsApp or through your order details page.
+            Open the floating Majo Support chat to message us here, or visit your order details for order-specific help. Include your order number and a short description of the issue.
           </p>
         </section>
       </main>

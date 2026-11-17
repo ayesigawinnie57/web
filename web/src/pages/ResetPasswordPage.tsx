@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
-          <img src={LOGO} alt="Majo Market" className="h-12 w-auto object-contain mx-auto mb-7" />
+          <img src={LOGO} alt="Majo Market" className="brand-logo h-12 w-12 object-contain mx-auto mb-7" />
 
           {!token ? (
             <div className="text-center">

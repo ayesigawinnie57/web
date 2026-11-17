@@ -13,7 +13,7 @@ const resolveApiBaseUrl = () => {
 
 export const BASE_URL = resolveApiBaseUrl()
 
-export const LOGO = '/pwa-512.png'
+export const LOGO = 'https://res.cloudinary.com/fhklnn0f/image/upload/v1794853987/Majo_market_logo.png'
 
 const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME ?? 'fhklnn0f'
 export const cloudinaryUrl = (publicId: string | null | undefined) =>
@@ -1090,9 +1090,10 @@ export type ApiTraderAgreement = {
   version: string
   issued_at: string | null
   effective_at: string | null
+  is_preview?: boolean
   ready_to_sign: boolean
   platform: { name: string; operator: string; address: string; signatory: string; title: string; signed_at: string | null }
-  trader: { name: string; id: string; application_uuid: string; business_name: string; address: string; email: string; national_id: string; registration_number: string; signed_name: string; signed_at: string | null; has_signature_image: boolean }
+  trader: { name: string; id: string; application_uuid: string; business_name: string; address: string; phone: string; email: string; national_id: string; registration_number: string; tin: string; signed_name: string; signed_at: string | null; has_signature_image: boolean }
   sections: Array<{ title: string; paragraphs: string[] }>
   declaration: string
   id_document_included: false
@@ -1378,6 +1379,7 @@ export const tradersApi = {
   // Trader portal
   profile: (uuid: string) => api.get<ApiTraderApplication>(`/api/traders/${uuid}/profile/`),
   agreement: (uuid: string) => api.get<ApiTraderAgreement>(`/api/traders/${uuid}/agreement/`),
+  contractPreview: (uuid: string) => api.get<ApiTraderAgreement>(`/api/traders/${uuid}/agreement/`, { params: { preview: 1 } }),
   signAgreement: (uuid: string, data: FormData) => api.post<ApiTraderAgreement>(`/api/traders/${uuid}/agreement/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   dashboard: (uuid: string) => api.get<ApiTraderDashboard>(`/api/traders/${uuid}/dashboard/`),
   products: (uuid: string) => api.get<ApiTraderProduct[]>(`/api/traders/${uuid}/products/`),

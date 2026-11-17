@@ -64,20 +64,25 @@ export default function Navbar() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
-  useEffect(() => {
-    if (searchOpen) setTimeout(() => inputRef.current?.focus(), 50)
-  }, [searchOpen])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!query.trim()) { setResults([]); setCatResults([]); return }
+    if (!query.trim()) {
+      setResults([])
+      setCatResults([])
+      setSearching(false)
+      return
+    }
+
+    let active = true
     setSearching(true)
     debounceRef.current = setTimeout(async () => {
-      const q = query.toLowerCase()
+      const q = query.trim().toLowerCase()
       try {
         const [prodRes, catRes] = await Promise.all([productsApi.list(), productsApi.categories()])
         const rawP = (prodRes.data as any)?.results ?? prodRes.data ?? []
         const allP: Product[] = (Array.isArray(rawP) ? rawP : []).map(toProduct)
+        if (!active) return
         setResults(allP.filter(p =>
           p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q),
         ).slice(0, 20))
@@ -86,9 +91,17 @@ export default function Navbar() {
         setCatResults(allC.filter((c: ApiCategory) =>
           c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q),
         ).slice(0, 3))
-      } catch { setResults([]); setCatResults([]) }
-      finally { setSearching(false) }
+      } catch {
+        if (active) { setResults([]); setCatResults([]) }
+      } finally {
+        if (active) setSearching(false)
+      }
     }, 350)
+
+    return () => {
+      active = false
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [query])
 
   useEffect(() => {
@@ -200,7 +213,20 @@ export default function Navbar() {
     }).catch(() => undefined)
   }, [])
 
-  const closeSearch = () => { setSearchOpen(false); setQuery(''); setResults([]); setCatResults([]) }
+  const closeSearch = () => {
+    setSearchOpen(false)
+    setQuery('')
+    setResults([])
+    setCatResults([])
+    inputRef.current?.blur()
+  }
+  const clearSearch = () => {
+    setQuery('')
+    setResults([])
+    setCatResults([])
+    setSearching(false)
+    inputRef.current?.focus()
+  }
 
   const signOut = () => {
     localStorage.removeItem('access_token')
@@ -221,44 +247,38 @@ export default function Navbar() {
         <div className="relative flex items-center px-4 h-16 lg:h-20 gap-2.5">
           {/* Logo */}
           <Link to="/" onClick={closeSearch} className="shrink-0">
-            <img src={LOGO} alt="Majo Market" className="h-11 w-11 rounded-full object-cover mix-blend-multiply" />
+            <img src={LOGO} alt="Majo Market" className="brand-logo h-11 w-11" />
           </Link>
 
-          {/* Search pill / active */}
-          {searchOpen ? (
-            <div className="flex-1 lg:flex-none lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:w-[280px] flex items-center bg-[#F8FAFC] border-2 border-[#071A2B] rounded-full px-3 h-10 gap-2 shadow-sm">
-              <svg className="w-3.5 h-3.5 text-[#071A2B] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-              </svg>
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={e => {
-                  const value = e.target.value
-                  if (!value.trim()) closeSearch()
-                  else setQuery(value)
-                }}
-                onKeyDown={e => { if (e.key === 'Enter' && query.trim()) { navigate(`/shop?q=${query}`); closeSearch() } }}
-                placeholder="Search Majo Market..."
-                className="flex-1 bg-transparent text-sm text-[#071A2B] outline-none placeholder-[#94A3B8]"
-              />
-              {query
-                ? <button onClick={closeSearch} className="p-1"><svg className="w-4 h-4 text-[#64748B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-                : <button onClick={closeSearch} className="p-1"><svg className="w-4 h-4 text-[#071A2B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-              }
-            </div>
-          ) : (
-            <button
-              onClick={() => setSearchOpen(true)}
-              aria-label="Search products on Majo Market"
-              className="flex-1 lg:flex-none lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:w-[280px] flex items-center bg-[#F8FAFC] border-[1.5px] border-[#E2E8F0] rounded-full px-3 h-10 gap-2 text-left transition-[width] duration-200"
-            >
-              <svg className="w-3.5 h-3.5 text-[#64748B] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-              </svg>
-              <span className="text-sm text-[#94A3B8]">Search Majo Market...</span>
-            </button>
-          )}
+          {/* Search input */}
+          <div className="flex-1 min-w-0 lg:ml-auto lg:max-w-[520px] flex items-center bg-white border border-[#dfe1e5] rounded-full px-4 h-11 gap-3 shadow-[0_1px_3px_rgba(60,64,67,0.12)] transition-shadow duration-200 hover:shadow-[0_1px_6px_rgba(60,64,67,0.18)] focus-within:shadow-[0_1px_6px_rgba(60,64,67,0.28)]">
+            <svg className="w-5 h-5 text-[#5f6368] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+            </svg>
+            <input
+              ref={inputRef}
+              aria-label="Search products and categories on Majo Market"
+              value={query}
+              onFocus={() => setSearchOpen(true)}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && query.trim()) {
+                  e.preventDefault()
+                  navigate(`/shop?q=${encodeURIComponent(query.trim())}`)
+                  closeSearch()
+                } else if (e.key === 'Escape') {
+                  closeSearch()
+                }
+              }}
+              placeholder="Search Majo Market..."
+              className="flex-1 min-w-0 bg-transparent text-base text-[#202124] outline-none placeholder-[#80868b]"
+            />
+            {query && (
+              <button type="button" onClick={clearSearch} aria-label="Clear search" className="p-1 text-[#5f6368] hover:text-[#202124]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            )}
+          </div>
 
           {/* Primary navigation and actions */}
           <div className="ml-auto flex items-center gap-3.5 shrink-0">
@@ -355,7 +375,7 @@ export default function Navbar() {
         </div>
 
         {/* Search dropdown */}
-        {searchOpen && (
+        {searchOpen && query.trim() && (
           <>
             <div className="absolute left-0 right-0 top-full bg-white rounded-b-2xl shadow-xl z-50 max-h-96 overflow-y-auto">
               {searching ? (

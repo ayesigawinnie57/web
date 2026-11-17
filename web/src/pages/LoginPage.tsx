@@ -174,7 +174,7 @@ export default function LoginPage() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
-        <img src={LOGO} alt="Majo Market" className="h-12 w-auto object-contain mx-auto mb-7" />
+        <img src={LOGO} alt="Majo Market" className="brand-logo h-12 w-12 object-contain mx-auto mb-7" />
         <div className="mb-7"><h1 className="text-2xl font-extrabold text-[#071A2B]">Welcome back</h1><p className="text-[13px] text-[#64748B] mt-1">Sign in to your account</p></div>
         {error && <div className="mb-5 p-3 bg-red-50 border border-red-100 text-[13px] font-semibold text-red-600">{error}</div>}
         <form onSubmit={submit} className="space-y-5">
@@ -332,7 +332,7 @@ function GoogleProfileForm({ name, email, tmpToken, onComplete }: {
   return (
     <AuthPageBackground className="min-h-screen flex items-center justify-center px-4 py-12" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <section className="w-full max-w-md bg-white border border-[#E2E8F0] p-6 sm:p-8">
-        <img src={LOGO} alt="Majo Market" className="h-12 w-auto object-contain mx-auto mb-7" />
+        <img src={LOGO} alt="Majo Market" className="brand-logo h-12 w-12 object-contain mx-auto mb-7" />
         <div className="mb-6">
           <h1 className="text-2xl font-extrabold text-[#071A2B]">Complete your profile</h1>
           <p className="text-[13px] text-[#64748B] mt-1">Signed in as <strong>{name}</strong> ({email}). Just a few more details.</p>

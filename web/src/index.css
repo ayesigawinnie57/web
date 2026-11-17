@@ -10,6 +10,18 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+.brand-logo {
+  display: block;
+  background: #fff;
+  border-radius: 0 !important;
+  object-fit: contain;
+  box-sizing: border-box;
+}
+
+.brand-logo--circle {
+  border-radius: 50% !important;
+}
+
 .scrollbar-none {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
@@ -51,15 +63,19 @@ body {
   display: grid;
   width: 96px;
   height: 96px;
+  overflow: hidden;
   place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.18);
 }
 
 .app-loading-orbit {
   position: absolute;
   inset: 1px;
-  border: 1px solid rgba(147, 197, 253, 0.18);
-  border-top-color: #93c5fd;
-  border-right-color: rgba(96, 165, 250, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-top-color: rgba(255, 255, 255, 0.92);
+  border-right-color: rgba(255, 255, 255, 0.74);
   border-radius: 50%;
   animation: app-loading-spin 1.5s linear infinite;
 }
@@ -71,16 +87,16 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #bfdbfe;
-  box-shadow: 0 0 14px 3px rgba(147, 197, 253, 0.75);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 14px 3px rgba(255, 255, 255, 0.5);
   content: '';
 }
 
 .app-loading-logo {
-  width: 66px;
-  height: 66px;
-  border-radius: 50%;
-  object-fit: cover;
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
   box-shadow: 0 0 36px rgba(96, 165, 250, 0.18);
   animation: app-loading-breathe 2.2s ease-in-out infinite;
 }

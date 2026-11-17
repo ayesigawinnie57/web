@@ -39,11 +39,40 @@ export default function FloatingChatButton() {
   const [staffKeysReady, setStaffKeysReady] = useState(false)
   const [identity, setIdentity] = useState<SupportDeviceIdentity | null>(null)
   const [ownKeyId, setOwnKeyId] = useState('')
+  const chatPanelRef = useRef<HTMLElement | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const typingHeartbeat = useRef<number | null>(null)
   const typingTimeout = useRef<number | null>(null)
   const typingActive = useRef(false)
   const [authenticated, setAuthenticated] = useState(!!localStorage.getItem('access_token'))
+
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+    const updateViewport = () => {
+      const panel = chatPanelRef.current
+      if (!panel) return
+      const inset = window.innerWidth < 768
+        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+        : 0
+      if (inset > 0) {
+        panel.style.bottom = `${inset + 12}px`
+        panel.style.height = `${Math.min(600, Math.max(0, viewport.height - 24))}px`
+      } else {
+        panel.style.removeProperty('bottom')
+        panel.style.removeProperty('height')
+      }
+    }
+    updateViewport()
+    viewport.addEventListener('resize', updateViewport)
+    viewport.addEventListener('scroll', updateViewport)
+    window.addEventListener('resize', updateViewport)
+    return () => {
+      viewport.removeEventListener('resize', updateViewport)
+      viewport.removeEventListener('scroll', updateViewport)
+      window.removeEventListener('resize', updateViewport)
+    }
+  }, [open])
 
   useEffect(() => {
     const updateAuth = () => setAuthenticated(!!localStorage.getItem('access_token'))
@@ -224,7 +253,11 @@ export default function FloatingChatButton() {
   return (
     <>
       {open && (
-        <section className="fixed bottom-[88px] right-4 z-[80] flex h-[min(600px,calc(100dvh-120px))] w-[min(380px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-[#DCE5EB] bg-white shadow-[0_24px_70px_rgba(7,26,43,0.24)] sm:right-6" aria-label="Customer support chat">
+        <section
+          ref={chatPanelRef}
+          className="fixed bottom-[88px] right-4 z-[80] flex h-[min(600px,calc(100dvh-120px))] w-[min(380px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-[#DCE5EB] bg-white shadow-[0_24px_70px_rgba(7,26,43,0.24)] print:hidden sm:right-6"
+          aria-label="Customer support chat"
+        >
           <header className="flex items-center justify-between bg-[#071A2B] px-4 py-3.5 text-white">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#C2410C]">
@@ -313,9 +346,10 @@ export default function FloatingChatButton() {
                   rows={1}
                   placeholder="Write a message..."
                   aria-label="Write a message"
+                  enterKeyHint="send"
                   className="max-h-28 min-h-11 flex-1 resize-y rounded-xl border border-[#DCE5EB] px-3 py-3 text-[13px] leading-5 outline-none focus:border-[#C2410C] disabled:bg-[#F8FAFC]"
                 />
-                <button type="submit" disabled={!draft.trim() || sending || !encryptionReady || !staffKeysReady} aria-label="Send message" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#C2410C] text-white transition hover:bg-[#9A3412] disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="submit" disabled={!draft.trim() || sending || !encryptionReady || !staffKeysReady} aria-label="Send message" className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-xl bg-[#C2410C] text-white transition hover:bg-[#9A3412] disabled:cursor-not-allowed disabled:opacity-50">
                   <Send size={17} />
                 </button>
               </form>}
@@ -337,7 +371,7 @@ export default function FloatingChatButton() {
           }}
           aria-label="Open support chat"
           aria-expanded={false}
-          className="floating-chat-toggle group fixed bottom-20 right-5 z-[80] inline-flex h-14 w-14 items-center justify-center rounded-[50%] bg-[#C2410C] text-white shadow-[0_18px_40px_rgba(194,65,12,0.35)] transition duration-200 hover:-translate-y-1 hover:scale-105 sm:right-6 lg:bottom-5"
+          className="floating-chat-toggle group fixed bottom-20 right-5 z-[80] inline-flex h-14 w-14 items-center justify-center rounded-[50%] bg-[#C2410C] text-white shadow-[0_18px_40px_rgba(194,65,12,0.35)] transition duration-200 hover:-translate-y-1 hover:scale-105 print:hidden sm:right-6 lg:bottom-5"
         >
           <span aria-hidden="true" className="absolute inset-0 -z-10 rounded-full bg-[#C2410C] opacity-20 motion-reduce:animate-none animate-ping" />
           <MessageCircleMore className="h-6 w-6" />

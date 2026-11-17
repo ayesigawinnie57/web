@@ -213,6 +213,7 @@ export default function App() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/cookies" element={<CookiesPage />} />
           <Route path="/become-a-trader" element={<BecomeTraderPage />} />
+          <Route path="/contract/:traderUuid" element={<TraderAgreementPage />} />
           <Route path="/agreement/:traderUuid" element={<TraderAgreementPage />} />
           <Route path="/payment-callback" element={<PaymentCallbackPage />} />
           <Route element={<TraderGuard />}>

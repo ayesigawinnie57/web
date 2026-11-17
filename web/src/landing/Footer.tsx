@@ -29,7 +29,7 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-10 md:grid-cols-[1.25fr_1fr_1fr] md:gap-8 lg:gap-16">
           <div>
-            <img src={LOGO} alt="Majo Market" className="h-12 w-12 rounded-full object-cover object-center" />
+            <img src={LOGO} alt="Majo Market" className="brand-logo h-12 w-12 object-contain" />
 
             <p className="mt-5 max-w-xs text-sm leading-6 text-slate-300">
               Your marketplace for quality products, great deals and trusted sellers.

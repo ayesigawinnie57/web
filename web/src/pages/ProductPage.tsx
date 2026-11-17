@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { BadgeCheck, ChevronDown, ChevronRight, Star, Users } from 'lucide-react'
-import { advertisingApi, cartApi, hasAccessToken, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiAdvertisingPlacement, type ApiPublicSeller, type CartItem, type Product, type ApiReview } from '../lib/api'
+import { advertisingApi, cartApi, hasAccessToken, LOGO, productsApi, publicSellerApi, wishlistApi, notifyWishlistUpdated, toProduct, type ApiAdvertisingPlacement, type ApiPublicSeller, type CartItem, type Product, type ApiReview } from '../lib/api'
 import { trackProductView, trackCategoryVisit } from '../lib/behaviour'
 import { sanitizeRichText } from '../lib/sanitizeRichText'
 import ProductCard from '../components/ProductCard'
@@ -332,7 +332,7 @@ export default function ProductPage() {
   const pageDesc = productDescription
     ? `${productDescription} Compare available seller offers on Majo Market.`
     : `Buy ${product.name} on Majo Market. Compare available seller offers, prices, stock, delivery, warranty and return options.`
-  const pageImage = product.image || 'https://www.majogadgets.com/pwa-512.png'
+  const pageImage = product.image || LOGO
   const pageUrl = `https://www.majogadgets.com/shop/${product.slug}`
   const currentSellerName = seller?.business_name || product.sellerName || undefined
 

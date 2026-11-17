@@ -29,7 +29,39 @@ const PROMOS = [
     imageAlt: 'Majo Market deals across electronics, fashion, home, and accessories',
     accent: '#B91C1C',
   },
+  {
+    eyebrow: 'Marketplace discovery',
+    title: 'Discover More, Shop Better',
+    detail: 'Explore quality products from trusted sellers.',
+    href: '/shop',
+    image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1794853046/Majo_Market__Discover_More_Shop_Better.png',
+    imageAlt: 'Discover more products and shop better with Majo Market',
+    accent: '#1E3A8A',
+  },
+  {
+    eyebrow: 'Shop on the go',
+    title: 'Shop Anywhere',
+    detail: 'Browse the marketplace wherever you are.',
+    href: '/shop',
+    image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1794853085/Majo_Market__Shop_Anywhere.png',
+    imageAlt: 'Shop anywhere with Majo Market',
+    accent: '#0F766E',
+  },
+  {
+    eyebrow: 'Online marketplace',
+    title: 'Shop Online with Majo Market',
+    detail: 'Find products from different sellers in one place.',
+    href: '/shop',
+    image: 'https://res.cloudinary.com/fhklnn0f/image/upload/v1794853094/Shop_Online_with_Majo_Market.png',
+    imageAlt: 'Shop online with Majo Market',
+    accent: '#F97316',
+  },
 ]
+
+const responsivePromoUrl = (url: string, width: number) =>
+  url.includes('/image/upload/')
+    ? url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${width}/`)
+    : url
 
 export default function PromoBanners() {
   const [index, setIndex] = useState(0)
@@ -106,7 +138,15 @@ export default function PromoBanners() {
                   aria-label={`${promo.title}: ${promo.detail}`}
                   className="promo-carousel__slide"
                 >
-                  <img src={promo.image} alt={promo.imageAlt} loading={slideIndex === 0 ? 'eager' : 'lazy'} />
+                  <img
+                    src={responsivePromoUrl(promo.image, 1440)}
+                    srcSet={promo.image.includes('/image/upload/')
+                      ? `${responsivePromoUrl(promo.image, 720)} 720w, ${responsivePromoUrl(promo.image, 1440)} 1440w`
+                      : undefined}
+                    sizes="(min-width: 1280px) 1216px, calc(100vw - 32px)"
+                    alt={promo.imageAlt}
+                    loading={slideIndex === 0 ? 'eager' : 'lazy'}
+                  />
                 </Link>
               ))}
             </div>

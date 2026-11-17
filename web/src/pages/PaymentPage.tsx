@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
-import { ArrowRight, CheckCircle2, CreditCard, MessageCircleMore, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, CreditCard, MessageCircleMore, ShieldCheck } from 'lucide-react'
 import Navbar from '../landing/Navbar'
 import Footer from '../landing/Footer'
 
@@ -60,25 +60,16 @@ export default function PaymentPage() {
 
           <aside className="rounded-[28px] border border-[#E2E8F0] bg-white p-6 md:p-7">
             <div className="flex items-center gap-3">
-              <MessageCircleMore className="text-[#25D366]" size={22} />
+              <MessageCircleMore className="text-[#1E3A8A]" size={22} />
               <h2 className="text-[20px] font-extrabold text-[#071A2B]">Contact support</h2>
             </div>
 
             <div className="mt-5 rounded-2xl border border-[#BAE6FD] bg-[#E0F2FE] p-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#1E3A8A]">WhatsApp</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#1E3A8A]">In-app support</p>
               <p className="mt-2 text-[18px] font-black text-[#071A2B]">Majo Market Support</p>
-              <p className="mt-1 text-[15px] text-[#334155]">+256 779 122 222</p>
+              <p className="mt-1 text-[15px] text-[#334155]">Contact us directly from the marketplace.</p>
             </div>
 
-            <a
-              href="https://wa.me/256779122222?text=Hello%20Majo%20Market%20Support%2C%20I%20want%20to%20confirm%20payment%20for%20my%20order."
-              target="_blank"
-              rel="noreferrer"
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-[13px] font-bold text-white transition hover:bg-[#1ebc5f]"
-            >
-              Chat on WhatsApp
-              <ArrowRight size={15} />
-            </a>
             <a href="mailto:support@majogadgets.com" className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-[#DCE5EB] px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-[#F8FAFC]">
               Email support
             </a>
@@ -89,7 +80,7 @@ export default function PaymentPage() {
                 Step after payment
               </p>
               <ul className="mt-3 space-y-2 text-[13px] leading-6 text-[#475569]">
-                <li>• Send the payment proof on WhatsApp.</li>
+                <li>• Email your payment proof to support@majogadgets.com.</li>
                 <li>• Share your order number and full name.</li>
                 <li>• Our team will confirm the transaction.</li>
               </ul>

@@ -66,7 +66,7 @@ export default function TraderLayout() {
 
       {/* Top header */}
       <header className="flex items-center gap-3 px-4 h-14 bg-[#071A2B] border-b border-white/10 shrink-0 z-40">
-        <img src={LOGO} alt="Majo Market" className="h-8 w-auto object-contain shrink-0" />
+        <img src={LOGO} alt="Majo Market" className="brand-logo h-8 w-8 object-contain shrink-0" />
         <div className="flex items-center gap-1.5 shrink-0">
           <Store size={12} className="text-[#22C55E]" />
           <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest hidden sm:block">Trader Portal</span>

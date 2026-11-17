@@ -1,14 +1,12 @@
-const CACHE_NAME = 'majo-shell-v6'
+const CACHE_NAME = 'majo-shell-v7'
 const scopeUrl = new URL(self.registration.scope)
 const appUrl = new URL('./', scopeUrl)
 const manifestUrl = new URL('manifest.webmanifest', scopeUrl)
-const icon192Url = new URL('pwa-192.png', scopeUrl)
-const icon512Url = new URL('pwa-512.png', scopeUrl)
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll([appUrl.href, manifestUrl.href, icon192Url.href, icon512Url.href]))
+      .then(cache => cache.addAll([appUrl.href, manifestUrl.href]))
       .then(() => self.skipWaiting()),
   )
 })
@@ -64,8 +62,7 @@ self.addEventListener('fetch', event => {
 
   const assetsPath = new URL('assets/', scopeUrl).pathname
   const isBuiltAsset = requestUrl.pathname.startsWith(assetsPath)
-  const isInstallAsset = [manifestUrl.pathname, icon192Url.pathname, icon512Url.pathname]
-    .includes(requestUrl.pathname)
+  const isInstallAsset = requestUrl.pathname === manifestUrl.pathname
   if (!isBuiltAsset && !isInstallAsset) return
 
   event.respondWith((async () => {

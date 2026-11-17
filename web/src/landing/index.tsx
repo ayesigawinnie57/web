@@ -3,12 +3,13 @@ import { Helmet } from 'react-helmet-async'
 import Navbar from './Navbar'
 import Hero from './Hero'
 import Products from './Products'
+import CategoryProductSections from './CategoryProductSections'
 import PromoBanners from './PromoBanners'
 import FlashDeals from './FlashDeals'
 import ShopByCategory from './ShopByCategory'
 import Recommended from './Recommended'
 import Footer from './Footer'
-import { productsApi, toProduct, watchPageResume, type Product } from '../lib/api'
+import { LOGO, productsApi, toProduct, watchPageResume, type Product } from '../lib/api'
 
 export default function LandingPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -81,11 +82,11 @@ export default function LandingPage() {
         <meta property="og:title" content="Majo Market | Shop Quality Products Online in Uganda" />
         <meta property="og:description" content="Discover quality products from trusted sellers on Majo Market. Shop electronics, fashion, home essentials, tools, accessories and more." />
         <meta property="og:url" content="https://www.majogadgets.com/" />
-        <meta property="og:image" content="https://www.majogadgets.com/OG.png" />
+        <meta property="og:image" content={LOGO} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Majo Market | Shop Quality Products Online in Uganda" />
         <meta name="twitter:description" content="Discover quality products from trusted sellers on Majo Market. Shop electronics, fashion, home essentials, tools, accessories and more." />
-        <meta name="twitter:image" content="https://www.majogadgets.com/OG.png" />
+        <meta name="twitter:image" content={LOGO} />
       </Helmet>
       <Navbar />
       <div className="pb-20 pt-[112px] lg:pb-0 lg:pt-[128px]">
@@ -94,6 +95,7 @@ export default function LandingPage() {
         <FlashDeals onProductsLoaded={handleFlashSaleProducts} />
         <PromoBanners />
         {loading ? <ProductsSkeleton /> : <Products products={featuredProducts} />}
+        <CategoryProductSections />
         {!loading && (
           <Recommended
             products={products}

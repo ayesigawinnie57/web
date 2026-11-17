@@ -93,7 +93,7 @@ export default function RegisterPage() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <section className="w-full max-w-2xl bg-white border border-[#E2E8F0] p-6 sm:p-8">
-          <img src={LOGO} alt="Majo Market" className="h-12 w-auto object-contain mx-auto mb-7" />
+          <img src={LOGO} alt="Majo Market" className="brand-logo h-12 w-12 object-contain mx-auto mb-7" />
           <div className="flex items-center gap-3 mb-7">
             <div className="w-10 h-10 rounded-full bg-[#EFF6FF] flex items-center justify-center">
               <UserPlus className="text-[#1E3A8A]" size={19} />
