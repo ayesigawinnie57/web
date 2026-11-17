@@ -68,7 +68,7 @@ export default function CookiesPage() {
         <title>Cookie Policy | Majo Market</title>
         <meta name="description" content="Learn how Majo Market uses cookies and similar technologies to support and improve the marketplace." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/cookies" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/cookies" />
       </Helmet>
       <Navbar />
 

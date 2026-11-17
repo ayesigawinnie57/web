@@ -110,12 +110,12 @@ export default function CategoryPage() {
         <title>All Categories – Majo Market</title>
         <meta name="description" content="Browse all product departments and categories on Majo Market. Find electronics, fashion, home essentials, and more." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/categories" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/categories" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Majo Market" />
         <meta property="og:title" content="All Categories | Majo Market" />
         <meta property="og:description" content="Browse product categories and discover quality products from trusted sellers on Majo Market." />
-        <meta property="og:url" content="https://www.majogadgets.com/categories" />
+        <meta property="og:url" content="https://www.majomarket-uganda.com/categories" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="All Categories | Majo Market" />
         <meta name="twitter:description" content="Browse product categories and discover quality products from trusted sellers on Majo Market." />

@@ -116,7 +116,7 @@ export default function PrivacyPolicyPage() {
         <title>Privacy Policy | Majo Market</title>
         <meta name="description" content="Read how Majo Market collects, uses, and protects personal information when customers use our marketplace." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/privacy-policy" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/privacy-policy" />
       </Helmet>
       <Navbar />
 

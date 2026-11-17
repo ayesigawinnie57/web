@@ -79,7 +79,7 @@ export default function TermsPage() {
         <title>Terms and Conditions | Majo Market</title>
         <meta name="description" content="Read the terms and conditions for shopping and using services on the Majo Market website and mobile app." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/terms" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/terms" />
       </Helmet>
       <Navbar />
 

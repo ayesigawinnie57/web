@@ -14,8 +14,8 @@ const contactMethods = [
   {
     icon: Mail,
     label: 'Email',
-    value: 'contact@majogadgets.com',
-    href: 'mailto:contact@majogadgets.com',
+    value: 'support@majomarket-uganda.com',
+    href: 'mailto:support@majomarket-uganda.com',
   },
   {
     icon: MapPin,
@@ -25,6 +25,13 @@ const contactMethods = [
   },
 ]
 
+const departmentContacts = [
+  { label: 'Order management', email: 'orders@majomarket-uganda.com' },
+  { label: 'Trader relations', email: 'traders@majomarket-uganda.com' },
+  { label: 'Customer relations', email: 'customer@majomarket-uganda.com' },
+  { label: 'General business enquiries', email: 'info@majomarket-uganda.com' },
+]
+
 export default function ContactUsPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -32,7 +39,7 @@ export default function ContactUsPage() {
         <title>Contact Majo Market Support | Uganda</title>
         <meta name="description" content="Contact Majo Market for help with marketplace orders, delivery, returns, payments, and customer support in Uganda." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/contact" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/contact" />
       </Helmet>
       <Navbar />
 
@@ -65,6 +72,18 @@ export default function ContactUsPage() {
                 )}
               </div>
             ))}
+          </section>
+
+          <section className="mt-8 rounded-[28px] border border-[#E2E8F0] bg-white p-6 md:p-8">
+            <h2 className="text-[22px] font-black text-[#071A2B]">Contact the right team</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {departmentContacts.map(({ label, email }) => (
+                <a key={email} href={`mailto:${email}`} className="rounded-2xl bg-[#F8FAFC] p-4 hover:bg-[#EFF6FF]">
+                  <span className="block text-[11px] font-bold uppercase tracking-[0.12em] text-[#64748B]">{label}</span>
+                  <span className="mt-2 block break-all text-[14px] font-bold text-[#1E3A8A]">{email}</span>
+                </a>
+              ))}
+            </div>
           </section>
 
           <section className="mt-8 rounded-[28px] border border-[#E2E8F0] bg-white p-6 md:p-8">

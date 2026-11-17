@@ -29,7 +29,7 @@ export default function AboutPage() {
         <title>About Majo Market | Online Marketplace in Uganda</title>
         <meta name="description" content="Learn how Majo Market connects shoppers with quality products and trusted sellers across Uganda." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/about" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/about" />
       </Helmet>
       <Navbar />
 

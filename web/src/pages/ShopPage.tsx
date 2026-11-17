@@ -166,12 +166,12 @@ export default function ShopPage() {
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
         <meta name="robots" content={hasSearchOrFilters ? 'noindex,follow' : 'index,follow'} />
-        <link rel="canonical" href="https://www.majogadgets.com/shop" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/shop" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Majo Market" />
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={pageDescription} />
-        <meta property="og:url" content="https://www.majogadgets.com/shop" />
+        <meta property="og:url" content="https://www.majomarket-uganda.com/shop" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={pageDescription} />

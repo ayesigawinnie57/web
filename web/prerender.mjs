@@ -112,6 +112,14 @@ const staticPages = [
     changefreq: 'monthly',
   },
   {
+    path: 'become-a-trader',
+    title: 'Become a Trader | Majo Market',
+    description: 'Join Majo Market as a trader and sell products to shoppers across Uganda.',
+    robots: 'index, follow',
+    priority: '0.6',
+    changefreq: 'monthly',
+  },
+  {
     path: 'payment',
     title: 'Payment Information | Majo Market',
     description: 'View payment information for Majo Market orders and learn how to confirm a payment with customer support.',
@@ -158,7 +166,7 @@ const staticPages = [
 ]
 
 for (const page of staticPages) {
-  const url = `https://www.majogadgets.com/${page.path}`
+  const url = `https://www.majomarket-uganda.com/${page.path}`
   const pageJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
@@ -166,7 +174,7 @@ for (const page of staticPages) {
     url,
     name: page.title,
     description: page.description,
-    isPartOf: { '@id': 'https://www.majogadgets.com/#website' },
+    isPartOf: { '@id': 'https://www.majomarket-uganda.com/#website' },
   }
   const html = template
     .replace(/<title>.*?<\/title>/, `<title>${escapeHtml(page.title)}</title>`)
@@ -213,8 +221,8 @@ for (const p of products) {
     p.image_url,
     ...(Array.isArray(p.images) ? p.images.map(item => item.url) : []),
   ].filter(Boolean)
-  const image = images[0] || 'https://www.majogadgets.com/pwa-512.png'
-  const url = `https://www.majogadgets.com/shop/${p.slug}`
+  const image = images[0] || 'https://www.majomarket-uganda.com/pwa-512.png'
+  const url = `https://www.majomarket-uganda.com/shop/${p.slug}`
   const title = `${p.name} | Majo Market`
   const productCategory = categories.find(category =>
     category.id === p.category?.id || category.slug === p.category?.slug,
@@ -229,13 +237,13 @@ for (const p of products) {
     parentId = parent.parent_id
   }
   const breadcrumbs = [
-    { name: 'Home', item: 'https://www.majogadgets.com/' },
+    { name: 'Home', item: 'https://www.majomarket-uganda.com/' },
     ...(categoryPath.length
       ? categoryPath.map((category, index) => ({
         name: category.name,
-        item: `https://www.majogadgets.com/shop/${categoryPath.slice(0, index + 1).map(item => item.slug).join('/')}`,
+        item: `https://www.majomarket-uganda.com/shop/${categoryPath.slice(0, index + 1).map(item => item.slug).join('/')}`,
       }))
-      : [{ name: 'Shop', item: 'https://www.majogadgets.com/shop' }]),
+      : [{ name: 'Shop', item: 'https://www.majomarket-uganda.com/shop' }]),
     { name: p.name, item: url },
   ]
 
@@ -327,7 +335,7 @@ for (const category of categories.filter(item => item.is_active !== false)) {
     parentId = parent.parent_id
   }
 
-  const categoryUrl = `https://www.majogadgets.com/shop/${path.map(item => item.slug).join('/')}`
+  const categoryUrl = `https://www.majomarket-uganda.com/shop/${path.map(item => item.slug).join('/')}`
   const title = `${category.name} | Shop ${category.name} Online in Uganda | Majo Market`
   const description = trimDescription(category.description?.trim()
     || `Browse ${category.name} from trusted sellers on Majo Market. Compare available products, prices, and stock.`)
@@ -340,20 +348,20 @@ for (const category of categories.filter(item => item.is_active !== false)) {
         url: categoryUrl,
         name: title,
         description,
-        isPartOf: { '@id': 'https://www.majogadgets.com/#website' },
+        isPartOf: { '@id': 'https://www.majomarket-uganda.com/#website' },
         breadcrumb: { '@id': `${categoryUrl}#breadcrumb` },
       },
       {
         '@type': 'BreadcrumbList',
         '@id': `${categoryUrl}#breadcrumb`,
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.majogadgets.com/' },
-          { '@type': 'ListItem', position: 2, name: 'Categories', item: 'https://www.majogadgets.com/categories' },
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.majomarket-uganda.com/' },
+          { '@type': 'ListItem', position: 2, name: 'Categories', item: 'https://www.majomarket-uganda.com/categories' },
           ...path.map((item, index) => ({
             '@type': 'ListItem',
             position: index + 3,
             name: item.name,
-            item: `https://www.majogadgets.com/shop/${path.slice(0, index + 1).map(part => part.slug).join('/')}`,
+            item: `https://www.majomarket-uganda.com/shop/${path.slice(0, index + 1).map(part => part.slug).join('/')}`,
           })),
         ],
       },
@@ -386,17 +394,17 @@ console.log(`Pre-rendered ${categoryUrls.length} active category pages.`)
 
 // Generate sitemap with all public, category, and product URLs
 const staticUrls = [
-  { loc: 'https://www.majogadgets.com/', priority: '1.0', changefreq: 'daily' },
+  { loc: 'https://www.majomarket-uganda.com/', priority: '1.0', changefreq: 'daily' },
   ...staticPages
     .filter(page => page.robots === 'index, follow')
     .map(page => ({
-      loc: `https://www.majogadgets.com/${page.path}`,
+      loc: `https://www.majomarket-uganda.com/${page.path}`,
       priority: page.priority,
       changefreq: page.changefreq,
     })),
 ]
 const productUrls = products.map(p => ({
-  loc: `https://www.majogadgets.com/shop/${encodeURIComponent(p.slug)}`,
+  loc: `https://www.majomarket-uganda.com/shop/${encodeURIComponent(p.slug)}`,
   priority: '0.7',
   changefreq: 'weekly',
 }))

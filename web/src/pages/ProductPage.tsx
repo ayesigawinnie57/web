@@ -333,7 +333,7 @@ export default function ProductPage() {
     ? `${productDescription} Compare available seller offers on Majo Market.`
     : `Buy ${product.name} on Majo Market. Compare available seller offers, prices, stock, delivery, warranty and return options.`
   const pageImage = product.image || LOGO
-  const pageUrl = `https://www.majogadgets.com/shop/${product.slug}`
+  const pageUrl = `https://www.majomarket-uganda.com/shop/${product.slug}`
   const currentSellerName = seller?.business_name || product.sellerName || undefined
 
   const activeVariants = product.variants.filter(variant => variant.is_active)
@@ -609,8 +609,8 @@ export default function ProductPage() {
               '@type': 'BreadcrumbList',
               '@id': `${pageUrl}#breadcrumb`,
               itemListElement: [
-                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.majogadgets.com/' },
-                { '@type': 'ListItem', position: 2, name: 'Shop', item: 'https://www.majogadgets.com/shop' },
+                { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.majomarket-uganda.com/' },
+                { '@type': 'ListItem', position: 2, name: 'Shop', item: 'https://www.majomarket-uganda.com/shop' },
                 { '@type': 'ListItem', position: 3, name: product.name, item: pageUrl },
               ],
             },

@@ -96,7 +96,7 @@ export default function HelpCenterPage() {
         <title>Help Center | Majo Market</title>
         <meta name="description" content="Get help with Majo Market orders, delivery, returns, payments, accounts, and trusted seller services." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/help-center" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/help-center" />
       </Helmet>
       <Navbar />
       <main className="max-w-6xl mx-auto px-4 pt-[150px] pb-8 md:pt-[156px] md:pb-12">
@@ -204,7 +204,7 @@ export default function HelpCenterPage() {
               <p className="text-[13px] text-[#334155]">Message us without leaving Majo Market.</p>
             </div>
 
-            <a href="mailto:support@majogadgets.com" className="inline-flex items-center justify-center rounded-xl border border-[#0F2B43] px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-white">
+            <a href="mailto:support@majomarket-uganda.com" className="inline-flex items-center justify-center rounded-xl border border-[#0F2B43] px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-white">
               Email support
             </a>
           </div>

@@ -58,12 +58,12 @@ export default function DealsPage() {
         <title>Marketplace Deals &amp; Flash Sales | Majo Market</title>
         <meta name="description" content="Discover marketplace deals and limited-time offers from trusted sellers on Majo Market while available stock lasts." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/deals" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/deals" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Majo Market" />
         <meta property="og:title" content="Marketplace Deals &amp; Flash Sales | Majo Market" />
         <meta property="og:description" content="Discover marketplace deals and limited-time offers from trusted sellers on Majo Market while available stock lasts." />
-        <meta property="og:url" content="https://www.majogadgets.com/deals" />
+        <meta property="og:url" content="https://www.majomarket-uganda.com/deals" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="Marketplace Deals &amp; Flash Sales | Majo Market" />
         <meta name="twitter:description" content="Discover marketplace deals and limited-time offers from trusted sellers on Majo Market while available stock lasts." />

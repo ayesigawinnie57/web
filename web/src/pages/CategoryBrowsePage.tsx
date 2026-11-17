@@ -60,7 +60,7 @@ export default function CategoryBrowsePage({ categoryId }: { categoryId: number 
   }, [categoryId])
 
   const path = category ? getCategoryPath(categories, category) : []
-  const canonicalUrl = `https://www.majogadgets.com${category ? getCategoryUrl(categories, category) : '/categories'}`
+  const canonicalUrl = `https://www.majomarket-uganda.com${category ? getCategoryUrl(categories, category) : '/categories'}`
   const pageTitle = category
     ? `${category.name} | Shop ${category.name} Online in Uganda | Majo Market`
     : 'Marketplace Categories | Majo Market'
@@ -72,13 +72,13 @@ export default function CategoryBrowsePage({ categoryId }: { categoryId: number 
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.majogadgets.com/' },
-      { '@type': 'ListItem', position: 2, name: 'Categories', item: 'https://www.majogadgets.com/categories' },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.majomarket-uganda.com/' },
+      { '@type': 'ListItem', position: 2, name: 'Categories', item: 'https://www.majomarket-uganda.com/categories' },
       ...path.map((item, index) => ({
         '@type': 'ListItem',
         position: index + 3,
         name: item.name,
-        item: `https://www.majogadgets.com${getCategoryUrl(categories, item)}`,
+        item: `https://www.majomarket-uganda.com${getCategoryUrl(categories, item)}`,
       })),
     ],
   } : null

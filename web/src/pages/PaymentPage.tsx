@@ -11,7 +11,7 @@ export default function PaymentPage() {
         <title>Payment Information | Majo Market</title>
         <meta name="description" content="Learn about payment options and order payment confirmation on Majo Market." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/payment" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/payment" />
       </Helmet>
       <Navbar />
 
@@ -70,8 +70,8 @@ export default function PaymentPage() {
               <p className="mt-1 text-[15px] text-[#334155]">Contact us directly from the marketplace.</p>
             </div>
 
-            <a href="mailto:support@majogadgets.com" className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-[#DCE5EB] px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-[#F8FAFC]">
-              Email support
+            <a href="mailto:orders@majomarket-uganda.com" className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-[#DCE5EB] px-5 py-3 text-[13px] font-bold text-[#071A2B] transition hover:bg-[#F8FAFC]">
+              Email order management
             </a>
 
             <div className="mt-6 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
@@ -80,7 +80,7 @@ export default function PaymentPage() {
                 Step after payment
               </p>
               <ul className="mt-3 space-y-2 text-[13px] leading-6 text-[#475569]">
-                <li>• Email your payment proof to support@majogadgets.com.</li>
+                <li>• Email your payment proof to orders@majomarket-uganda.com.</li>
                 <li>• Share your order number and full name.</li>
                 <li>• Our team will confirm the transaction.</li>
               </ul>

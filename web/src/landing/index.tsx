@@ -78,10 +78,10 @@ export default function LandingPage() {
         <title>Majo Market | Online Marketplace in Uganda | Shop Quality Products</title>
         <meta name="description" content="Discover quality products from trusted sellers on Majo Market. Shop electronics, fashion, home essentials, tools, accessories and more at great prices." />
         <meta name="robots" content="index,follow" />
-        <link rel="canonical" href="https://www.majogadgets.com/" />
+        <link rel="canonical" href="https://www.majomarket-uganda.com/" />
         <meta property="og:title" content="Majo Market | Shop Quality Products Online in Uganda" />
         <meta property="og:description" content="Discover quality products from trusted sellers on Majo Market. Shop electronics, fashion, home essentials, tools, accessories and more." />
-        <meta property="og:url" content="https://www.majogadgets.com/" />
+        <meta property="og:url" content="https://www.majomarket-uganda.com/" />
         <meta property="og:image" content={LOGO} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Majo Market | Shop Quality Products Online in Uganda" />

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
-Sitemap: https://www.majogadgets.com/sitemap.xml
+Sitemap: https://www.majomarket-uganda.com/sitemap.xml

@@ -415,7 +415,7 @@ export default function BecomeTraderPage() {
               Join our platform as a verified trader. Fill in the form below and our team will review your application. Once approved, you'll be able to list and sell products on Majo Market.
             </p>
             <p className="mt-3 text-[12px] text-[#64748B]">
-              Sales and partnership questions? <a className="font-bold text-[#1E3A8A] hover:underline" href="mailto:sales@majogadgets.com">Email our sales team</a>.
+              Sales and partnership questions? <a className="font-bold text-[#1E3A8A] hover:underline" href="mailto:traders@majomarket-uganda.com">Email our trader relations team</a>.
             </p>
           </div>
         )}
