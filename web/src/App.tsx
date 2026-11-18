@@ -33,7 +33,6 @@ const RequestReturnPage      = lazy(() => import('./pages/RequestReturnPage'))
 const HelpCenterPage         = lazy(() => import('./pages/HelpCenterPage'))
 const AboutPage              = lazy(() => import('./pages/AboutPage'))
 const ContactUsPage          = lazy(() => import('./pages/ContactUsPage'))
-const PaymentPage            = lazy(() => import('./pages/PaymentPage'))
 const PrivacyPolicyPage      = lazy(() => import('./pages/PrivacyPolicyPage'))
 const TermsPage              = lazy(() => import('./pages/TermsPage'))
 const CookiesPage            = lazy(() => import('./pages/CookiesPage'))
@@ -186,6 +185,9 @@ export default function App() {
           <Route path="/shop/:department/:category/:subcategory" element={<ShopPathRoute />} />
           <Route path="/shop/:department/:category" element={<ShopPathRoute />} />
           <Route path="/shop/:slug" element={<ShopPathRoute />} />
+          <Route path="/category/:department/:category/:subcategory" element={<ShopPathRoute />} />
+          <Route path="/category/:department/:category" element={<ShopPathRoute />} />
+          <Route path="/category/:slug" element={<ShopPathRoute />} />
           <Route path="/categories" element={<CategoryPage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/products/:slug" element={<ProductRedirect />} />
@@ -208,7 +210,6 @@ export default function App() {
           <Route path="/help-center" element={<HelpCenterPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
-          <Route path="/payment" element={<PaymentPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/cookies" element={<CookiesPage />} />

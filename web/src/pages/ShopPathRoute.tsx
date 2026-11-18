@@ -29,6 +29,8 @@ export default function ShopPathRoute() {
   if (slug) {
     const departmentCategory = categories.find(item => item.slug === slug && item.parent_id === null)
     if (departmentCategory) return <CategoryBrowsePage categoryId={departmentCategory.id} />
+    const categoryMatch = categories.find(item => item.slug === slug)
+    if (categoryMatch) return <CategoryBrowsePage categoryId={categoryMatch.id} />
     return <ProductPage />
   }
 

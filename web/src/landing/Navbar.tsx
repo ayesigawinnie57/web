@@ -246,8 +246,16 @@ export default function Navbar() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#E2E8F0]">
         <div className="relative flex items-center px-4 h-16 lg:h-20 gap-2.5">
           {/* Logo */}
-          <Link to="/" onClick={closeSearch} className="shrink-0">
-            <img src={LOGO} alt="Majo Market" className="brand-logo h-11 w-11" />
+          <Link
+            to="/"
+            onClick={closeSearch}
+            className="shrink-0 inline-flex flex-col items-center gap-0.5 sm:flex-row sm:gap-2"
+          >
+            <img src={LOGO} alt="" className="brand-logo h-8 w-8 sm:h-11 sm:w-11" />
+            <span className="flex whitespace-nowrap text-[10px] leading-none font-extrabold tracking-tight sm:text-[15px]">
+              <span className="text-[#071A2B]">Majo</span>
+              <span className="ml-1 text-[#1E3A8A]">Market</span>
+            </span>
           </Link>
 
           {/* Search input */}

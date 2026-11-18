@@ -324,7 +324,7 @@ export function getCategoryPath(categories: ApiCategory[], category: ApiCategory
 }
 
 export function getCategoryUrl(categories: ApiCategory[], category: ApiCategory): string {
-  return `/shop/${getCategoryPath(categories, category).map(item => item.slug).join('/')}`
+  return `/category/${getCategoryPath(categories, category).map(item => item.slug).join('/')}`
 }
 
 export type Product = {

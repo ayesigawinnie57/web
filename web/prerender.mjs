@@ -120,38 +120,6 @@ const staticPages = [
     changefreq: 'monthly',
   },
   {
-    path: 'payment',
-    title: 'Payment Information | Majo Market',
-    description: 'View payment information for Majo Market orders and learn how to confirm a payment with customer support.',
-    robots: 'index, follow',
-    priority: '0.5',
-    changefreq: 'monthly',
-  },
-  {
-    path: 'privacy-policy',
-    title: 'Privacy Policy | Majo Market',
-    description: 'Read how Majo Market collects, uses, and protects personal information when customers use our website and services.',
-    robots: 'index, follow',
-    priority: '0.4',
-    changefreq: 'yearly',
-  },
-  {
-    path: 'cookies',
-    title: 'Cookie Policy | Majo Market',
-    description: 'Learn how Majo Market uses essential, preference, and analytics cookies on our website.',
-    robots: 'index, follow',
-    priority: '0.4',
-    changefreq: 'yearly',
-  },
-  {
-    path: 'terms',
-    title: 'Terms and Conditions | Majo Market',
-    description: 'Read the terms and conditions for shopping and using services on the Majo Market website and mobile app.',
-    robots: 'index, follow',
-    priority: '0.4',
-    changefreq: 'yearly',
-  },
-  {
     path: 'login',
     title: 'Sign In | Majo Market',
     description: 'Sign in to your Majo Market account.',
@@ -335,7 +303,7 @@ for (const category of categories.filter(item => item.is_active !== false)) {
     parentId = parent.parent_id
   }
 
-  const categoryUrl = `https://www.majomarket-uganda.com/shop/${path.map(item => item.slug).join('/')}`
+  const categoryUrl = `https://www.majomarket-uganda.com/category/${path.map(item => item.slug).join('/')}`
   const title = `${category.name} | Shop ${category.name} Online in Uganda | Majo Market`
   const description = trimDescription(category.description?.trim()
     || `Browse ${category.name} from trusted sellers on Majo Market. Compare available products, prices, and stock.`)
@@ -361,7 +329,7 @@ for (const category of categories.filter(item => item.is_active !== false)) {
             '@type': 'ListItem',
             position: index + 3,
             name: item.name,
-            item: `https://www.majomarket-uganda.com/shop/${path.slice(0, index + 1).map(part => part.slug).join('/')}`,
+            item: `https://www.majomarket-uganda.com/category/${path.slice(0, index + 1).map(part => part.slug).join('/')}`,
           })),
         ],
       },
@@ -379,7 +347,7 @@ for (const category of categories.filter(item => item.is_active !== false)) {
     .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${escapeHtml(description)}" />`)
     .replace('</head>', `<script type="application/ld+json">${jsonLdScript(pageJsonLd)}</script>\n</head>`)
 
-  const dir = join(DIST, 'shop', ...path.map(item => item.slug))
+  const dir = join(DIST, 'category', ...path.map(item => item.slug))
   mkdirSync(dir, { recursive: true })
   writeFileSync(join(dir, 'index.html'), html)
   categoryUrls.push({

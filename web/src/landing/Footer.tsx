@@ -15,7 +15,6 @@ export default function Footer() {
   const footerLinks = [
     { label: 'About Us', to: '/about' },
     { label: 'Help Center', to: '/help-center' },
-    { label: 'Payment', to: '/payment' },
     { label: 'Returns', to: '/returns' },
     { label: 'Contact Us', to: '/contact' },
     { label: 'Privacy Policy', to: '/privacy-policy' },
